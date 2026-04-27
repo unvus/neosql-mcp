@@ -43,6 +43,7 @@ neosql MCP 개발 실습 공간. 클라이언트(MCP Host)와 neosql embedded-se
 
 - 프로젝트 전반: `CLAUDE.md` (세션 context에 자동 로드)
 - 단계별 구현 계획: `PLAN.md`
+- 수동 e2e 검증 (실제 MCP 클라이언트 연동): `docs/e2e-manual.md`
 - Streamable HTTP 트랜스포트 개념·동작: `docs/streamable-http.md`
 - neosql 실행 모드/포트 결정: `~/workspace/neosql/docs/architecture/execution-modes.md`
 - MCP 개선 논의 소스: `~/workspace/neosql/docs/plan/mcp-improvement-discussion-source.md`

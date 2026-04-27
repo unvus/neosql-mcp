@@ -25,6 +25,8 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `npm pack --dry-run` 배포 패키지 검증
 - [x] `npm link` → `which neosql-mcp` 확인
 
+> 수동 e2e 검증 절차(Inspector / Claude Code / Codex 연동) → `docs/e2e-manual.md`
+
 ---
 
 ## Phase 1 · portResolver (포트 파일 단독) — 예정
