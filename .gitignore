@@ -1,0 +1,10 @@
+.mcp.json
+.env
+.env.local
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.idea/
+.claude/
