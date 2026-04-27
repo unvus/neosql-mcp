@@ -11,8 +11,8 @@
 |------|------|
 | 기술 스택 | 아래 "기술 스택" 표 그대로 |
 | 포트 검출 | **포트 파일 단독** (환경변수 override·프로세스 탐색·포트 스캔 등은 구현 안 함, 필요 시 개발 중 재검토) |
-| 포트 파일 경로 | macOS/Linux `~/.neosql/mcp.json`, Windows `%APPDATA%\neosql\mcp.json` |
-| 포트 파일 스키마 | `{ "port": number, "pid": number, "startedAt": ISO8601 string, "version": string }` |
+| 포트 파일 경로 | neosql Electron 앱의 `userData/neosql-config.json` (macOS `~/Library/Application Support/NeoSQL/neosql-config.json`, Windows `%APPDATA%\NeoSQL\neosql-config.json`) |
+| 포트 파일 스키마 | `{ "embeddedServerPort": number, "embeddedServerPid"?: number }` (앱 실행 중일 때만 `embeddedServerPid` 존재) |
 | Phase 순서 | Phase 0 → 1 → 2 선행, Phase 3 이상은 Phase 2 완료 후 재검토 |
 | 배포 | **npm public registry** (`npx neosql-mcp`) |
 
@@ -79,40 +79,44 @@ neosql-mcp 내부에서 `McpServer`가 수신한 요청을 내부 `Client`로 fo
 
 ### 포트 파일 방식
 
-- **경로**
-  - macOS / Linux: `~/.neosql/mcp.json`
-  - Windows: `%APPDATA%\neosql\mcp.json`
-- **스키마**
+기존 neosql Electron 앱이 이미 작성하는 `neosql-config.json` 을 그대로 재사용한다. mcp 전용 파일을 추가하지 않는다.
+
+- **경로** (Electron `app.getPath('userData')` 규칙)
+  - macOS: `~/Library/Application Support/NeoSQL/neosql-config.json`
+  - Windows: `%APPDATA%\NeoSQL\neosql-config.json`
+- **앱 실행 중**
   ```json
-  { "port": 51837, "pid": 12345, "startedAt": "2026-04-24T10:00:00Z", "version": "1.2.3" }
+  { "embeddedServerPort": 52080, "embeddedServerPid": 26301 }
   ```
-- **수명 주기** (neosql 본체가 수행)
-  - electron-app이 embedded-server spawn 직후 → 빈 포트 선택 → java 실행 → 위 파일에 **원자적 write** (tmp + rename).
-  - 앱 정상 종료 시 → 파일 삭제.
-  - 비정상 종료로 남은 stale 파일 → neosql-mcp가 pid 생존·port listen 여부로 걸러냄.
-
-### neosql 본체에 필요한 변경 (별도 PR)
-
-- `electron-main`에 포트 파일 write/delete 로직 추가 (수십 줄 수준).
-- neosql 본체 리포에서 별도 PR로 관리.
+- **앱 종료**
+  ```json
+  { "embeddedServerPort": 52080 }
+  ```
+- **수명 주기** (neosql 본체가 이미 수행 중)
+  - electron-app 이 embedded-server spawn 직후 → 빈 포트 선택 → java 실행 → 위 파일에 `embeddedServerPort` + `embeddedServerPid` 기록.
+  - 앱 정상 종료 시 → `embeddedServerPid` 만 제거. `embeddedServerPort` 는 남는다.
+  - 즉 **`embeddedServerPid` 존재 = 실행 중** 으로 1차 판정 가능.
+  - 비정상 종료로 pid 가 남아있는 경우 → neosql-mcp 가 pid 생존·port listen 여부로 걸러냄.
 
 ### 산출물
 
-- `portResolver` 모듈: 포트 파일 읽기 → stale 판정 → 유효 URL 반환.
-- 포트 파일 read helper (스키마 검증 포함).
+- `portResolver` 모듈: `neosql-config.json` 읽기 → 실행 상태 판정 → 유효 URL 반환.
+- config 파일 read helper (스키마 검증 포함, OS 별 경로 해석).
 - health check helper (Streamable HTTP MCP endpoint ping).
 
 ### 테스트 (TDD)
 
-- 정상 파일 → port 반환.
-- 파일 없음 → 명확한 에러.
-- stale 파일 (pid 죽음 / port listen 안 됨) → 에러.
-- 스키마 불일치 → 에러.
+- `embeddedServerPort` + `embeddedServerPid` 정상 → port 반환.
+- `embeddedServerPid` 없음 (앱 종료 상태) → "앱이 실행되고 있지 않음" 에러.
+- 파일 없음 → 명확한 에러 (앱 미설치/미실행).
+  - TODO 파일이 있다고 해서 반드시 설치되어 있다고 볼 수 있을까?
+- pid 가 살아있다고 기록되었으나 실제 프로세스 죽음 / port listen 안 됨 → stale 에러.
+- 스키마 불일치 (`embeddedServerPort` 누락 등) → 에러.
 
 ### 완료 조건
 
 - neosql Desktop이 기동된 상태에서 포트 반환 성공.
-- 포트 파일 포맷이 neosql 본체 구현과 합의됨.
+- neosql Desktop 미실행/종료 상태에서 사용자에게 명확한 에러 메시지 노출.
 
 ---
 
