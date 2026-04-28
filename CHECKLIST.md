@@ -20,7 +20,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] ping 툴 (`src/tools/ping.ts`)
 - [x] MCP 서버 팩토리 (`src/server.ts`)
 - [x] CLI 진입점 (`src/cli.ts`, shebang 포함)
-- [x] 단위 테스트: InMemoryTransport로 tools/list, ping 응답 (`src/server.test.ts`, 2건)
+- [x] 단위 테스트: InMemoryTransport 로 tools/list, ping 응답 (`src/server.test.ts`, 2건)
 - [x] 통합 테스트: dist/cli.js spawn (`src/cli.spawn.test.ts`, 1건)
 - [x] `npm pack --dry-run` 배포 패키지 검증
 - [x] `npm link` → `which neosql-mcp` 확인
@@ -29,22 +29,30 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ---
 
-## Phase 1 · portResolver (포트 파일 단독) — 예정
+## Phase 1 · endpointResolver (electron-main UDS/Named Pipe, config 파일 단독) — 예정
 
 - [ ] **test list 제안 → 사람 리뷰 → 합의** (`docs/testing.md` 워크플로 1–2단계)
-- [ ] 포트 파일 스키마 정의 (zod)
-- [ ] `portResolver` 모듈 기본 read 흐름
+- [ ] config 파일 스키마 정의 (zod) — `mcpSocketPath`, `mcpHttpPath`, `electronAppPid`
+- [ ] `endpointResolver` 모듈 기본 read 흐름
 - [ ] stale 판정: pid 생존 확인
-- [ ] stale 판정: port listen 확인
-- [ ] 테스트: 정상 / 파일없음 / pid dead / port not listening / 스키마 불일치
-- [ ] `docs/port-file.md` (경로·스키마·수명 주기·neosql 본체 PR 범위 정리)
-- [ ] neosql 본체 PR (electron-main에 파일 write/delete 로직) — **별도 리포**
+- [ ] stale 판정: socket connect 확인 (health check via `http.request({ socketPath })`)
+- [ ] 테스트: 정상 / 파일없음 / pid dead / socket not bound / 스키마 불일치
+- [ ] `docs/endpoint-config.md` (경로·스키마·수명 주기 정리, OS 별 socket path 형식)
+- [ ] (보류) neosql 본체 PR — 본체 작업 시점에 별도 진행 (UDS listen + chmod 0600 / Named Pipe listen + ACL, stale unlink)
 
 ---
 
-## Phase 2 · stdio ↔ HTTP MCP 중계 — 예정
+## Phase 2 · stdio↔HTTP 채널 + 도구 정의 — 예정
 
-Phase 1 완료 후 test list부터 시작.
+Phase 1 완료 후 test list 부터 시작.
+
+- [ ] **test list 제안 → 사람 리뷰 → 합의**
+- [ ] `httpClient` 모듈 (`endpointResolver` 결과 사용, `http.request({ socketPath })` 기반, JSON-RPC over HTTP POST + SSE 채널, 요청 단위 timeout/retry)
+- [ ] SSE 파서 (자체 구현, `\n\n` 블록 단위)
+- [ ] mcp-server 도구 카탈로그 인프라 + 첫 도구 1개 (mock UDS 서버 대상)
+- [ ] 도구 핸들러 → httpClient → mock UDS 서버 라운드트립 테스트
+- [ ] 에러 매핑 (HTTP 4xx/5xx / 타임아웃 / 메서드 미정의 / socket 연결 실패 → MCP error code)
+- [ ] 도구 목록 추가 (별도 단계에서 작성 — 기존 embedded-server tool 명세를 Node 로 옮김)
 
 ---
 

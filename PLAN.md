@@ -5,38 +5,81 @@
 
 > **진행 방식**: Phase 0 → 1 → 2 까지 먼저 완성한다. Phase 3 이상은 Phase 2 완료 시점에 범위·우선순위를 다시 판단한다.
 
-## 확정 사항 (2026-04-24)
+## 확정 사항
 
 | 항목 | 확정 |
 |------|------|
 | 기술 스택 | 아래 "기술 스택" 표 그대로 |
-| 포트 검출 | **포트 파일 단독** (환경변수 override·프로세스 탐색·포트 스캔 등은 구현 안 함, 필요 시 개발 중 재검토) |
-| 포트 파일 경로 | neosql Electron 앱의 `userData/neosql-config.json` (macOS `~/Library/Application Support/NeoSQL/neosql-config.json`, Windows `%APPDATA%\NeoSQL\neosql-config.json`) |
-| 포트 파일 스키마 | `{ "embeddedServerPort": number, "embeddedServerPid"?: number }` (앱 실행 중일 때만 `embeddedServerPid` 존재) |
+| 도구 정의 위치 | **mcp Node 모듈** (기존 embedded-server 의 tool 명세를 Node 로 가져옴) |
+| upstream 채널 | **electron-main 이 호스트하는 HTTP 엔드포인트 1개** (POST 요청/응답 + GET SSE 서버 푸시). JSON-RPC over HTTP 로 메서드 분기 |
+| upstream transport | **Unix Domain Socket (POSIX) / Named Pipe (Windows)** — TCP 포트 미사용. Node `http`/`net` 이 동일 API 로 추상화 |
+| renderer 호출 | electron-main 이 IPC 로 위임 |
+| 엔드포인트 검출 | **config 파일 단독** (환경변수 override·프로세스 탐색 등은 구현 안 함, 필요 시 개발 중 재검토) |
+| config 파일 경로 | neosql Electron 앱의 `userData/neosql-config.json` (macOS `~/Library/Application Support/NeoSQL/neosql-config.json`, Windows `%APPDATA%\NeoSQL\neosql-config.json`) |
+| config 파일 스키마 | 본체 변경과 함께 확정 예정. 최소 `mcpSocketPath` (string) + `mcpHttpPath` (string) + 실행 상태 판정용 pid 필드 필요 |
 | Phase 순서 | Phase 0 → 1 → 2 선행, Phase 3 이상은 Phase 2 완료 후 재검토 |
 | 배포 | **npm public registry** (`npx neosql-mcp`) |
+
+> 본 시점에 neosql 본체(electron-main / renderer / embedded-server) 변경은 진행하지 않는다. 본체 작업이 시작되는 시점에 config 파일 스키마와 HTTP 메서드 명세를 함께 확정한다.
+
+### upstream 채널을 HTTP 로 정한 근거 요약
+
+기존 embedded-server MCP tool 들의 사용 패턴을 6 축(메시지 패턴 / push 빈도 / 격리 요구 / 장애 모델 / 세션 의미 / 응답 형태 다양성) 으로 평가했을 때, **6 항목 모두 HTTP 가 우세하거나 명확 우세**.
+
+핵심 근거:
+- 어떤 도구도 server→client push 를 사용하지 않음 (DDL approval 도 UI 측 모달).
+- executeQuery / createTables / modifyTables 가 60 s timeout 의 long-running 도구 → **요청 단위 격리** 가 안전.
+- `setContext`/`getContext` 가 명시적 세션 컨텍스트를 관리 → "연결=세션" 모델보다 명시적 세션 헤더가 정합.
+- 응답 크기 편차가 큼 (μs 작은 JSON ~ generateCode 수십 KB) → 요청별 응답 형태 선택(단일 JSON / SSE) 이 future-proof.
+
+WS 가 우세해질 시점(진행 알림·취소·서버 발신 이벤트 일상화) 이 오면 SSE 채널로 흡수 가능.
+
+### transport 를 UDS / Named Pipe 로 정한 근거 요약
+
+TCP loopback 대신 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** 를 채택. protocol(JSON-RPC over HTTP) 결정은 그대로 유지하고 transport 레이어만 교체.
+
+이유:
+- **포트 충돌·방화벽 회피**: 동적 포트 관리, 사용자 보안 SW 의 loopback 차단 가능성 등에서 자유.
+- **외부 노출 0**: TCP loopback 도 외부 접근은 막혀있지만 listen 자체는 보임. UDS/Named Pipe 는 OS 레벨에서 file path / pipe name 으로 격리 (POSIX 는 `chmod 0600` 으로 동일 호스트 내 다른 사용자도 차단 가능).
+- **Node 표준 API 동일 추상화**: `http.createServer().listen(socketPath)` / `http.request({ socketPath })` 로 두 OS 모두 동일하게 처리. 코드 분기는 socket path 결정만.
+- **POC 실측 통과**: macOS 환경에서 S1 (POST/JSON 왕복) / S2 (SSE 5 이벤트) / S3 (3 client × 100 round-trip) 모두 PASS. POC 산출물은 `poc/` 디렉토리 (gitignore).
+
+비용:
+- POSIX 는 비정상 종료 시 socket file 잔존 → 본체 기동 시 unlink 필수 (Windows Named Pipe 는 OS 자동 cleanup).
+- POSIX 는 `chmod 0600`, Windows 는 Named Pipe ACL 별도 적용 (Node 표준 API 미제공, win32 native 처리 필요) — 본체 작업 시 보강.
+- POSIX `sun_path` 길이 제한 (~104 byte) 회피 위해 socket path 는 `os.tmpdir()` 등 짧은 위치에 둠.
 
 ## 기술 스택
 
 | 항목 | 선택 | 선택 이유 |
 |------|------|----------|
-| 런타임 | **Node 20+** | MCP SDK 최소 요구, 내장 `fetch`/`ReadableStream`으로 SSE 중계 용이. |
-| 언어 | **TypeScript** (strict) | MCP SDK 자체가 TS·타입 완비, 메시지 스키마 안전 처리. |
-| MCP SDK | **`@modelcontextprotocol/sdk` v1** | 공식. Server+Client+Transport 한 패키지 → 중계기 구현에 그대로 사용. v2는 pre-alpha. |
-| 테스트 | **Vitest** | TS 네이티브(ts-jest 불필요), ESM 친화, 빠른 watch, mock API 내장. |
-| 빌드 | **tsup** | esbuild 기반. `bin` 진입점 번들링에 특화 → `npx neosql-mcp` 배포에 적합. |
-| HTTP | **Node 내장 fetch** (필요 시 `undici`) | 기본 중계는 내장 fetch로 충분. keep-alive/dispatcher 제어가 필요해지면 undici로 교체. |
-| Lint/Format | **ESLint + Prettier** | 생태계 성숙. Biome은 속도 이점 있으나 플러그인 성숙도 부족. |
-| 로깅 | **pino (stderr)** | MCP는 stdout이 JSON-RPC → **로그는 반드시 stderr**. pino는 저비용 구조화 로그 표준. |
+| 런타임 | **Node 20+** | MCP SDK 최소 요구. `http`/`net` 모듈이 UDS/Named Pipe 를 표준 지원. |
+| 언어 | **TypeScript** (strict) | MCP SDK 자체가 TS·타입 완비. |
+| MCP SDK | **`@modelcontextprotocol/sdk` v1** | 공식. stdio Server transport + 도구 정의 모델을 그대로 사용. v2는 pre-alpha. |
+| 테스트 | **Vitest** | TS 네이티브, ESM 친화, mock API 내장. |
+| 빌드 | **tsup** | esbuild 기반. `bin` 진입점 번들링 → `npx neosql-mcp` 배포 적합. |
+| HTTP/SSE 클라이언트 | **Node 내장 `http.request({ socketPath })` + 자체 SSE 파서**, 또는 `undici` 패키지의 `Agent({ connect: { socketPath } })` + `fetch` | 글로벌 `fetch` 는 dispatcher 옵션 미지원이라 UDS/Named Pipe 사용 불가. 의존성 0 인 `http` 모듈 직접 사용이 기본, ergonomics 가 필요하면 `undici` 패키지 명시 설치. |
+| Lint/Format | **ESLint + Prettier** | 생태계 성숙. |
+| 로깅 | **pino (stderr)** | MCP 는 stdout 이 JSON-RPC → **로그는 반드시 stderr**. |
 | 배포 | npm publish (`bin: neosql-mcp`) | `npx neosql-mcp` 실행 |
 
-### MCP SDK 배치 개념도
+### 아키텍처 개념도
 
 ```
-Claude Host ──stdio──▶ neosql-mcp (McpServer + Client) ──StreamableHTTP──▶ embedded-server (Spring AI MCP)
+[mcp-client] ── stdio ──▶ [neosql-mcp (Node)] ── HTTP+SSE over UDS/Named Pipe ──▶ [electron-main] ── IPC ──▶ [electron-renderer]
+              JSON-RPC                          JSON-RPC                                                  method invocation
+              (MCP)                             (neosql 자체 RPC)
+
+  Node 내부:
+    ├─ MCP Server (StdioServerTransport)
+    ├─ Tools 카탈로그 + 핸들러 (도구 정의 보유)
+    └─ neosql RPC client (http.request({ socketPath, ... }) + SSE)
 ```
 
-neosql-mcp 내부에서 `McpServer`가 수신한 요청을 내부 `Client`로 forward. tools/resources 목록도 upstream에서 조회해 그대로 노출.
+- **클라이언트 ↔ Node**: MCP 표준 (JSON-RPC over stdio). MCP Server SDK 가 처리.
+- **Node ↔ electron-main**: 자체 RPC over HTTP, transport 는 **UDS (POSIX) / Named Pipe (Windows)**. POST 요청/응답이 기본. 서버 push 가 필요한 경우 GET SSE 채널 별도 오픈. HTTP path 하나, 그 위에서 method 로 분기 (예: `connection.list`, `sql.execute`, `ddl.requestApproval`). 메시지·메서드 정의는 도구 정의에 따라 추가. **MCP 도구 ↔ HTTP 메서드는 1:1 매핑이 보장되지 않는다** — 핸들러가 여러 HTTP 메서드를 조합하거나 단순 forward 하는 형태가 도구별로 혼합될 수 있다.
+- **electron-main ↔ renderer**: 기존 IPC. main 의 핸들러가 받은 메서드 중 renderer 데이터·UI 가 필요한 것은 IPC 로 위임, main 안에서 끝나는 것은 직접 처리.
+- **도구 카탈로그는 Node 가 보유**. 클라이언트가 `tools/list` 를 요청하면 Node 가 자체 카탈로그로 응답. `tools/call` 시 Node 의 핸들러가 실행되며 필요에 따라 HTTP 메서드를 호출.
 
 ### 참고 링크
 
@@ -45,108 +88,118 @@ neosql-mcp 내부에서 `McpServer`가 수신한 요청을 내부 `Client`로 fo
 - TS SDK GitHub: https://github.com/modelcontextprotocol/typescript-sdk
 - TS SDK API (v1): https://modelcontextprotocol.github.io/typescript-sdk/
 - Server 가이드: https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/server.md
-- Client 가이드: https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/client.md
 - Transport 스펙: https://modelcontextprotocol.io/specification/2025-03-26/basic/transports
 - npm: https://www.npmjs.com/package/@modelcontextprotocol/sdk
-- Streamable HTTP 정리 (이 리포): `docs/streamable-http.md`
+- 통신 계층 정리: `docs/통신 스택 계층 (RPC vs Transport).md`
 
 ---
 
-## Phase 0 · 프로젝트 부트스트랩
+## Phase 0 · 프로젝트 부트스트랩 — 완료
 
-**목표**: `npx neosql-mcp`가 실행되는 최소 MCP 서버 스켈레톤 확보.
-
-**산출물**
-- `package.json` (name: `neosql-mcp`, bin: `dist/cli.js`)
-- TypeScript + tsup 빌드 파이프라인
-- Vitest 구성
-- `ping` 툴 하나만 가진 stdio MCP 서버 (임시)
-- ESLint + Prettier, pino 로거 (stderr) 초기 설정
-
-**테스트 (TDD)**
-- CLI 실행 smoke test: child process spawn → `initialize` handshake 성공
-- `ping` 툴 호출 왕복
-
-**완료 조건**
-- Claude Desktop/Code에 `npx neosql-mcp` 등록 후 `ping` 호출 성공
-- 스택 구성 이 문서에 최종 반영
+`npx neosql-mcp` 가 실행되는 최소 MCP 서버 스켈레톤 확보 완료. 산출물·테스트 결과는 `CHECKLIST.md` Phase 0 섹션 참조.
 
 ---
 
-## Phase 1 · embedded-server 포트 검출 (포트 파일 단독)
+## Phase 1 · electron-main 엔드포인트 검출 (config 파일 단독)
 
-**목표**: 로컬에서 실행 중인 neosql embedded-server의 HTTP 포트를 포트 파일로부터 읽는다. 대체 전략(환경변수 override, 프로세스 탐색, 포트 스캔)은 이 단계에서 **구현하지 않는다**. 필요 판단 시 개발 중에 재검토.
+**목표**: 로컬에서 실행 중인 neosql Electron 앱의 socket path / http path 를 config 파일로부터 읽는다. 대체 전략(환경변수 override, 프로세스 탐색)은 이 단계에서 **구현하지 않는다**. 필요 판단 시 개발 중 재검토.
 
-### 포트 파일 방식
+### config 파일 방식
 
-기존 neosql Electron 앱이 이미 작성하는 `neosql-config.json` 을 그대로 재사용한다. mcp 전용 파일을 추가하지 않는다.
+기존 neosql Electron 앱이 작성하는 `neosql-config.json` 을 확장해서 mcp 용 엔드포인트 정보를 추가한다. mcp 전용 파일을 별도로 두지 않는다.
 
 - **경로** (Electron `app.getPath('userData')` 규칙)
   - macOS: `~/Library/Application Support/NeoSQL/neosql-config.json`
   - Windows: `%APPDATA%\NeoSQL\neosql-config.json`
-- **앱 실행 중**
+- **앱 실행 중 (예시 스키마)**
   ```json
-  { "embeddedServerPort": 52080, "embeddedServerPid": 26301 }
+  {
+    "mcpSocketPath": "/Users/x/Library/Application Support/NeoSQL/mcp.sock",
+    "mcpHttpPath": "/mcp",
+    "electronAppPid": 26301
+  }
   ```
+  Windows 의 경우 `mcpSocketPath` 가 `\\\\.\\pipe\\neosql-mcp` 형태.
 - **앱 종료**
   ```json
-  { "embeddedServerPort": 52080 }
+  {
+    "mcpSocketPath": "/Users/x/Library/Application Support/NeoSQL/mcp.sock",
+    "mcpHttpPath": "/mcp"
+  }
   ```
-- **수명 주기** (neosql 본체가 이미 수행 중)
-  - electron-app 이 embedded-server spawn 직후 → 빈 포트 선택 → java 실행 → 위 파일에 `embeddedServerPort` + `embeddedServerPid` 기록.
-  - 앱 정상 종료 시 → `embeddedServerPid` 만 제거. `embeddedServerPort` 는 남는다.
-  - 즉 **`embeddedServerPid` 존재 = 실행 중** 으로 1차 판정 가능.
-  - 비정상 종료로 pid 가 남아있는 경우 → neosql-mcp 가 pid 생존·port listen 여부로 걸러냄.
+  (마지막 값 잔존, pid 만 제거)
+- **수명 주기** (neosql 본체가 수행 — 본체 변경 시 확정)
+  - electron-main 기동 시 → socket path 결정 → (POSIX) stale socket file 있으면 unlink → `http.createServer().listen(socketPath)` → (POSIX) `chmod 0600` → 위 파일에 `mcpSocketPath` + `mcpHttpPath` + `electronAppPid` 기록.
+  - 정상 종료 시 → `electronAppPid` 만 제거. (POSIX 는 socket file 도 함께 unlink 권장)
+  - **`electronAppPid` 존재 = 실행 중** 으로 1차 판정.
+  - 비정상 종료로 pid 가 남으면 → neosql-mcp 가 pid 생존·socket connect 여부로 걸러냄.
 
 ### 산출물
 
-- `portResolver` 모듈: `neosql-config.json` 읽기 → 실행 상태 판정 → 유효 URL 반환.
+- `endpointResolver` 모듈: `neosql-config.json` 읽기 → 실행 상태 판정 → 유효 socket path + http path 반환.
 - config 파일 read helper (스키마 검증 포함, OS 별 경로 해석).
-- health check helper (Streamable HTTP MCP endpoint ping).
+- health check helper (`http.request({ socketPath, ... })` 로 GET ping 시도).
 
 ### 테스트 (TDD)
 
-- `embeddedServerPort` + `embeddedServerPid` 정상 → port 반환.
-- `embeddedServerPid` 없음 (앱 종료 상태) → "앱이 실행되고 있지 않음" 에러.
+- `mcpSocketPath` + `electronAppPid` 정상 → 엔드포인트 반환.
+- `electronAppPid` 없음 (앱 종료 상태) → "앱이 실행되고 있지 않음" 에러.
 - 파일 없음 → 명확한 에러 (앱 미설치/미실행).
-  - TODO 파일이 있다고 해서 반드시 설치되어 있다고 볼 수 있을까?
-- pid 가 살아있다고 기록되었으나 실제 프로세스 죽음 / port listen 안 됨 → stale 에러.
-- 스키마 불일치 (`embeddedServerPort` 누락 등) → 에러.
+- pid 가 살아있다고 기록되었으나 실제 프로세스 죽음 / socket connect 실패 → stale 에러.
+- 스키마 불일치 (`mcpSocketPath` 누락 등) → 에러.
 
 ### 완료 조건
 
-- neosql Desktop이 기동된 상태에서 포트 반환 성공.
+- neosql Desktop 이 기동된 상태에서 endpoint 반환 성공.
 - neosql Desktop 미실행/종료 상태에서 사용자에게 명확한 에러 메시지 노출.
 
 ---
 
-## Phase 2 · stdio ↔ HTTP MCP 중계
+## Phase 2 · stdio↔HTTP 채널 + 도구 정의
 
-**목표**: 클라이언트의 stdio MCP 요청을 embedded-server의 Spring AI MCP (Streamable HTTP)로 프록시.
+**목표**: 클라이언트의 stdio MCP 요청을 Node 안에서 도구 카탈로그·핸들러로 처리하고, 핸들러 내부에서 필요한 작업은 electron-main 의 HTTP 엔드포인트로 위임한다.
 
-**산출물**
-- `relay` 모듈:
-  - upstream URL은 Phase 1의 `portResolver`로 해결.
-  - `@modelcontextprotocol/sdk`의 `McpServer`(stdio) + `Client`(StreamableHTTP) 쌍으로 forward.
-  - 메소드: `initialize`, `tools/list`, `tools/call`, `resources/*`, `prompts/*`, `notifications/*`.
-  - 에러 매핑 (HTTP 4xx/5xx·타임아웃 → MCP error).
-  - 포트 변경 감지 시 resolve 재시도 + 1회 reconnect.
+### 산출물
 
-**테스트 (TDD)**
-- mock upstream HTTP MCP 서버에 대한 proxy 무결성 (req/resp body·header·메시지 id 보존).
-- 스트리밍 응답(Streamable HTTP) 중계.
-- upstream down·타임아웃·포트 변경 케이스.
+- `mcp-server` 모듈
+  - `@modelcontextprotocol/sdk` 의 `McpServer` + `StdioServerTransport`
+  - **도구 카탈로그** (도구 목록 자체는 별도 단계에서 작성. 본 단계에서는 카탈로그 인프라 + 첫 도구 1개로 e2e 흐름 확보)
+  - 도구 핸들러 → `httpClient` 호출 → 결과를 MCP `tools/call` 응답으로 변환
+- `httpClient` 모듈
+  - Node 내장 `http.request({ socketPath, ... })` 기반. Phase 1 의 `endpointResolver` 결과를 사용.
+  - JSON-RPC over HTTP — POST 요청/응답이 기본. 서버 push 가 필요한 메서드는 GET SSE 채널.
+  - 단일 path, method 기반 분기. 메서드 이름·payload 는 도구 정의에 따라 추가.
+  - 요청 단위 timeout / retry. SSE 채널만 끊긴 경우 `Last-Event-ID` 로 재개.
+  - socket path 변경 감지 시 resolve 재시도.
+  - 에러 매핑 (HTTP status 4xx/5xx / 타임아웃 / 메서드 미정의 → MCP error code).
 
-**완료 조건**
-- 실제 neosql Desktop을 upstream으로 `tools/list` / `tools/call` 왕복 성공.
+### 본체 작업 분리
+
+- electron-main / renderer 의 HTTP 서버·메서드·IPC 핸들러는 **본 리포 범위 밖**. 본체 작업 시점에 별도 PR.
+- Phase 2 의 단위·통합 테스트는 mock HTTP 서버로 검증.
+
+### 테스트 (TDD)
+
+- mock HTTP 서버 (UDS 위에 listen) 에 대해 도구 핸들러가 올바른 메서드·payload 를 호출.
+- HTTP 응답을 도구 결과로 변환해서 stdio 로 반환.
+- HTTP 4xx/5xx / 타임아웃 / socket path 변경 / 미정의 메서드 케이스.
+- (push 가 필요한 메서드 도입 시) SSE 청크 수신·재개.
+
+### 완료 조건
+
+- mock HTTP 서버 환경에서 stdio 클라이언트가 도구 호출 왕복 성공.
+- 본체 작업 완료 시점에 실 환경 e2e 검증 추가.
 - Phase 2 완료 시점에 **Phase 3 이상 범위·우선순위 재검토**.
 
 ---
 
 ## Phase 3 이상 (Phase 2 완료 후 구체화)
 
-Phase 2까지의 결과를 확인한 뒤 아래 항목의 범위·우선순위·방식을 재검토한다.
+Phase 2 까지의 결과를 확인한 뒤 아래 항목의 범위·우선순위·방식을 재검토한다.
 
-- **electron-app 실행 상태 확인·자동 기동** — Desktop이 꺼진 상태에서 MCP 요청 시 어떻게 처리할지.
+- **electron-app 실행 상태 확인·자동 기동** — Desktop 이 꺼진 상태에서 MCP 요청 시 어떻게 처리할지.
 - **electron-app 설치 여부 확인·설치 안내 또는 자동 설치** — 미설치 사용자 UX.
+- **multi-instance 처리** — 여러 npx 클라이언트가 동시에 같은 socket 에 접속하는 경우 인증·세션·격리 정책 (요청 단위 헤더 기반 식별). UDS/Named Pipe 자체는 N:1 multi-connection 을 표준 지원 (POC 검증 완료).
+- **Windows Named Pipe 보강** — POSIX `chmod 0600` 와 동등한 권한 격리를 위해 win32 native 호출로 ACL 적용 (본체 작업 시 진행).
+- **인증·권한** — JWT/OAuth 처리, projectId 별 권한 체크 위치.
 - **안정화·UX** — 구조화 로그 확장, CLI 옵션, lazy launch, E2E 시나리오 테스트.

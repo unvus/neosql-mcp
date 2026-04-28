@@ -146,33 +146,24 @@ LSP **표준 명세가 정의하는 transport** 는 다음과 같다:
 MCP (Model Context Protocol) 도 LSP 와 유사하게 **JSON-RPC 2.0 위에 정의된 도메인 프로토콜** 이며, 표준 명세가 두 가지 transport 를 정의한다:
 
 - **stdio transport** — 클라이언트가 MCP 서버를 자식 프로세스로 spawn (npx 실행 등). neosql-mcp 의 클라이언트 ↔ Node 구간이 여기 해당.
-- **Streamable HTTP transport** — 단일 endpoint 에 POST(요청/응답·SSE) + DELETE(세션 종료). neosql-mcp 의 Node ↔ Spring AI MCP 구간이 여기 해당.
+- **Streamable HTTP transport** — 단일 endpoint 에 POST(요청/응답·SSE) + DELETE(세션 종료).
 
 (과거 버전의 "HTTP+SSE" 는 deprecated 되었고 현재는 Streamable HTTP 로 통합됨.)
 
-즉 neosql-mcp 의 Phase 2 중계는
+neosql-mcp 의 클라이언트 ↔ Node 구간은 표준 stdio transport. Node ↔ electron-main 구간은 **MCP 표준 transport 가 아닌 자체 RPC** (JSON-RPC over HTTP) 를 쓰며, 이 자체 RPC 의 운반 계층으로 **UDS / Named Pipe** 를 선택했다 (§4.4 참조).
 
-```
-[클라이언트] — JSON-RPC over stdio — [Node] — JSON-RPC over Streamable HTTP — [Spring AI MCP]
-```
+### 4.4 Node ↔ Electron 채널 결정 — UDS / Named Pipe 채택
 
-으로, **메시지 패턴(JSON-RPC + MCP) 은 동일하지만 transport 만 stdio↔HTTP 로 변환** 하는 구조다. 이 분리가 명확해야 "transport 변환만 책임지는 fallback transparent proxy" 라는 결정의 의미가 분명해진다.
+"Node MCP ↔ Electron Main" 채널을 두 축으로 분리해 평가했고 다음으로 확정.
 
-### 4.4 Node ↔ Electron 채널 결정에 적용
+- **Pattern 축**: **JSON-RPC over HTTP** (POST 요청/응답 + 필요 시 GET SSE 서버 푸시). MCP 도구 카탈로그는 Node 가 보유하고, 핸들러 안에서 자체 method 로 분기.
+- **Transport 축**: **Unix Domain Socket (POSIX) / Named Pipe (Windows)**. TCP 포트 미사용.
 
-Phase 4 이후 검토 중인 "Node MCP ↔ Electron Renderer/Main" 채널 결정도 두 축으로 분리하면 단순해진다:
+선택 근거:
+- HTTP 채택 — 6 축 (메시지 패턴 / push 빈도 / 격리 요구 / 장애 모델 / 세션 의미 / 응답 형태 다양성) 모두 HTTP 우세 (`PLAN.md` "upstream 채널을 HTTP 로 정한 근거 요약" 참조).
+- UDS / Named Pipe 채택 — 포트 충돌·방화벽 회피, OS 레벨 격리 (POSIX 는 `chmod 0600`, Windows 는 ACL), Node `http`/`net` 이 동일 API 로 두 OS 모두 추상화. POC 에서 N:1 multi-connection · SSE · POST/JSON 모두 실측 통과 (`poc/`).
 
-- **Pattern 축** — 어떤 메시지 모델을 쓸 것인가
-  - JSON-RPC 2.0 (MCP 와 일관성 유지)
-  - 자체 message protocol (event/command 기반)
-  - Pub/Sub (multi-instance fan-in 처리에 유리)
-- **Transport 축** — 어떤 통로로 보낼 것인가
-  - WebSocket (양방향, 기존 embedded-server↔Renderer 패턴과 일관)
-  - HTTP + SSE (요청은 POST, push 는 SSE)
-  - Unix Domain Socket / Named Pipe (로컬 한정·보안 우위)
-  - stdio (Node 가 Electron 의 자식이라면 — 현재 시나리오엔 부적합)
-
-두 축은 독립적으로 고를 수 있으므로 (예: "JSON-RPC over WS" 또는 "JSON-RPC over UDS"), pattern 결정과 transport 결정을 섞지 말고 따로 평가하는 것이 좋다.
+Pattern 과 Transport 결정을 분리해 평가한 덕에, 향후 SSE 가 부족해서 양방향 push 가 필요해지면 **transport 만** WebSocket 으로 바꿔도 (또는 그 위에 다른 message 모델을 얹어도) 도구 핸들러 코드는 영향 최소화 가능.
 
 ### 4.5 SSE 가 transport 인가 pattern 인가
 
@@ -194,10 +185,9 @@ gRPC 는 이름 그대로 RPC 패턴이지만, 표준 명세가 **transport 를 
 
 ## 5. 본 문서의 적용 범위
 
-이 문서는 **개념 정리용 참고 자료** 다. 다음 의사결정 문서에서 본 문서의 계층 정의를 전제로 사용한다:
+이 문서는 **개념 정리용 참고 자료** 다. 본 문서의 계층 정의를 전제로 다음 결정이 이루어졌다:
 
-- `Phase 2 중계 아키텍처 의사결정.md` — Pattern (JSON-RPC + MCP) 동일 / Transport (stdio ↔ HTTP) 변환
-- (예정) Phase 4 Node ↔ Electron 채널 결정 — Pattern 축과 Transport 축 분리 평가
+- `PLAN.md` — 클라이언트 ↔ Node 구간은 MCP 표준 stdio transport, Node ↔ electron-main 구간은 **JSON-RPC over HTTP** pattern 위에 **UDS / Named Pipe** transport 를 얹는 구조 (§4.4 요약 참조).
 
 ---
 

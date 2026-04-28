@@ -7,8 +7,9 @@
 ## neosql-mcp 방향성
 
 - **실행 방식 전환**: 기존 HTTP 직접 호출 방식에서 `npx` 로컬 실행 방식으로 변경한다.
-- **배포 패키지**: `npx`로 실행할 node 모듈명은 `neosql-mcp`로 한다. (향후 변경 가능)
-- **중계 구조**: neosql 본체(Spring AI MCP) 소스는 수정하지 않고, `neosql-mcp`가 클라이언트와 embedded-server 사이를 중계한다.
+- **배포 패키지**: `npx` 로 실행할 node 모듈명은 `neosql-mcp` 로 한다. (향후 변경 가능)
+- **도구 위치**: 도구 카탈로그·핸들러는 mcp Node 모듈이 보유한다 (기존 embedded-server tool 명세를 Node 로 가져옴).
+- **중계 구조**: Node 의 도구 핸들러는 electron-main 이 호스트하는 HTTP 엔드포인트(JSON-RPC over HTTP POST + 필요 시 GET SSE) 로 데이터·UI 트리거를 위임한다. transport 는 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** — TCP 포트 미사용. main → renderer 는 기존 IPC.
 
 상세한 기능 개발 우선순위는 `README.md`, 단계별 구현 계획은 `PLAN.md` 참조.
 
