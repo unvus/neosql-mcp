@@ -40,4 +40,24 @@ describe('createServer', () => {
     expect(content[0]?.type).toBe('text');
     expect(content[0]?.text).toBe('pong');
   });
+
+  it('exposes the 9 ported embedded-server tools plus ping in tools/list', async () => {
+    await connectClientToServer();
+    const result = await client!.listTools();
+    const toolNames = new Set(result.tools.map((t) => t.name));
+    expect(toolNames).toEqual(
+      new Set([
+        'ping',
+        'generateCode',
+        'listTables',
+        'getTableDetails',
+        'setContext',
+        'getContext',
+        'getContextHelp',
+        'createTables',
+        'modifyTables',
+        'executeQuery',
+      ]),
+    );
+  });
 });

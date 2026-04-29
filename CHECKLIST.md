@@ -59,7 +59,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
   - [ ] `context/get-context`
   - [ ] `context/get-context-help`
   - [ ] `ddl/create-tables`
-  - [ ] `ddl/alter-tables`
+  - [ ] `ddl/modify-tables`
   - [ ] `sql/execute-query`
 - [ ] `tests/helpers/mock-uds-server.ts` (재사용 fixture)
 - [ ] `tests/integration/round-trip.test.ts` — 9개 도구 mock UDS 라운드트립 green
