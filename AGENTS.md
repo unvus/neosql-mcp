@@ -1,11 +1,11 @@
 # Repository Guidelines
 
-## Project Context
+## 프로젝트 맥락
 
-This repository is the TypeScript ESM package for `neosql-mcp`, a local MCP relay
-server run by stdio MCP clients through `npx neosql-mcp`.
+이 저장소는 `neosql-mcp`의 TypeScript ESM 패키지다. stdio MCP 클라이언트가
+`npx neosql-mcp`로 실행하는 로컬 MCP 중계 서버를 구현한다.
 
-The intended architecture is:
+목표 아키텍처:
 
 ```text
 [mcp-client] -- stdio MCP --> [neosql-mcp Node]
@@ -13,66 +13,84 @@ The intended architecture is:
   -- IPC --> [electron-renderer]
 ```
 
-Important boundaries:
+중요한 경계:
 
-- Client to Node uses standard MCP JSON-RPC over stdio.
-- Node to electron-main uses neosql's own JSON-RPC over HTTP endpoint.
-- The upstream transport is Unix Domain Socket on POSIX and Named Pipe on Windows.
-  Do not introduce TCP ports unless the architecture docs are explicitly changed.
-- Tool catalog and MCP handlers live in this Node package. Handlers may delegate one
-  or more upstream HTTP methods to electron-main; MCP tools and upstream methods are
-  not guaranteed to map 1:1.
-- electron-main, renderer, and embedded-server changes are outside this repository
-  unless a task explicitly includes the neosql main app.
+- 클라이언트 ↔ Node 구간은 표준 MCP JSON-RPC over stdio를 사용한다.
+- Node ↔ electron-main 구간은 neosql 자체 JSON-RPC over HTTP endpoint를 사용한다.
+- upstream transport는 POSIX에서는 Unix Domain Socket, Windows에서는 Named Pipe다.
+  아키텍처 문서가 명시적으로 바뀌기 전까지 TCP port를 도입하지 않는다.
+- Tool catalog와 MCP handler는 이 Node 패키지에 둔다. handler는 하나 이상의
+  upstream HTTP method를 electron-main에 위임할 수 있으며, MCP tool과 upstream
+  method는 1:1 매핑을 보장하지 않는다.
+- electron-main, renderer, embedded-server 변경은 이 저장소 범위 밖이다. 단, 작업이
+  neosql main app 변경을 명시적으로 포함하면 예외다.
 
-Current status:
+현재 상태와 로드맵:
 
-- Phase 0 is complete: package scaffold, MCP server, `ping` tool, logger, build,
-  unit tests, and spawn integration test.
-- Phase 1 is next: endpoint resolution from the neosql Electron app config file.
-- Phase 2 follows: stdio-to-HTTP channel, upstream client, SSE support, and real
-  tool catalog expansion.
+- Phase 0 완료: package scaffold, MCP server, `ping` tool, logger, build, unit test,
+  spawn integration test.
+- Phase 1 완료: endpoint resolution은 config file, environment variable, process
+  discovery가 아니라 deterministic socket path 규칙을 사용한다.
+- Phase 2: embedded-server MCP tool을 이 Node 패키지로 이관한다. 순서는 Phase 2-1
+  channel infrastructure + 9개 tool signature + mock UDS round-trip, Phase 2-2
+  contract analysis, Phase 2-3 Node handler, Phase 2-4 `ContextTools` real Electron
+  pilot이다.
+- Phase 3+는 Phase 2-4 pilot 결과를 확인한 뒤 범위와 우선순위를 다시 정한다.
 
-Use `README.md` for the high-level direction, `PLAN.md` for architecture decisions,
-`CHECKLIST.md` for phase progress, and `docs/testing.md` for the required testing
-workflow.
+문서 기준:
 
-## Project Structure & Module Organization
+- `CLAUDE.md`: Claude로 진행해온 neosql 고수준 맥락.
+- `README.md`: 저장소 개요.
+- `PLAN.md`: 아키텍처 결정과 phase 전략의 단일 진실의 원천.
+- `CHECKLIST.md`: 현재 진행 상태의 단일 진실의 원천.
+- `docs/project-structure.md`: 파일 배치 규칙의 단일 진실의 원천.
+- `docs/testing.md`: 필수 테스트 워크플로.
 
-전체 디렉토리 레이아웃과 새 파일 배치 규칙은 `docs/project-structure.md` 를
-**단일 진실의 원천**으로 삼는다. 새 파일·모듈을 추가하거나 기존 파일을 이동
-할 때는 반드시 해당 문서를 먼저 참조해 분류를 확인하고, 분류가 모호하면 PR
-설명에 근거를 적는다. 새 경계가 필요한 변경이라면 코드와 함께
-`docs/project-structure.md` 도 같이 갱신한다.
+`AGENTS.md`는 Codex-facing repository guide다. `CLAUDE.md`와 일관성을 유지하되,
+세부 내용이 다르면 더 구체적인 계획 문서(`PLAN.md`, `CHECKLIST.md`,
+`docs/project-structure.md`)를 우선한다. `CLAUDE.md`가 참조하는
+`~/workspace/neosql/docs/` 하위 외부 문서는 main-app 맥락이 필요한 작업에서만 읽는다.
+
+## 프로젝트 구조와 모듈 배치
+
+전체 디렉토리 레이아웃과 새 파일 배치 규칙은 `docs/project-structure.md`를
+**단일 진실의 원천**으로 삼는다. 새 파일·모듈을 추가하거나 기존 파일을 이동할 때는
+반드시 해당 문서를 먼저 참조해 분류를 확인한다. 분류가 모호하면 PR 설명에 근거를
+적고, 새 경계가 필요한 변경이면 코드와 함께 `docs/project-structure.md`도 갱신한다.
 
 핵심 요약:
 
-- `src/` 는 프로덕션 코드만. `src/{cli, mcp, upstream, infra}/` 4개 경계.
-  - `cli/` — 바이너리 진입점 (`cli.ts` 가 `package.json` `bin` 타깃) + CLI 인자 파싱.
-  - `mcp/` — MCP stdio 서버 + tool 카탈로그(`mcp/tools/`).
-  - `upstream/` — electron-main HTTP 채널 (UDS/Named Pipe). Phase 2 이후 http-client / SSE 파서가 여기 추가.
-  - `infra/` — 횡단 관심사 (logger 등). pino 로그는 stdout 이 MCP stdio 전용이므로 반드시 stderr.
-- `tests/` 는 모든 테스트 코드. `src/` 구조를 미러링하는 단위 테스트 (`tests/cli/`, `tests/mcp/`, `tests/upstream/`) + `tests/spawn/` (built CLI 통합) + (Phase 2+) `tests/integration/`, `tests/fixtures/`, `tests/helpers/`.
-- 테스트는 `import ... from '../../src/<dir>/foo.js'` 로 src를 참조. src 는 tests 를 절대 import 하지 않는다.
-- 보조 문서: `docs/testing.md` (TDD 워크플로), `docs/e2e-manual.md` (수동 MCP 호스트 검증), `docs/spawn.md` (spawn 통합 테스트).
-- `poc/` 는 transport 실험 코드 (프로덕션 아님), `dist/` 는 빌드 산출물 (편집 금지).
+- `src/`는 프로덕션 코드만 둔다. 경계는 `src/{cli,mcp,upstream,infra}/` 4개다.
+  - `cli/`: binary entry point (`cli.ts`가 `package.json#bin` target)와 CLI arg parsing.
+  - `mcp/`: MCP stdio server와 tool catalog(`mcp/tools/`).
+  - `upstream/`: electron-main HTTP channel. endpoint resolver, health check,
+    HTTP client, SSE parser 같은 UDS/Named Pipe transport/RPC 인프라.
+  - `infra/`: logger 등 횡단 관심사. MCP stdio가 stdout을 사용하므로 pino log는 반드시 stderr.
+- `tests/`는 모든 테스트 코드다. `src/` 구조를 미러링하는 unit test
+  (`tests/cli/`, `tests/mcp/`, `tests/upstream/`)와 `tests/spawn/`,
+  `tests/integration/`, `tests/fixtures/`, `tests/helpers/`를 둔다.
+- 테스트는 `import ... from '../../src/<dir>/foo.js'` 형태로 `src`를 참조한다.
+  `src`는 `tests`를 절대 import하지 않는다.
+- 보조 문서: `docs/testing.md`, `docs/e2e-manual.md`, `docs/spawn.md`.
+- `poc/`는 transport 실험 코드이며 프로덕션 코드가 아니다.
+- `dist/`는 빌드 산출물이다. 직접 편집하지 않는다.
 
-## Build, Test, and Development Commands
+## 빌드, 테스트, 개발 명령
 
-Use Node.js `>=20`, as required by `package.json`.
+Node.js는 `package.json` 기준에 따라 `>=20`을 사용한다.
 
-- `npm run build` builds with `tsup` into `dist/`.
-- `npm run dev` runs `tsup --watch`.
-- `npm test` runs the full Vitest suite once.
-- `npm run test:watch` starts Vitest watch mode.
-- `npm run test:unit` excludes `*.spawn.test.ts`.
-- `npm run test:integration` builds first, then runs spawn integration tests.
-- `npm run lint` checks the repository with ESLint.
-- `npm run typecheck` runs `tsc --noEmit`.
-- `npm run format` formats the repository with Prettier.
-- `npm pack --dry-run` manually verifies publish package contents.
+- `npm run build`: `tsup`으로 `dist/` 빌드.
+- `npm run dev`: `tsup --watch` 실행.
+- `npm test`: 전체 Vitest suite 1회 실행.
+- `npm run test:watch`: Vitest watch mode.
+- `npm run test:unit`: `*.spawn.test.ts` 제외.
+- `npm run test:integration`: build 후 spawn integration test 실행.
+- `npm run lint`: ESLint 검사.
+- `npm run typecheck`: `tsc --noEmit`.
+- `npm run format`: Prettier format.
+- `npm pack --dry-run`: publish package contents 수동 검증.
 
-For binary entry or packaging changes, run at least:
+binary entry나 packaging 변경은 최소한 아래 명령을 실행한다.
 
 ```bash
 npm run build
@@ -80,9 +98,9 @@ npm run test:integration
 npm pack --dry-run
 ```
 
-## Coding Style & Naming Conventions
+## 코딩 스타일과 네이밍
 
-Use TypeScript with ESM imports/exports. Follow the existing style:
+TypeScript ESM imports/exports를 사용한다. 기존 스타일을 따른다.
 
 - 2-space indentation
 - semicolons
@@ -90,88 +108,99 @@ Use TypeScript with ESM imports/exports. Follow the existing style:
 - trailing commas
 - LF endings
 - 100-character print width
-- named exports where practical
+- 가능한 곳은 named exports
 
-Keep external I/O behind clear module boundaries so it can be mocked in unit tests.
-This matters especially for file-system config reads, process checks, child process
-launching, HTTP/UDS calls, Named Pipe calls, and SSE parsing.
+외부 I/O는 unit test에서 mock할 수 있도록 명확한 모듈 경계 뒤에 둔다. 특히 socket
+path resolution, process check, child process launching, HTTP/UDS call, Named Pipe
+call, SSE parsing은 이 원칙을 지킨다.
 
-Name tests after the unit or behavior, for example `server.test.ts` or
-`cli.spawn.test.ts`. Test names should describe behavior directly, such as
-`returns "pong" when the ping tool is called`; avoid vague `should ...` names.
-Prefix intentionally unused variables or arguments with `_`.
+테스트 파일은 대상 unit 또는 behavior 기준으로 이름 짓는다. 예: `server.test.ts`,
+`cli.spawn.test.ts`. 테스트 이름은 동작을 직접 설명한다. 예:
+`returns "pong" when the ping tool is called`. 모호한 `should ...` 표현은 피한다.
+의도적으로 사용하지 않는 변수나 인자는 `_` prefix를 붙인다.
 
-## Architecture Rules
+## 아키텍처 규칙
 
-Do not replace the agreed upstream channel casually. The current decision is:
+합의된 upstream channel을 가볍게 바꾸지 않는다. 현재 결정은 다음과 같다.
 
 - Pattern: JSON-RPC over HTTP.
 - Request/response: POST.
 - Optional server push: GET SSE.
 - Transport: UDS on POSIX, Named Pipe on Windows.
-- TCP loopback ports are intentionally avoided.
+- TCP loopback port는 의도적으로 피한다.
 
-For Phase 1 endpoint resolution:
+endpoint resolution 규칙:
 
-- Read only the neosql Electron app config file; do not add environment variable
-  overrides or process discovery unless the plan changes.
-- Config path follows Electron `userData`:
-  - macOS: `~/Library/Application Support/NeoSQL/neosql-config.json`
-  - Windows: `%APPDATA%\NeoSQL\neosql-config.json`
-- Expected minimal fields are `mcpSocketPath`, `mcpHttpPath`, and an execution-state
-  PID field such as `electronAppPid`.
-- Treat stale PID/socket states as explicit error cases with clear user-facing
-  messages.
+- `neosql-mcp`와 electron-main이 공유하는 deterministic socket path 계산을 사용한다.
+  `PLAN.md`가 명시적으로 바뀌기 전까지 config file read, environment variable
+  override, process discovery를 추가하지 않는다.
+- POSIX socket path: `path.join(os.tmpdir(), 'neosql-mcp' + suffix + '.sock')`.
+- Windows Named Pipe path: `\\\\.\\pipe\\neosql-mcp` + suffix.
+- `suffix`는 prod에서 `''`, `--dev`에서 `'-dev'`다. 기본 profile은 prod다.
+- HTTP path는 `/rpc` 상수다. config에 저장하지 않는다.
+- missing listener, stale POSIX socket file, timeout, unsupported socket state는
+  명확한 사용자-facing error로 다룬다.
 
-Use Node built-ins such as `http.request({ socketPath, ... })` by default for UDS
-and Named Pipe HTTP calls. Global `fetch` is not enough for this transport because
-it does not expose the required socket path dispatcher behavior in the standard API.
+UDS와 Named Pipe HTTP 호출은 기본적으로 Node built-in
+`http.request({ socketPath, ... })`를 사용한다. global `fetch`는 표준 API에서 필요한
+socket path dispatcher 동작을 노출하지 않으므로 이 transport에는 충분하지 않다.
 
-## Testing Guidelines
+Phase 2 tool migration 규칙:
 
-Vitest is the test framework. From Phase 1 onward, follow `docs/testing.md`:
+- Node 패키지가 MCP tool definition과 handler를 소유한다.
+- handler는 얇게 유지한다. MCP input validation, upstream JSON-RPC method 호출,
+  upstream error → MCP tool response mapping, result formatting에 집중한다.
+- 이관 대상은 5개 category, 9개 tool이다: `generateCode`, `listTables`,
+  `getTableDetails`, `setContext`, `getContext`, `getContextHelp`, `createTables`,
+  `modifyTables`, `executeQuery`.
+- Phase 2-1부터 2-3까지는 mock UDS/HTTP integration test로 검증한다. real
+  electron-main / renderer 변경은 계획이 바뀌지 않는 한 Phase 2-4부터 시작한다.
 
-1. Propose the test list before implementation.
-2. Get human review and agreement.
-3. Write failing tests and confirm red.
-4. Implement.
-5. Confirm green.
+## 테스트 지침
 
-단위 테스트는 `tests/<src 미러>/` 에 두어 대상 모듈 구조를 그대로 따른다. spawn
-테스트는 `tests/spawn/` 에서 built CLI 또는 자식 프로세스 동작만 다룬다. 이터레이션
-중에는 `npm run test:unit` 을, 핸드오프 전에는 `npm test` 를 돌린다. 바이너리 진입
-점이나 dist 영향이 있는 변경은 `npm run test:integration` 도 같이 돌린다.
+테스트 프레임워크는 Vitest다. Phase 1부터는 `docs/testing.md`의 워크플로를 따른다.
 
-Manual e2e with real MCP hosts is documented in `docs/e2e-manual.md`. Phase 0 e2e
-checks only the `ping` tool; later phases should add scenario-specific checks there.
+1. 구현 전에 test list를 제시한다.
+2. 사람 리뷰와 합의를 받는다.
+3. 실패하는 테스트를 작성하고 red를 확인한다.
+4. 구현한다.
+5. green을 확인한다.
 
-## Commit & Pull Request Guidelines
+unit test는 `tests/<src mirror>/`에 둔다. mock UDS server 기반 round-trip 검증은
+`tests/integration/`에 둔다. spawn test는 `tests/spawn/`에서 built CLI 또는 child
+process 동작만 다룬다. 반복 작업 중에는 `npm run test:unit`을, handoff 전에는
+`npm test`를 실행한다. binary entry나 `dist`에 영향이 있는 변경은
+`npm run test:integration`도 실행한다.
 
-Commit 메시지는 `docs/commit-style.md` 의 규칙을 따른다 (Conventional Commits 의
-단순화 버전). 새 commit 작성 시 해당 문서를 먼저 참조한다.
+실제 MCP host와의 manual e2e는 `docs/e2e-manual.md`에 문서화한다. Phase 0 e2e는
+`ping` tool만 확인하며, 이후 phase에서는 scenario별 검증 절차를 추가한다.
+
+## Commit과 Pull Request
+
+commit message는 `docs/commit-style.md` 규칙을 따른다. 새 commit을 작성할 때는 먼저
+해당 문서를 확인한다.
 
 핵심 요약:
 
-- 형식: `<type>[(<scope>)]: <subject>` (한 줄, 50–72자, 명령형/명사형, 마침표 없음).
-- type 6종: `feat` / `fix` / `refactor` / `test` / `docs` / `chore`.
-- body 는 "왜(why)" 가 비자명할 때만. "무엇(what)" 은 diff 가 보여주므로 생략.
-- 한 commit = 한 논리적 변경.
+- 형식: `<type>[(<scope>)]: <subject>` (한 줄, 50-72자, 명령형/명사형, 마침표 없음).
+- type 6종: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`.
+- body는 "왜(why)"가 비자명할 때만 작성한다. "무엇(what)"은 diff가 보여주므로 생략한다.
+- 한 commit은 한 논리적 변경만 담는다.
 
-Pull requests should include:
+Pull request에는 다음을 포함한다.
 
-- short description
-- reason for the change
-- tests run
-- manual verification steps, when relevant
-- links to related planning docs or issues
+- 짧은 설명.
+- 변경 이유.
+- 실행한 테스트.
+- 관련 있으면 수동 검증 절차.
+- 관련 planning doc 또는 issue link.
 
-## Security & Configuration Tips
+## 보안과 설정
 
-Do not commit local secrets, undocumented machine-specific paths, or generated
-artifacts from `dist/`. Keep `.mcp.json`, neosql config paths, socket path behavior,
-Named Pipe assumptions, and installation assumptions documented when behavior depends
-on the local environment.
+local secret, 문서화되지 않은 machine-specific path, `dist/` generated artifact를
+commit하지 않는다. `.mcp.json`, socket path behavior, Named Pipe assumption,
+installation assumption처럼 local environment에 따라 달라지는 동작은 문서화한다.
 
-For POSIX UDS behavior, remember that stale socket files can remain after abnormal
-shutdown and the main app should unlink them before listening. For Windows Named
-Pipe behavior, ACL handling is a future hardening item tracked in the plan.
+POSIX UDS는 비정상 종료 뒤 stale socket file이 남을 수 있으므로 main app이 listen
+전에 unlink해야 한다. Windows Named Pipe ACL hardening은 plan에 남아 있는 future
+item이다.
