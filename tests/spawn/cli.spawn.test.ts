@@ -5,7 +5,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const CLI_PATH = resolve(__dirname, '../dist/cli.js');
+const CLI_PATH = resolve(__dirname, '../../dist/cli.js');
 
 describe('built CLI via stdio spawn', () => {
   const clients: Client[] = [];

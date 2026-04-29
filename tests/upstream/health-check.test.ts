@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { checkHealth } from './health-check.js';
+import { checkHealth } from '../../src/upstream/health-check.js';
 
 const isWin32 = process.platform === 'win32';
 

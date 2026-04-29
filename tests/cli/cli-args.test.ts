@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCliArgs } from './cli-args.js';
+import { parseCliArgs } from '../../src/cli/cli-args.js';
 
 describe('parseCliArgs', () => {
   it('defaults to prod profile when no flags are given', () => {

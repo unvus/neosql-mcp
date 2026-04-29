@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { createServer } from './server.js';
+import { createServer } from '../../src/mcp/server.js';
 
 describe('createServer', () => {
   let client: Client | undefined;

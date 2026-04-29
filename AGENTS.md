@@ -39,18 +39,23 @@ workflow.
 
 ## Project Structure & Module Organization
 
-- `src/cli.ts` is the `neosql-mcp` binary entry point and should stay CLI-specific.
-- `src/server.ts` creates and wires the MCP server.
-- `src/tools/` contains MCP tool registrations, currently including `ping.ts`.
-- `src/logger.ts` configures pino logging. Logs must go to stderr because stdout is
-  reserved for the MCP stdio protocol.
-- `src/*.test.ts` contains Vitest tests.
-- `src/*.spawn.test.ts` covers built-CLI child-process behavior.
-- `docs/testing.md` defines the TDD workflow and test layers.
-- `docs/e2e-manual.md` defines manual MCP host checks.
-- `docs/spawn.md` explains spawn-based integration tests.
-- `poc/` contains transport experiments and reference scripts, not production code.
-- `dist/` is generated build output and must not be edited directly.
+전체 디렉토리 레이아웃과 새 파일 배치 규칙은 `docs/project-structure.md` 를
+**단일 진실의 원천**으로 삼는다. 새 파일·모듈을 추가하거나 기존 파일을 이동
+할 때는 반드시 해당 문서를 먼저 참조해 분류를 확인하고, 분류가 모호하면 PR
+설명에 근거를 적는다. 새 경계가 필요한 변경이라면 코드와 함께
+`docs/project-structure.md` 도 같이 갱신한다.
+
+핵심 요약:
+
+- `src/` 는 프로덕션 코드만. `src/{cli, mcp, upstream, infra}/` 4개 경계.
+  - `cli/` — 바이너리 진입점 (`cli.ts` 가 `package.json` `bin` 타깃) + CLI 인자 파싱.
+  - `mcp/` — MCP stdio 서버 + tool 카탈로그(`mcp/tools/`).
+  - `upstream/` — electron-main HTTP 채널 (UDS/Named Pipe). Phase 2 이후 http-client / SSE 파서가 여기 추가.
+  - `infra/` — 횡단 관심사 (logger 등). pino 로그는 stdout 이 MCP stdio 전용이므로 반드시 stderr.
+- `tests/` 는 모든 테스트 코드. `src/` 구조를 미러링하는 단위 테스트 (`tests/cli/`, `tests/mcp/`, `tests/upstream/`) + `tests/spawn/` (built CLI 통합) + (Phase 2+) `tests/integration/`, `tests/fixtures/`, `tests/helpers/`.
+- 테스트는 `import ... from '../../src/<dir>/foo.js'` 로 src를 참조. src 는 tests 를 절대 import 하지 않는다.
+- 보조 문서: `docs/testing.md` (TDD 워크플로), `docs/e2e-manual.md` (수동 MCP 호스트 검증), `docs/spawn.md` (spawn 통합 테스트).
+- `poc/` 는 transport 실험 코드 (프로덕션 아님), `dist/` 는 빌드 산출물 (편집 금지).
 
 ## Build, Test, and Development Commands
 
@@ -132,10 +137,10 @@ Vitest is the test framework. From Phase 1 onward, follow `docs/testing.md`:
 4. Implement.
 5. Confirm green.
 
-Use focused unit tests beside related source under `src/`. Use spawn tests only for
-built CLI or child-process behavior. Run `npm run test:unit` during iteration and
-`npm test` before handoff when practical. For binary entry changes, also run
-`npm run test:integration`.
+단위 테스트는 `tests/<src 미러>/` 에 두어 대상 모듈 구조를 그대로 따른다. spawn
+테스트는 `tests/spawn/` 에서 built CLI 또는 자식 프로세스 동작만 다룬다. 이터레이션
+중에는 `npm run test:unit` 을, 핸드오프 전에는 `npm test` 를 돌린다. 바이너리 진입
+점이나 dist 영향이 있는 변경은 `npm run test:integration` 도 같이 돌린다.
 
 Manual e2e with real MCP hosts is documented in `docs/e2e-manual.md`. Phase 0 e2e
 checks only the `ping` tool; later phases should add scenario-specific checks there.

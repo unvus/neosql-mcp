@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveSocketPath, HTTP_PATH } from './endpoint-resolver.js';
+import { resolveSocketPath, HTTP_PATH } from '../../src/upstream/endpoint-resolver.js';
 
 describe('resolveSocketPath', () => {
   it('returns os.tmpdir()/neosql-mcp.sock for prod profile on POSIX', () => {

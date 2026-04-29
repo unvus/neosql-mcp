@@ -1,8 +1,8 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createServer } from './server.js';
-import { logger } from './logger.js';
+import { createServer } from '../mcp/server.js';
+import { logger } from '../infra/logger.js';
 import { parseCliArgs } from './cli-args.js';
-import { resolveSocketPath, HTTP_PATH } from './endpoint-resolver.js';
+import { resolveSocketPath, HTTP_PATH } from '../upstream/endpoint-resolver.js';
 
 const main = async (): Promise<void> => {
   const { profile } = parseCliArgs(process.argv.slice(2));

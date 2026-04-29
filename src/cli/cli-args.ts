@@ -1,4 +1,4 @@
-import type { Profile } from './endpoint-resolver.js';
+import type { Profile } from '../upstream/endpoint-resolver.js';
 
 export interface ParsedCliArgs {
   profile: Profile;
