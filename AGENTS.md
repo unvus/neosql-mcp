@@ -147,8 +147,15 @@ checks only the `ping` tool; later phases should add scenario-specific checks th
 
 ## Commit & Pull Request Guidelines
 
-The history uses short, imperative subjects, sometimes in Korean, such as
-`e2e 문서 추가` or `neosql-config.json 경로 반영`. Keep commits focused.
+Commit 메시지는 `docs/commit-style.md` 의 규칙을 따른다 (Conventional Commits 의
+단순화 버전). 새 commit 작성 시 해당 문서를 먼저 참조한다.
+
+핵심 요약:
+
+- 형식: `<type>[(<scope>)]: <subject>` (한 줄, 50–72자, 명령형/명사형, 마침표 없음).
+- type 6종: `feat` / `fix` / `refactor` / `test` / `docs` / `chore`.
+- body 는 "왜(why)" 가 비자명할 때만. "무엇(what)" 은 diff 가 보여주므로 생략.
+- 한 commit = 한 논리적 변경.
 
 Pull requests should include:
 
