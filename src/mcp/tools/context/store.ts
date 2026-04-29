@@ -12,5 +12,13 @@ export interface ContextStore {
 }
 
 export const createContextStore = (): ContextStore => {
-  throw new Error('createContextStore: not implemented');
+  let current: NeosqlContext = {};
+
+  return {
+    get: () => ({ ...current }),
+    set: (patch) => {
+      current = { ...current, ...patch };
+      return { ...current };
+    },
+  };
 };

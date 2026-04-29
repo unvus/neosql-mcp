@@ -8,13 +8,10 @@ const main = async (): Promise<void> => {
   const { profile } = parseCliArgs(process.argv.slice(2));
   const socketPath = resolveSocketPath(profile);
 
-  const server = createServer();
+  const server = createServer({ profile, socketPath });
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.info(
-    { transport: 'stdio', profile, socketPath, httpPath: HTTP_PATH },
-    'neosql-mcp ready',
-  );
+  logger.info({ transport: 'stdio', profile, socketPath, httpPath: HTTP_PATH }, 'neosql-mcp ready');
 };
 
 main().catch((err: unknown) => {

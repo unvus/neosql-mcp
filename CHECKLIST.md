@@ -2,11 +2,11 @@
 
 Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
-| 문서 | 역할 |
-|------|------|
-| `PLAN.md` | 전략·설계·아키텍처 결정 (안정적, 드물게 바뀜) |
+| 문서                     | 역할                                             |
+| ------------------------ | ------------------------------------------------ |
+| `PLAN.md`                | 전략·설계·아키텍처 결정 (안정적, 드물게 바뀜)    |
 | `CHECKLIST.md` (이 문서) | Phase별 작업 체크박스 (세션 간 영속적 진척 기록) |
-| 에이전트 TaskCreate | 세션 내 휘발성 트래킹 |
+| 에이전트 TaskCreate      | 세션 내 휘발성 트래킹                            |
 
 ---
 
@@ -41,29 +41,29 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ---
 
-## Phase 2 · embedded-server MCP 도구 Node 이관 — 예정
+## Phase 2 · embedded-server MCP 도구 Node 이관 — 진행 중
 
 `PLAN.md` Phase 2 참조. embedded-server 의 9개 도구(5 카테고리)를 Node 로 전면 이관한다. **Option A + pilot** 전략 — Node 일괄 구현 후 ContextTools 로 real Electron pilot.
 
-### Phase 2-1 · 채널 인프라 + 9개 시그니처 + mock 라운드트립
+### Phase 2-1 · 채널 인프라 + 9개 시그니처 + mock 라운드트립 — 완료 (2026-04-29)
 
-- [ ] **test list 제안 → 사람 리뷰 → 합의**
-- [ ] `httpClient` 모듈 (`endpointResolver` 결과 사용, `http.request({ socketPath })` 기반, JSON-RPC over HTTP POST, 요청 단위 timeout)
-- [ ] SSE 파서 (자체 구현, `\n\n` 블록 단위, 멀티라인 `data:` 누적, `:` comment 무시)
-- [ ] error-map (HTTP 4xx/5xx / 타임아웃 / `ENOENT`/`ECONNREFUSED`/`ENOTSOCK` / JSON-RPC `error` → MCP error code)
-- [ ] 도구 시그니처 9개 이관 (placeholder 핸들러 = `httpClient` 호출):
-  - [ ] `code-generation/generate-code`
-  - [ ] `schema/list-tables`
-  - [ ] `schema/get-table-details`
-  - [ ] `context/set-context`
-  - [ ] `context/get-context`
-  - [ ] `context/get-context-help`
-  - [ ] `ddl/create-tables`
-  - [ ] `ddl/modify-tables`
-  - [ ] `sql/execute-query`
-- [ ] `tests/helpers/mock-uds-server.ts` (재사용 fixture)
-- [ ] `tests/integration/round-trip.test.ts` — 9개 도구 mock UDS 라운드트립 green
-- [ ] `CHECKLIST.md` / `docs/project-structure.md` 갱신
+- [x] **test list 제안 → 사람 리뷰 → 합의**
+- [x] `httpClient` 모듈 (`endpointResolver` 결과 사용, `http.request({ socketPath })` 기반, JSON-RPC over HTTP POST, 요청 단위 timeout)
+- [x] SSE 파서 (자체 구현, `\n\n` 블록 단위, 멀티라인 `data:` 누적, `:` comment 무시)
+- [x] error-map (HTTP 4xx/5xx / 타임아웃 / `ENOENT`/`ECONNREFUSED`/`ENOTSOCK` / JSON-RPC `error` → MCP tool error result)
+- [x] 도구 시그니처 9개 이관:
+  - [x] `code-generation/generate-code`
+  - [x] `schema/list-tables`
+  - [x] `schema/get-table-details`
+  - [x] `context/set-context`
+  - [x] `context/get-context`
+  - [x] `context/get-context-help`
+  - [x] `ddl/create-tables`
+  - [x] `ddl/modify-tables`
+  - [x] `sql/execute-query`
+- [x] `tests/helpers/mock-uds-server.ts` (재사용 fixture)
+- [x] `tests/integration/round-trip.test.ts` — 9개 도구 mock UDS 라운드트립 green
+- [x] `CHECKLIST.md` / `docs/project-structure.md` 갱신
 
 ### Phase 2-2 · Java tool 분석 + contract + 도구별 체크리스트
 

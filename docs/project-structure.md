@@ -12,11 +12,18 @@ src/                            (프로덕션 코드만)
 ├── mcp/         MCP stdio 서버 + tool 카탈로그
 │   ├── server.ts               createServer 팩토리
 │   └── tools/                  MCP 도구 등록
-│       └── ping.ts
+│       ├── ping.ts
+│       ├── shared.ts           tool 응답/forward 공통 헬퍼
+│       ├── code-generation/
+│       ├── context/
+│       ├── ddl/
+│       ├── schema/
+│       └── sql/
 ├── upstream/    electron-main HTTP 채널 (UDS / Named Pipe)
 │   ├── endpoint-resolver.ts    profile → socket path 산출, /rpc 상수
 │   ├── health-check.ts         socket path connect 시도
-│   └── (Phase 2 예정) http-client.ts, sse-parser.ts, json-rpc-dispatch.ts
+│   ├── http-client.ts          JSON-RPC over HTTP POST 클라이언트
+│   └── sse-parser.ts           GET SSE 채널용 event-stream 파서
 └── infra/       횡단 관심사
     └── logger.ts               pino → stderr
 
@@ -30,9 +37,12 @@ tests/                          (모든 테스트 코드)
 │   └── health-check.test.ts
 ├── spawn/                      built dist/cli.js 대상 통합 테스트
 │   └── cli.spawn.test.ts
-├── (Phase 2 예정) integration/ mock UDS 서버 대상 통합 테스트
+├── integration/                mock UDS 서버 대상 통합 테스트
+│   └── round-trip.test.ts
 ├── (Phase 2 예정) fixtures/    mock RPC 응답, 샘플 config 등
-└── (Phase 2 예정) helpers/     mock 서버 빌더, 공통 setup 유틸
+└── helpers/                    mock 서버 빌더, 공통 setup 유틸
+    ├── mock-uds-server.ts
+    └── socket.ts
 
 docs/   사용자/에이전트 가이드 (이 문서 포함)
 poc/    transport 실험 (프로덕션 아님)
@@ -51,12 +61,12 @@ dist/   tsup 빌드 산출물 (편집 금지)
 
 ### `src/` 4개 경계
 
-| 경계 | 책임 | 예시 |
-|---|---|---|
-| `cli/` | 프로세스 진입, CLI 인자 파싱 | `--verbose` 플래그 추가 |
-| `mcp/` | MCP SDK stdio 서버, tool 등록 | 새 MCP 도구 (`tools/` 안) |
-| `upstream/` | electron-main 측 채널 (transport + RPC 클라) | HTTP 클라, SSE 파서, RPC 메서드 핸들러 |
-| `infra/` | 횡단 관심사 (다른 곳이 의존하지만 자신은 의존하지 않음) | 에러 매핑 헬퍼, 메트릭 |
+| 경계        | 책임                                                    | 예시                                   |
+| ----------- | ------------------------------------------------------- | -------------------------------------- |
+| `cli/`      | 프로세스 진입, CLI 인자 파싱                            | `--verbose` 플래그 추가                |
+| `mcp/`      | MCP SDK stdio 서버, tool 등록                           | 새 MCP 도구 (`tools/` 안)              |
+| `upstream/` | electron-main 측 채널 (transport + RPC 클라)            | HTTP 클라, SSE 파서, RPC 메서드 핸들러 |
+| `infra/`    | 횡단 관심사 (다른 곳이 의존하지만 자신은 의존하지 않음) | 에러 매핑 헬퍼, 메트릭                 |
 
 ### 의존 방향
 
@@ -82,14 +92,14 @@ tests ─► src          (테스트는 항상 ../../src/... 로 import)
 
 ## 테스트 배치 규칙
 
-| 종류 | 위치 | 명명 | 비고 |
-|---|---|---|---|
-| 단위 테스트 | `tests/<src 미러>/foo.test.ts` | `*.test.ts` | mock 사용, 빠름 |
-| 통합 테스트 | `tests/integration/...` (Phase 2+) | `*.test.ts` | mock UDS/HTTP 서버 대상 |
-| spawn 통합 | `tests/spawn/...` | `*.spawn.test.ts` | 빌드된 `dist/cli.js` spawn |
-| E2E | `tests/e2e/...` (Phase 3+) | `*.e2e.test.ts` | 실제 electron-main 대상 |
-| fixtures | `tests/fixtures/` | (테스트 아님) | mock 응답, 샘플 데이터 |
-| helpers | `tests/helpers/` | (테스트 아님) | mock 서버 빌더, setup 유틸 |
+| 종류        | 위치                               | 명명              | 비고                       |
+| ----------- | ---------------------------------- | ----------------- | -------------------------- |
+| 단위 테스트 | `tests/<src 미러>/foo.test.ts`     | `*.test.ts`       | mock 사용, 빠름            |
+| 통합 테스트 | `tests/integration/...` (Phase 2+) | `*.test.ts`       | mock UDS/HTTP 서버 대상    |
+| spawn 통합  | `tests/spawn/...`                  | `*.spawn.test.ts` | 빌드된 `dist/cli.js` spawn |
+| E2E         | `tests/e2e/...` (Phase 3+)         | `*.e2e.test.ts`   | 실제 electron-main 대상    |
+| fixtures    | `tests/fixtures/`                  | (테스트 아님)     | mock 응답, 샘플 데이터     |
+| helpers     | `tests/helpers/`                   | (테스트 아님)     | mock 서버 빌더, setup 유틸 |
 
 - 단위 테스트는 `src/` 구조를 그대로 미러링한다 (예: `src/upstream/health-check.ts` → `tests/upstream/health-check.test.ts`).
 - `tests/` 안에서는 `import { foo } from '../../src/<dir>/foo.js'` 형태로 src를 참조한다.
@@ -114,3 +124,4 @@ tests ─► src          (테스트는 항상 ../../src/... 로 import)
 ## 변경 이력
 
 - 2026-04-29: `src/` 평면 → `cli/mcp/upstream/infra` 4분할, `src/` ↔ `tests/` 분리 도입.
+- 2026-04-29: Phase 2-1 채널 인프라(`http-client`, `sse-parser`)와 9개 MCP tool 시그니처, mock UDS 통합 테스트 추가.
