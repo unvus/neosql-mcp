@@ -29,16 +29,15 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ---
 
-## Phase 1 · endpointResolver (electron-main UDS/Named Pipe, config 파일 단독) — 예정
+## Phase 1 · endpointResolver (고정 socket path) — 완료 (2026-04-29)
 
-- [ ] **test list 제안 → 사람 리뷰 → 합의** (`docs/testing.md` 워크플로 1–2단계)
-- [ ] config 파일 스키마 정의 (zod) — `mcpSocketPath`, `mcpHttpPath`, `electronAppPid`
-- [ ] `endpointResolver` 모듈 기본 read 흐름
-- [ ] stale 판정: pid 생존 확인
-- [ ] stale 판정: socket connect 확인 (health check via `http.request({ socketPath })`)
-- [ ] 테스트: 정상 / 파일없음 / pid dead / socket not bound / 스키마 불일치
-- [ ] `docs/endpoint-config.md` (경로·스키마·수명 주기 정리, OS 별 socket path 형식)
-- [ ] (보류) neosql 본체 PR — 본체 작업 시점에 별도 진행 (UDS listen + chmod 0600 / Named Pipe listen + ACL, stale unlink)
+- [x] **test list 제안 → 사람 리뷰 → 합의** (`docs/testing.md` 워크플로 1–2단계)
+- [x] `endpointResolver` 모듈 — profile (prod / dev) → socket path 산출, HTTP path 상수 (`/rpc`) 보유
+- [x] profile 인지: `--dev` / `--prod` CLI 플래그 파싱 (`src/cli-args.ts`)
+- [x] `healthCheck` 모듈 — `http.request({ socketPath })` 로 connect + HTTP response 시도. 결과: `running` / `not_running` / `stale_socket` / `timeout`
+- [x] 테스트: prod·dev path 산출(3) / cli-args(6) / health-check 5건 (running·not_running·timeout 양 OS, stale_socket 2건은 POSIX-only `it.skipIf`)
+- [x] `docs/endpoint-resolver.md` (경로 산출 규칙, profile suffix, OS 별 차이, sun_path 한계)
+- [ ] (보류) neosql 본체 PR — 본체 작업 시점에 별도 진행 (동일 규칙으로 socket listen + chmod 0600 / Named Pipe ACL, stale unlink, dev/prod suffix 일치)
 
 ---
 
