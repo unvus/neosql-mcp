@@ -41,20 +41,60 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ---
 
-## Phase 2 · stdio↔HTTP 채널 + 도구 정의 — 예정
+## Phase 2 · embedded-server MCP 도구 Node 이관 — 예정
 
-Phase 1 완료 후 test list 부터 시작.
+`PLAN.md` Phase 2 참조. embedded-server 의 9개 도구(5 카테고리)를 Node 로 전면 이관한다. **Option A + pilot** 전략 — Node 일괄 구현 후 ContextTools 로 real Electron pilot.
+
+### Phase 2-1 · 채널 인프라 + 9개 시그니처 + mock 라운드트립
 
 - [ ] **test list 제안 → 사람 리뷰 → 합의**
-- [ ] `httpClient` 모듈 (`endpointResolver` 결과 사용, `http.request({ socketPath })` 기반, JSON-RPC over HTTP POST + SSE 채널, 요청 단위 timeout/retry)
-- [ ] SSE 파서 (자체 구현, `\n\n` 블록 단위)
-- [ ] mcp-server 도구 카탈로그 인프라 + 첫 도구 1개 (mock UDS 서버 대상)
-- [ ] 도구 핸들러 → httpClient → mock UDS 서버 라운드트립 테스트
-- [ ] 에러 매핑 (HTTP 4xx/5xx / 타임아웃 / 메서드 미정의 / socket 연결 실패 → MCP error code)
-- [ ] 도구 목록 추가 (별도 단계에서 작성 — 기존 embedded-server tool 명세를 Node 로 옮김)
+- [ ] `httpClient` 모듈 (`endpointResolver` 결과 사용, `http.request({ socketPath })` 기반, JSON-RPC over HTTP POST, 요청 단위 timeout)
+- [ ] SSE 파서 (자체 구현, `\n\n` 블록 단위, 멀티라인 `data:` 누적, `:` comment 무시)
+- [ ] error-map (HTTP 4xx/5xx / 타임아웃 / `ENOENT`/`ECONNREFUSED`/`ENOTSOCK` / JSON-RPC `error` → MCP error code)
+- [ ] 도구 시그니처 9개 이관 (placeholder 핸들러 = `httpClient` 호출):
+  - [ ] `code-generation/generate-code`
+  - [ ] `schema/list-tables`
+  - [ ] `schema/get-table-details`
+  - [ ] `context/set-context`
+  - [ ] `context/get-context`
+  - [ ] `context/get-context-help`
+  - [ ] `ddl/create-tables`
+  - [ ] `ddl/alter-tables`
+  - [ ] `sql/execute-query`
+- [ ] `tests/helpers/mock-uds-server.ts` (재사용 fixture)
+- [ ] `tests/integration/round-trip.test.ts` — 9개 도구 mock UDS 라운드트립 green
+- [ ] `CHECKLIST.md` / `docs/project-structure.md` 갱신
+
+### Phase 2-2 · Java tool 분석 + contract + 도구별 체크리스트
+
+- [ ] `CodeGenerationTools.java` 분석 (의존성·상태·에러·응답 페이로드)
+- [ ] `ContextTools.java` 분석
+- [ ] `DdlTools.java` 분석
+- [ ] `SchemaTools.java` 분석
+- [ ] `SqlTools.java` 분석
+- [ ] 도구별 Node ↔ Electron 분할 결정
+- [ ] `docs/upstream-rpc-contract.md` — 도구별 HTTP 메서드 명세 (이름, request/response schema, 에러 코드)
+- [ ] Phase 2-3 / 2-4 / Phase 3+ 도구별 체크리스트 추가 (`Node 핸들러` / `Electron HTTP 메서드` / `IPC/renderer 연결` / `e2e 검증`)
+
+### Phase 2-3 · Node 핸들러 일괄 구현 (mock UDS)
+
+- [ ] **test list 제안 → 사람 리뷰 → 합의** (각 도구별 시나리오)
+- [ ] Phase 2-1 placeholder 핸들러를 contract 기반 실 핸들러로 교체 (9개)
+- [ ] mock UDS 서버를 contract 기반으로 강화 (메서드별 fixture dispatcher)
+- [ ] 도구별 단위 테스트에 contract 시나리오(정상/에러/스키마) 추가
+
+### Phase 2-4 · ContextTools real Electron pilot
+
+- [ ] **test list 제안 → 사람 리뷰 → 합의**
+- [ ] (본체 PR) electron-main UDS HTTP 서버 — listen + `chmod 0600` + stale unlink + dev/prod suffix + `/rpc` dispatcher
+- [ ] (본체 PR) ContextTools 3개 메서드 구현 (`setContext` / `getContext` / `getContextHelp`)
+- [ ] (본체 PR) renderer IPC 연결 (필요 시)
+- [ ] 본 리포: `tests/e2e/` 신설 + 실 electron 기동 후 도구 호출
+- [ ] `docs/e2e-manual.md` 절차 보강
+- [ ] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정
 
 ---
 
 ## Phase 3 이상
 
-Phase 2 완료 시점에 범위·우선순위 재검토 (`PLAN.md` 참조).
+Phase 2-4 pilot 완료 시점에 범위·우선순위 재검토 (`PLAN.md` 참조). 핵심: 나머지 Electron 카테고리 일괄(Schema → SQL → DDL → CodeGeneration), 미설치/미실행 구분, multi-instance, 인증, Windows ACL 등.
