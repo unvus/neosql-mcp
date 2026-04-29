@@ -43,7 +43,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ## Phase 2 · embedded-server MCP 도구 Node 이관 — 진행 중
 
-`PLAN.md` Phase 2 참조. embedded-server 의 9개 도구(5 카테고리)를 Node 로 전면 이관한다. **Option A + pilot** 전략 — Node 일괄 구현 후 ContextTools 로 real Electron pilot.
+`PLAN.md` Phase 2 참조. embedded-server 의 9개 도구(5 카테고리)를 Node 로 전면 이관한다. **Option A + pilot** 전략 — Node 일괄 구현 후 SchemaTools 로 real Electron pilot.
 
 ### Phase 2-1 · 채널 인프라 + 9개 시그니처 + mock 라운드트립 — 완료 (2026-04-29)
 
@@ -65,16 +65,18 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `tests/integration/round-trip.test.ts` — 9개 도구 mock UDS 라운드트립 green
 - [x] `CHECKLIST.md` / `docs/project-structure.md` 갱신
 
-### Phase 2-2 · Java tool 분석 + contract + 도구별 체크리스트
+### Phase 2-2 · Java tool 분석 + contract + 도구별 체크리스트 — 완료 (2026-04-29)
 
-- [ ] `CodeGenerationTools.java` 분석 (의존성·상태·에러·응답 페이로드)
-- [ ] `ContextTools.java` 분석
-- [ ] `DdlTools.java` 분석
-- [ ] `SchemaTools.java` 분석
-- [ ] `SqlTools.java` 분석
-- [ ] 도구별 Node ↔ Electron 분할 결정
-- [ ] `docs/upstream-rpc-contract.md` — 도구별 HTTP 메서드 명세 (이름, request/response schema, 에러 코드)
-- [ ] Phase 2-3 / 2-4 / Phase 3+ 도구별 체크리스트 추가 (`Node 핸들러` / `Electron HTTP 메서드` / `IPC/renderer 연결` / `e2e 검증`)
+- [x] `CodeGenerationTools.java` 분석 (의존성·상태·에러·응답 페이로드)
+- [x] `ContextTools.java` 분석
+- [x] `DdlTools.java` 분석
+- [x] `SchemaTools.java` 분석
+- [x] `SqlTools.java` 분석
+- [x] [`McpContextHolder` 분석/설계](docs/mcp-context-holder-analysis.md) (context 우선순위·session 저장소·Node 이관 정책)
+- [x] `docs/embedded-server-tool-analysis.md` — Java tool / app handler 분석 결과
+- [x] 도구별 Node ↔ Electron 분할 결정
+- [x] `docs/upstream-rpc-contract.md` — 도구별 HTTP 메서드 명세 (이름, request/response schema, 에러 코드)
+- [x] Phase 2-3 / 2-4 / Phase 3+ 도구별 체크리스트 추가 (`Node 핸들러` / `Electron HTTP 메서드` / `IPC/renderer 연결` / `e2e 검증`)
 
 ### Phase 2-3 · Node 핸들러 일괄 구현 (mock UDS)
 
@@ -82,19 +84,38 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [ ] Phase 2-1 placeholder 핸들러를 contract 기반 실 핸들러로 교체 (9개)
 - [ ] mock UDS 서버를 contract 기반으로 강화 (메서드별 fixture dispatcher)
 - [ ] 도구별 단위 테스트에 contract 시나리오(정상/에러/스키마) 추가
+- [ ] `context/set-context` — Node-local schema/default merge 구현
+- [ ] `context/get-context` — Node-local response를 분석 문서 기준으로 보정
+- [ ] `context/get-context-help` — stdio MCP 구조에 맞게 도움말 보정
+- [ ] `schema/list-tables` — `schema.listTables` contract 기반 forward 구현
+- [ ] `schema/get-table-details` — `schema.getTableDetails` contract 기반 forward 구현
+- [ ] `sql/execute-query` — DDL guard + `sql.executeQuery` contract 기반 forward 구현
+- [ ] `ddl/create-tables` — `ddlExecute` default merge + `ddl.createTables` forward 구현
+- [ ] `ddl/modify-tables` — `ddlExecute` default merge + `ddl.modifyTables` forward 구현
+- [ ] `code-generation/generate-code` — `tableName` → `tableNames[]` 변환 + `codeGeneration.generateCode` forward 구현
 
-### Phase 2-4 · ContextTools real Electron pilot
+### Phase 2-4 · SchemaTools real Electron pilot
 
 - [ ] **test list 제안 → 사람 리뷰 → 합의**
 - [ ] (본체 PR) electron-main UDS HTTP 서버 — listen + `chmod 0600` + stale unlink + dev/prod suffix + `/rpc` dispatcher
-- [ ] (본체 PR) ContextTools 3개 메서드 구현 (`setContext` / `getContext` / `getContextHelp`)
+- [ ] (본체 PR) `schema.listTables` 메서드 구현
+- [ ] (본체 PR) `schema.getTableDetails` 메서드 구현
 - [ ] (본체 PR) renderer IPC 연결 (필요 시)
 - [ ] 본 리포: `tests/e2e/` 신설 + 실 electron 기동 후 도구 호출
 - [ ] `docs/e2e-manual.md` 절차 보강
 - [ ] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정
+- [ ] 분석 결과 open item 확인: DDL restriction branch의 `response` 참조, `templatePackId` 처리 정책
 
 ---
 
 ## Phase 3 이상
 
-Phase 2-4 pilot 완료 시점에 범위·우선순위 재검토 (`PLAN.md` 참조). 핵심: 나머지 Electron 카테고리 일괄(Schema → SQL → DDL → CodeGeneration), 미설치/미실행 구분, multi-instance, 인증, Windows ACL 등.
+Phase 2-4 pilot 완료 시점에 범위·우선순위 재검토 (`PLAN.md` 참조). 핵심: 나머지 Electron 카테고리 일괄(SQL → DDL → CodeGeneration), 미설치/미실행 구분, multi-instance, 인증, Windows ACL 등.
+
+- [ ] SQL Electron 구현/e2e (`sql.executeQuery`)
+- [ ] DDL Electron 구현/e2e (`ddl.createTables`, `ddl.modifyTables`)
+- [ ] CodeGeneration Electron 구현/e2e (`codeGeneration.generateCode`)
+- [ ] `templatePackId` contract 지원 여부 확정
+- [ ] DDL `executeImmediately=true` 권한 제한 branch 검증
+- [ ] multi-instance / session identity 정책 확정
+- [ ] Windows Named Pipe ACL hardening
