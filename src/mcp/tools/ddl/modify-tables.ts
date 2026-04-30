@@ -1,12 +1,30 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ContextStore } from '../context/store.js';
-import { registerForwardTool } from '../shared.js';
+import { z } from 'zod';
+import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
 
-export interface ModifyTablesDeps {
-  postRpc: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-  contextStore: ContextStore;
-}
+export type ModifyTablesDeps = UpstreamToolDeps;
 
 export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDeps): void => {
-  registerForwardTool(server, 'modifyTables', 'Modify tables through NeoSQL.', deps.postRpc);
+  server.registerTool(
+    'modifyTables',
+    {
+      title: 'modifyTables',
+      description: 'Modify tables through NeoSQL.',
+      inputSchema: {
+        alterations: z.array(z.record(z.unknown())),
+        executeImmediately: z.boolean().optional(),
+      },
+    },
+    async (args) => {
+      const executeImmediately =
+        args.executeImmediately ?? deps.contextStore.get().ddlExecute ?? false;
+      return callUpstreamTool(
+        deps,
+        'ddl.modifyTables',
+        { ...args, executeImmediately },
+        { ddlExecute: executeImmediately },
+        { timeoutMs: 60_000 },
+      );
+    },
+  );
 };

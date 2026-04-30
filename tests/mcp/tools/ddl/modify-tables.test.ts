@@ -2,14 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../../../src/mcp/server.js';
-import {
-  startMockRpcServer,
-  type MockRpcRequest,
-} from '../../../helpers/mock-uds-server.js';
-import {
-  makeTestSocketPath,
-  removeSocketFile,
-} from '../../../helpers/socket.js';
+import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
+import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
 describe('modifyTables tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
@@ -21,7 +15,7 @@ describe('modifyTables tool', () => {
     }
   });
 
-  it('forwards alterations to upstream and returns the response as text', async () => {
+  it('calls ddl.modifyTables with explicit executeImmediately overriding context', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -42,13 +36,18 @@ describe('modifyTables tool', () => {
     const client = new Client({ name: 'test', version: '0.0.0' });
     await client.connect(ct);
     cleanups.push(() => client.close());
+    await client.callTool({
+      name: 'setContext',
+      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: true },
+    });
 
     const result = await client.callTool({
       name: 'modifyTables',
       arguments: {
         alterations: [
-          { table: 'users', changes: [{ type: 'addColumn', column: { name: 'age' } }] },
+          { tableName: 'users', columnOperations: [{ action: 'ADD', columnName: 'age' }] },
         ],
+        executeImmediately: false,
       },
     });
 
@@ -56,6 +55,15 @@ describe('modifyTables tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { modified: string[] };
     expect(data.modified).toEqual(['users']);
-    expect(received[0]?.method).toMatch(/modifyTables/);
+    expect(received[0]?.method).toBe('ddl.modifyTables');
+    expect(received[0]?.params).toMatchObject({
+      context: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: false },
+      input: {
+        alterations: [
+          { tableName: 'users', columnOperations: [{ action: 'ADD', columnName: 'age' }] },
+        ],
+        executeImmediately: false,
+      },
+    });
   });
 });

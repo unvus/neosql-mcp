@@ -2,14 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../../../src/mcp/server.js';
-import {
-  startMockRpcServer,
-  type MockRpcRequest,
-} from '../../../helpers/mock-uds-server.js';
-import {
-  makeTestSocketPath,
-  removeSocketFile,
-} from '../../../helpers/socket.js';
+import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
+import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
 describe('generateCode tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
@@ -21,7 +15,7 @@ describe('generateCode tool', () => {
     }
   });
 
-  it('forwards the call to upstream and returns the response as text content', async () => {
+  it('calls codeGeneration.generateCode with tableName converted to tableNames', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -45,7 +39,7 @@ describe('generateCode tool', () => {
 
     const result = await client.callTool({
       name: 'generateCode',
-      arguments: { tableName: 'users', templatePackId: 'java-jpa' },
+      arguments: { tableName: 'users', templatePackId: 'java-jpa', schema: 'public' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -54,6 +48,10 @@ describe('generateCode tool', () => {
     const data = JSON.parse(content[0]?.text ?? '{}') as { files: unknown[] };
     expect(data.files).toEqual([{ path: 'User.java', content: '...' }]);
     expect(received).toHaveLength(1);
-    expect(received[0]?.method).toMatch(/generateCode/);
+    expect(received[0]?.method).toBe('codeGeneration.generateCode');
+    expect(received[0]?.params).toMatchObject({
+      context: { schema: 'public' },
+      input: { tableNames: ['users'], templatePackId: 'java-jpa' },
+    });
   });
 });

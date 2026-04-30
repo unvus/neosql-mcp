@@ -10,6 +10,10 @@ export const registerGetContextTool = (server: McpServer, store: ContextStore): 
       description: 'Return the current in-memory NeoSQL context.',
       inputSchema: {},
     },
-    async () => jsonTextResult({ context: store.get() }),
+    async () =>
+      jsonTextResult({
+        context: store.get(),
+        source: 'Session context (set via setContext tool)',
+      }),
   );
 };

@@ -1,15 +1,31 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { registerForwardTool } from '../shared.js';
+import { z } from 'zod';
+import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
 
-export interface GenerateCodeDeps {
-  postRpc: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-}
+export type GenerateCodeDeps = UpstreamToolDeps;
 
 export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDeps): void => {
-  registerForwardTool(
-    server,
+  server.registerTool(
     'generateCode',
-    'Generate code from NeoSQL schema metadata.',
-    deps.postRpc,
+    {
+      title: 'generateCode',
+      description: 'Generate code from NeoSQL schema metadata.',
+      inputSchema: {
+        tableName: z.string().min(1),
+        templatePackId: z.string().optional(),
+        schema: z.string().optional(),
+      },
+    },
+    async (args) =>
+      callUpstreamTool(
+        deps,
+        'codeGeneration.generateCode',
+        {
+          tableNames: [args.tableName],
+          ...(args.templatePackId === undefined ? {} : { templatePackId: args.templatePackId }),
+        },
+        { schema: args.schema },
+        { timeoutMs: 60_000 },
+      ),
   );
 };

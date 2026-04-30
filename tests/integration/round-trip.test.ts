@@ -2,21 +2,34 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../src/mcp/server.js';
-import { startMockRpcServer } from '../helpers/mock-uds-server.js';
+import { startMockRpcServer, type MockRpcRequest } from '../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../helpers/socket.js';
 
 interface ToolCase {
   name: string;
   args: Record<string, unknown>;
+  method?: string;
 }
 
 const RPC_TOOL_CASES: ToolCase[] = [
-  { name: 'generateCode', args: { tableName: 'users', templatePackId: 'java-jpa' } },
-  { name: 'listTables', args: {} },
-  { name: 'getTableDetails', args: { tableNames: ['users'] } },
-  { name: 'createTables', args: { tableDefinitions: [{ name: 't1', columns: [] }] } },
-  { name: 'modifyTables', args: { alterations: [{ table: 't1', changes: [] }] } },
-  { name: 'executeQuery', args: { sql: 'SELECT 1' } },
+  {
+    name: 'generateCode',
+    method: 'codeGeneration.generateCode',
+    args: { tableName: 'users', templatePackId: 'java-jpa' },
+  },
+  { name: 'listTables', method: 'schema.listTables', args: {} },
+  { name: 'getTableDetails', method: 'schema.getTableDetails', args: { tableNames: ['users'] } },
+  {
+    name: 'createTables',
+    method: 'ddl.createTables',
+    args: { tableDefinitions: [{ name: 't1', columns: [] }] },
+  },
+  {
+    name: 'modifyTables',
+    method: 'ddl.modifyTables',
+    args: { alterations: [{ tableName: 't1', columnOperations: [] }] },
+  },
+  { name: 'executeQuery', method: 'sql.executeQuery', args: { sql: 'SELECT 1' } },
 ];
 
 const CONTEXT_TOOL_CASES: ToolCase[] = [
@@ -45,11 +58,15 @@ describe('round-trip integration', () => {
     return client;
   };
 
-  it('roundtrips all 9 tools (6 over mock UDS + 3 in-memory context)', async () => {
+  it('roundtrips all 9 tools with contract method names and params envelopes', async () => {
     const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
       socketPath,
-      handler: (req) => ({ kind: 'result', result: { ok: true, method: req.method } }),
+      handler: (req) => {
+        received.push(req);
+        return { kind: 'result', result: { ok: true, method: req.method } };
+      },
     });
     cleanups.push(async () => {
       await mock.close();
@@ -61,6 +78,19 @@ describe('round-trip integration', () => {
     for (const c of [...RPC_TOOL_CASES, ...CONTEXT_TOOL_CASES]) {
       const result = await client.callTool({ name: c.name, arguments: c.args });
       expect(result.isError, `tool ${c.name} should not error`).not.toBe(true);
+    }
+
+    expect(received.map((req) => req.method)).toEqual(RPC_TOOL_CASES.map((c) => c.method));
+    const sessionIds = new Set(
+      received.map((req) => (req.params as { sessionId?: string } | undefined)?.sessionId),
+    );
+    expect(sessionIds.size).toBe(1);
+    expect([...sessionIds][0]).toEqual(expect.any(String));
+    for (const req of received) {
+      expect(req.params).toMatchObject({
+        context: expect.any(Object),
+        input: expect.any(Object),
+      });
     }
   });
 

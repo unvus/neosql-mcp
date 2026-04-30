@@ -1,15 +1,27 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { registerForwardTool } from '../shared.js';
+import { z } from 'zod';
+import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
 
-export interface ListTablesDeps {
-  postRpc: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-}
+export type ListTablesDeps = UpstreamToolDeps;
 
 export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps): void => {
-  registerForwardTool(
-    server,
+  server.registerTool(
     'listTables',
-    'List tables from the active NeoSQL context.',
-    deps.postRpc,
+    {
+      title: 'listTables',
+      description: 'List tables from the active NeoSQL context.',
+      inputSchema: {
+        schema: z.string().optional(),
+        search: z.string().optional(),
+      },
+    },
+    async (args) =>
+      callUpstreamTool(
+        deps,
+        'schema.listTables',
+        args,
+        { schema: args.schema },
+        { timeoutMs: 30_000 },
+      ),
   );
 };

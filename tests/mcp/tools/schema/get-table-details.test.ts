@@ -2,14 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../../../src/mcp/server.js';
-import {
-  startMockRpcServer,
-  type MockRpcRequest,
-} from '../../../helpers/mock-uds-server.js';
-import {
-  makeTestSocketPath,
-  removeSocketFile,
-} from '../../../helpers/socket.js';
+import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
+import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
 describe('getTableDetails tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
@@ -21,7 +15,7 @@ describe('getTableDetails tool', () => {
     }
   });
 
-  it('forwards multiple table names to upstream and returns the response as text', async () => {
+  it('calls schema.getTableDetails with table names inside the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -60,8 +54,25 @@ describe('getTableDetails tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { tables: unknown[] };
     expect(data.tables).toHaveLength(2);
-    expect(received[0]?.method).toMatch(/getTableDetails/);
-    const params = received[0]?.params as { tableNames?: string[] } | undefined;
-    expect(params?.tableNames).toEqual(['users', 'orders']);
+    expect(received[0]?.method).toBe('schema.getTableDetails');
+    expect(received[0]?.params).toMatchObject({
+      input: { tableNames: ['users', 'orders'] },
+    });
+  });
+
+  it('returns a tool error when tableNames is empty', async () => {
+    const server = createServer();
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
+
+    const result = await client.callTool({
+      name: 'getTableDetails',
+      arguments: { tableNames: [] },
+    });
+
+    expect(result.isError).toBe(true);
   });
 });

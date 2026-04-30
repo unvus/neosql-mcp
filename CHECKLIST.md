@@ -79,21 +79,21 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `docs/upstream-rpc-contract.md` — 도구별 HTTP 메서드 명세 (이름, request/response schema, 에러 코드)
 - [x] Phase 2-3 / 2-4 / Phase 3+ 도구별 체크리스트 추가 (`Node 핸들러` / `Electron HTTP 메서드` / `IPC/renderer 연결` / `e2e 검증`)
 
-### Phase 2-3 · Node 핸들러 일괄 구현 (mock UDS)
+### Phase 2-3 · Node 핸들러 일괄 구현 (mock UDS) — 완료 (2026-04-30)
 
-- [ ] **test list 제안 → 사람 리뷰 → 합의** (각 도구별 시나리오)
-- [ ] Phase 2-1 placeholder 핸들러를 contract 기반 실 핸들러로 교체 (9개)
-- [ ] mock UDS 서버를 contract 기반으로 강화 (메서드별 fixture dispatcher)
-- [ ] 도구별 단위 테스트에 contract 시나리오(정상/에러/스키마) 추가
-- [ ] `context/set-context` — Node-local schema/default merge 구현
-- [ ] `context/get-context` — Node-local response를 분석 문서 기준으로 보정
-- [ ] `context/get-context-help` — stdio MCP 구조에 맞게 도움말 보정
-- [ ] `schema/list-tables` — `schema.listTables` contract 기반 forward 구현
-- [ ] `schema/get-table-details` — `schema.getTableDetails` contract 기반 forward 구현
-- [ ] `sql/execute-query` — DDL guard + `sql.executeQuery` contract 기반 forward 구현
-- [ ] `ddl/create-tables` — `ddlExecute` default merge + `ddl.createTables` forward 구현
-- [ ] `ddl/modify-tables` — `ddlExecute` default merge + `ddl.modifyTables` forward 구현
-- [ ] `code-generation/generate-code` — `tableName` → `tableNames[]` 변환 + `codeGeneration.generateCode` forward 구현
+- [x] **test list 제안 → 사람 리뷰 → 합의** (각 도구별 시나리오)
+- [x] Phase 2-1 placeholder 핸들러를 contract 기반 실 핸들러로 교체 (9개)
+- [x] mock UDS 서버를 contract 기반으로 강화 (메서드별 fixture dispatcher)
+- [x] 도구별 단위 테스트에 contract 시나리오(정상/에러/스키마) 추가
+- [x] `context/set-context` — Node-local schema/default merge 구현
+- [x] `context/get-context` — Node-local response를 분석 문서 기준으로 보정
+- [x] `context/get-context-help` — stdio MCP 구조에 맞게 도움말 보정
+- [x] `schema/list-tables` — `schema.listTables` contract 기반 forward 구현
+- [x] `schema/get-table-details` — `schema.getTableDetails` contract 기반 forward 구현
+- [x] `sql/execute-query` — DDL guard + `sql.executeQuery` contract 기반 forward 구현
+- [x] `ddl/create-tables` — `ddlExecute` default merge + `ddl.createTables` forward 구현
+- [x] `ddl/modify-tables` — `ddlExecute` default merge + `ddl.modifyTables` forward 구현
+- [x] `code-generation/generate-code` — `tableName` → `tableNames[]` 변환 + `codeGeneration.generateCode` forward 구현
 
 ### Phase 2-4 · SchemaTools real Electron pilot
 

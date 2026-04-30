@@ -34,9 +34,11 @@ describe('getContext tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as {
       context: { projectId?: string; connectionId?: string; schema?: string };
+      source?: string;
     };
     expect(data.context.projectId).toBe('p');
     expect(data.context.connectionId).toBe('0');
     expect(data.context.schema).toBe('s');
+    expect(data.source).toBe('Session context (set via setContext tool)');
   });
 });

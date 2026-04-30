@@ -2,14 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../../../src/mcp/server.js';
-import {
-  startMockRpcServer,
-  type MockRpcRequest,
-} from '../../../helpers/mock-uds-server.js';
-import {
-  makeTestSocketPath,
-  removeSocketFile,
-} from '../../../helpers/socket.js';
+import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
+import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
 describe('listTables tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
@@ -21,7 +15,7 @@ describe('listTables tool', () => {
     }
   });
 
-  it('forwards the call to upstream and returns the response as text content', async () => {
+  it('calls schema.listTables with resolved context and input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -48,7 +42,7 @@ describe('listTables tool', () => {
 
     const result = await client.callTool({
       name: 'listTables',
-      arguments: { schema: 'public' },
+      arguments: { schema: 'analytics', search: 'user' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -56,6 +50,13 @@ describe('listTables tool', () => {
     const data = JSON.parse(content[0]?.text ?? '{}') as { tables: unknown[] };
     expect(data.tables).toEqual([{ name: 'users', type: 'TABLE' }]);
     expect(received).toHaveLength(1);
-    expect(received[0]?.method).toMatch(/listTables/);
+    expect(received[0]?.method).toBe('schema.listTables');
+    expect(received[0]?.params).toMatchObject({
+      context: { schema: 'analytics' },
+      input: { schema: 'analytics', search: 'user' },
+    });
+    expect((received[0]?.params as { sessionId?: string } | undefined)?.sessionId).toEqual(
+      expect.any(String),
+    );
   });
 });

@@ -28,20 +28,30 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
   const profile = opts.profile ?? 'prod';
   const socketPath = opts.socketPath ?? resolveSocketPath(profile);
   const contextStore = createContextStore();
-  const postRpc = <T = unknown>(method: string, params?: unknown): Promise<T> =>
-    defaultPostRpc<T>({ socketPath, method, params });
+  const postRpc = <T = unknown>(
+    method: string,
+    params?: unknown,
+    rpcOpts?: { timeoutMs?: number },
+  ): Promise<T> =>
+    defaultPostRpc<T>({
+      socketPath,
+      method,
+      params,
+      ...(rpcOpts?.timeoutMs === undefined ? {} : { timeoutMs: rpcOpts.timeoutMs }),
+    });
+  const upstreamDeps = { postRpc, contextStore, sessionId: mcpSessionId };
 
   registerPingTool(server);
   registerGetMcpSessionIdTool(server, mcpSessionId);
-  registerGenerateCodeTool(server, { postRpc });
-  registerListTablesTool(server, { postRpc });
-  registerGetTableDetailsTool(server, { postRpc });
+  registerGenerateCodeTool(server, upstreamDeps);
+  registerListTablesTool(server, upstreamDeps);
+  registerGetTableDetailsTool(server, upstreamDeps);
   registerSetContextTool(server, contextStore);
   registerGetContextTool(server, contextStore);
   registerGetContextHelpTool(server);
-  registerCreateTablesTool(server, { postRpc, contextStore });
-  registerModifyTablesTool(server, { postRpc, contextStore });
-  registerExecuteQueryTool(server, { postRpc, contextStore });
+  registerCreateTablesTool(server, upstreamDeps);
+  registerModifyTablesTool(server, upstreamDeps);
+  registerExecuteQueryTool(server, upstreamDeps);
 
   return server;
 };

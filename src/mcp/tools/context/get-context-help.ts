@@ -11,12 +11,13 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
     },
     async () =>
       jsonTextResult({
-        description: 'Set projectId, connectionId, and schema before calling database tools.',
+        description:
+          'Use setContext to store projectId, connectionId, schema, ddlExecute, and autoCommit for later stdio MCP tool calls.',
         projectId: 'NeoSQL project identifier.',
         connectionId: 'NeoSQL connection identifier.',
         schema: 'Database schema name.',
-        ddlExecute: 'Whether DDL execution is enabled.',
-        autoCommit: 'Whether SQL execution should auto-commit.',
+        ddlExecute: 'Default executeImmediately value for DDL tools.',
+        autoCommit: 'Default autoCommit value for SQL execution.',
       }),
   );
 };

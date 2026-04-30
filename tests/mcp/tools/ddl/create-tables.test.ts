@@ -2,14 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../../../src/mcp/server.js';
-import {
-  startMockRpcServer,
-  type MockRpcRequest,
-} from '../../../helpers/mock-uds-server.js';
-import {
-  makeTestSocketPath,
-  removeSocketFile,
-} from '../../../helpers/socket.js';
+import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
+import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
 describe('createTables tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
@@ -21,7 +15,7 @@ describe('createTables tool', () => {
     }
   });
 
-  it('forwards table definitions to upstream and returns the response as text', async () => {
+  it('calls ddl.createTables with executeImmediately defaulted from context', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -45,6 +39,10 @@ describe('createTables tool', () => {
     const client = new Client({ name: 'test', version: '0.0.0' });
     await client.connect(ct);
     cleanups.push(() => client.close());
+    await client.callTool({
+      name: 'setContext',
+      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: true },
+    });
 
     const result = await client.callTool({
       name: 'createTables',
@@ -57,6 +55,13 @@ describe('createTables tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { created: string[] };
     expect(data.created).toEqual(['users']);
-    expect(received[0]?.method).toMatch(/createTables/);
+    expect(received[0]?.method).toBe('ddl.createTables');
+    expect(received[0]?.params).toMatchObject({
+      context: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: true },
+      input: {
+        tableDefinitions: [{ name: 'users', columns: [] }],
+        executeImmediately: true,
+      },
+    });
   });
 });
