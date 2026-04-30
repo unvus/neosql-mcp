@@ -6,7 +6,7 @@
 
 - `neosql-mcp` 가 어디로 connect 할지 알아야 한다.
 - 양쪽 코드가 **config 파일·환경변수·프로세스 탐색 없이** 동일 규칙으로 path 를 계산한다.
-- 결과: `neosql-mcp` 측 `resolveSocketPath(profile)` 가 반환하는 단일 문자열 + 고정 HTTP path 상수 `'/rpc'`.
+- 결과: `neosql-mcp` 측 `resolveSocketPath(profile)` 가 반환하는 단일 문자열 + 고정 HTTP path 상수 `'/mcp/rpc'`.
 
 ## 경로 산출 규칙
 
@@ -43,11 +43,12 @@ path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`)
 ## HTTP path
 
 ```
-HTTP_PATH = '/rpc'
+HTTP_PATH = '/mcp/rpc'
 ```
 
 - 양쪽 코드의 상수로 보유. config 미저장.
-- 단일 path 위에서 JSON-RPC method 로 분기 (`connection.list`, `sql.execute`, …).
+- 단일 path 위에서 JSON-RPC method 로 분기 (`schema.listTables`, `sql.executeQuery`, …).
+- `/mcp/` 네임스페이스로 묶어 향후 `/health`, `/version` 등 비-RPC endpoint 또는 다른 RPC 묶음과 충돌하지 않도록 한다.
 - 서버 push 가 필요한 경우 같은 path 의 GET SSE 채널 별도 오픈 (Phase 2).
 
 ## 호출 예
@@ -62,11 +63,11 @@ const req = http.request({ socketPath, method: 'POST', path: HTTP_PATH });
 
 ## 알려진 제약
 
-| 항목 | 내용 | 완화 |
-|---|---|---|
-| POSIX `sun_path` 길이 ~104 byte (macOS) | macOS `os.tmpdir()` 만으로도 ~50 char 차지 | path 단편이 짧아야 함 (테스트는 `nm-test-{8hex}.sock`) |
-| POSIX socket file 잔존 | 비정상 종료 시 unlink 안 됨 → 다음 listen `EADDRINUSE` | electron-main 기동 시 unlink 후 listen (본체 작업) |
-| Windows Named Pipe 권한 | `\\.\pipe\name` 의 ACL 기본값은 다른 사용자 접근 가능성 있음 | win32 native 호출로 SDDL 적용 (본체 작업 시 보강) |
+| 항목                                    | 내용                                                         | 완화                                                   |
+| --------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| POSIX `sun_path` 길이 ~104 byte (macOS) | macOS `os.tmpdir()` 만으로도 ~50 char 차지                   | path 단편이 짧아야 함 (테스트는 `nm-test-{8hex}.sock`) |
+| POSIX socket file 잔존                  | 비정상 종료 시 unlink 안 됨 → 다음 listen `EADDRINUSE`       | electron-main 기동 시 unlink 후 listen (본체 작업)     |
+| Windows Named Pipe 권한                 | `\\.\pipe\name` 의 ACL 기본값은 다른 사용자 접근 가능성 있음 | win32 native 호출로 SDDL 적용 (본체 작업 시 보강)      |
 
 ## 관련 모듈
 

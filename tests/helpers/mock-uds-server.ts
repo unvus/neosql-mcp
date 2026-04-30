@@ -23,7 +23,7 @@ export interface StartedMock {
 
 export const startMockRpcServer = async (opts: StartMockOpts): Promise<StartedMock> => {
   const server = http.createServer((req, res) => {
-    if (req.method !== 'POST' || req.url !== '/rpc') {
+    if (req.method !== 'POST' || req.url !== '/mcp/rpc') {
       res.writeHead(404);
       res.end();
       return;

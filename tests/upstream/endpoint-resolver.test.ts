@@ -14,7 +14,7 @@ describe('resolveSocketPath', () => {
 });
 
 describe('HTTP_PATH', () => {
-  it('is "/rpc"', () => {
-    expect(HTTP_PATH).toBe('/rpc');
+  it('is "/mcp/rpc"', () => {
+    expect(HTTP_PATH).toBe('/mcp/rpc');
   });
 });

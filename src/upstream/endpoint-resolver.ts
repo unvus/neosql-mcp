@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export type Profile = 'prod' | 'dev';
 
-export const HTTP_PATH = '/rpc';
+export const HTTP_PATH = '/mcp/rpc';
 
 export const resolveSocketPath = (profile: Profile): string => {
   const suffix = profile === 'dev' ? '-dev' : '';

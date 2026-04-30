@@ -32,7 +32,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 ## Phase 1 · endpointResolver (고정 socket path) — 완료 (2026-04-29)
 
 - [x] **test list 제안 → 사람 리뷰 → 합의** (`docs/testing.md` 워크플로 1–2단계)
-- [x] `endpointResolver` 모듈 — profile (prod / dev) → socket path 산출, HTTP path 상수 (`/rpc`) 보유
+- [x] `endpointResolver` 모듈 — profile (prod / dev) → socket path 산출, HTTP path 상수 (`/mcp/rpc`) 보유
 - [x] profile 인지: `--dev` / `--prod` CLI 플래그 파싱 (`src/cli-args.ts`)
 - [x] `healthCheck` 모듈 — `http.request({ socketPath })` 로 connect + HTTP response 시도. 결과: `running` / `not_running` / `stale_socket` / `timeout`
 - [x] 테스트: prod·dev path 산출(3) / cli-args(6) / health-check 5건 (running·not_running·timeout 양 OS, stale_socket 2건은 POSIX-only `it.skipIf`)
@@ -99,7 +99,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 ### Phase 2-4 · SchemaTools real Electron pilot
 
 - [ ] **test list 제안 → 사람 리뷰 → 합의**
-- [ ] (본체 PR) electron-main UDS HTTP 서버 — listen + `chmod 0600` + stale unlink + dev/prod suffix + `/rpc` dispatcher
+- [ ] (본체 PR) electron-main UDS/Named Pipe HTTP 서버 — listen + `chmod 0600` + stale unlink + dev/prod suffix + `/mcp/rpc` dispatcher
 - [ ] (본체 PR) `schema.listTables` 메서드 구현
 - [ ] (본체 PR) `schema.getTableDetails` 메서드 구현
 - [ ] (본체 PR) renderer IPC 연결 (필요 시)

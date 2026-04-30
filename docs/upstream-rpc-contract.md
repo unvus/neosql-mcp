@@ -6,7 +6,7 @@
 
 ## Transport
 
-- HTTP path: `/rpc`
+- HTTP path: `/mcp/rpc`
 - HTTP method: `POST`
 - POSIX transport: Unix Domain Socket
 - Windows transport: Named Pipe
@@ -19,7 +19,7 @@ HTTP status 원칙:
 | -----: | ----------------------------------------------------------- |
 |    200 | JSON-RPC success 또는 JSON-RPC error                        |
 |    400 | HTTP body가 JSON이 아니거나 JSON-RPC envelope가 아님        |
-|    404 | `/rpc`가 아닌 path                                          |
+|    404 | `/mcp/rpc`가 아닌 path                                      |
 |    405 | POST 외 method                                              |
 |    500 | dispatcher crash 등 JSON-RPC error로 만들 수 없는 서버 오류 |
 
