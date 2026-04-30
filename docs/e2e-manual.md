@@ -34,29 +34,8 @@ claude mcp add neosql-ping neosql-mcp
 
 **방법 B — 프로젝트 단위 (`.mcp.json`)**
 
-```json
-{
-  "mcpServers": {
-    "neosql": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "neosql-mcp",
-        "--project",
-        "6c9fede500f949079f7c553cfd96ec72",
-        "--connection",
-        "88",
-        "--schema",
-        "appdb",
-        "--ddl-execute",
-        "false",
-        "--auto-commit",
-        "false"
-      ]
-    }
-  }
-}
-```
+프로젝트 설정 예시는 [`docs/mcp-client-config.md`](mcp-client-config.md)를 단일
+진실의 원천으로 삼는다.
 
 검증:
 
@@ -69,24 +48,8 @@ claude mcp add neosql-ping neosql-mcp
 
 `~/.codex/config.toml` 에 추가:
 
-```toml
-[mcp_servers.neosql]
-command = "npx"
-args = [
-  "-y",
-  "neosql-mcp",
-  "--project",
-  "6c9fede500f949079f7c553cfd96ec72",
-  "--connection",
-  "88",
-  "--schema",
-  "appdb",
-  "--ddl-execute",
-  "false",
-  "--auto-commit",
-  "false",
-]
-```
+Codex 설정 예시는 [`docs/mcp-client-config.md`](mcp-client-config.md)를 단일 진실의
+원천으로 삼는다.
 
 검증: 세션에서 `ping` 툴 호출 가능한지 확인.
 

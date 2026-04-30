@@ -1,0 +1,196 @@
+# MCP Client Config
+
+이 문서는 NeoSQL MCP host 설정의 단일 진실의 원천이다. `.mcp.json`,
+Codex `config.toml`, 기존 HTTP MCP 설정과 to-be stdio/npx 설정의 매핑은 이 문서를
+기준으로 유지한다.
+
+## To-Be: stdio / npx
+
+NeoSQL MCP host는 `neosql-mcp`를 stdio server process로 실행한다. Desktop app과의
+통신은 이 Node process가 UDS/Named Pipe upstream RPC로 위임한다.
+
+### Claude Code `.mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "neosql": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "neosql-mcp",
+        "--project",
+        "6c9fede500f949079f7c553cfd96ec72",
+        "--connection",
+        "88",
+        "--schema",
+        "appdb",
+        "--ddl-execute",
+        "false",
+        "--auto-commit",
+        "false"
+      ]
+    }
+  }
+}
+```
+
+### Codex `config.toml`
+
+```toml
+[mcp_servers.neosql]
+command = "npx"
+args = [
+  "-y",
+  "neosql-mcp",
+  "--project",
+  "6c9fede500f949079f7c553cfd96ec72",
+  "--connection",
+  "88",
+  "--schema",
+  "appdb",
+  "--ddl-execute",
+  "false",
+  "--auto-commit",
+  "false",
+]
+```
+
+### Local Linked Binary
+
+개발 중 `npm link`를 사용하면 `npx` 대신 linked binary를 직접 실행할 수 있다.
+
+```json
+{
+  "mcpServers": {
+    "neosql": {
+      "command": "neosql-mcp",
+      "args": [
+        "--project",
+        "6c9fede500f949079f7c553cfd96ec72",
+        "--connection",
+        "88",
+        "--schema",
+        "appdb",
+        "--ddl-execute",
+        "false",
+        "--auto-commit",
+        "false"
+      ]
+    }
+  }
+}
+```
+
+## Dev Profile
+
+기본 profile은 prod다. NeoSQL Desktop dev build가 `neosql-mcp-dev` socket/pipe suffix로
+listen하는 경우 MCP server에도 `--dev`를 전달한다.
+
+```json
+{
+  "mcpServers": {
+    "neosql": {
+      "command": "npx",
+      "args": ["-y", "neosql-mcp", "--dev"]
+    }
+  }
+}
+```
+
+`--dev`와 `--prod`가 둘 다 있으면 마지막 profile flag가 우선한다.
+
+## Legacy HTTP Config
+
+기존 embedded-server MCP는 HTTP endpoint와 headers로 context를 주입했다.
+
+```json
+{
+  "mcpServers": {
+    "neosql": {
+      "type": "http",
+      "url": "http://localhost:8098/mcp",
+      "headers": {
+        "x-neosql-project": "6c9fede500f949079f7c553cfd96ec72",
+        "x-neosql-connection": "88",
+        "x-neosql-schema": "appdb",
+        "x-neosql-ddl-execute": "false",
+        "x-neosql-auto-commit": "false"
+      }
+    }
+  }
+}
+```
+
+to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initial context option으로
+전달한다.
+
+## Mapping
+
+| Legacy HTTP header     | To-be CLI arg   | Context field  | Type    |
+| ---------------------- | --------------- | -------------- | ------- |
+| `x-neosql-project`     | `--project`     | `projectId`    | string  |
+| `x-neosql-connection`  | `--connection`  | `connectionId` | string  |
+| `x-neosql-schema`      | `--schema`      | `schema`       | string  |
+| `x-neosql-ddl-execute` | `--ddl-execute` | `ddlExecute`   | boolean |
+| `x-neosql-auto-commit` | `--auto-commit` | `autoCommit`   | boolean |
+
+## CLI Option Rules
+
+지원 형식:
+
+```text
+--project <value>
+--project=<value>
+--connection <value>
+--connection=<value>
+--schema <value>
+--schema=<value>
+--ddl-execute <true|false>
+--ddl-execute=<true|false>
+--auto-commit <true|false>
+--auto-commit=<true|false>
+```
+
+규칙:
+
+- `project`, `connection`, `schema`는 string으로 저장한다.
+- `ddl-execute`, `auto-commit`은 `true` 또는 `false`만 boolean으로 해석한다.
+- boolean 값이 없거나 `true`/`false`가 아니면 초기 context에 반영하지 않는다.
+- string 값이 빈 문자열이면 context store merge 단계에서 기존 값을 유지한다.
+- `connectionId`는 숫자처럼 보여도 string으로 유지한다. Electron app handler가 필요한
+  시점에 숫자로 변환한다.
+
+## Context Resolution
+
+Node MCP server의 context 우선순위:
+
+1. tool argument explicit override
+2. Node context store
+   - CLI initial context로 최초 설정
+   - 이후 `setContext` tool로 갱신 가능
+3. empty context
+
+예를 들어 `.mcp.json`에서 `--schema appdb`를 설정했더라도 `listTables` 호출에
+`schema: "analytics"`가 명시되면 해당 호출은 `analytics`를 우선한다.
+
+## Upstream Params
+
+Electron main으로 전달되는 upstream JSON-RPC params는 아래 구조를 따른다.
+
+```ts
+interface UpstreamToolParams<TInput> {
+  sessionId: string;
+  context: {
+    projectId?: string;
+    connectionId?: string;
+    schema?: string;
+    ddlExecute?: boolean;
+    autoCommit?: boolean;
+  };
+  input: TInput;
+}
+```
+
+`sessionId`는 Node process가 생성하는 upstream grouping key다. MCP Streamable HTTP의
+`Mcp-Session-Id` header가 아니다.
