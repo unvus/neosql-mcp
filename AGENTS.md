@@ -75,29 +75,6 @@
 - `poc/`는 transport 실험 코드이며 프로덕션 코드가 아니다.
 - `dist/`는 빌드 산출물이다. 직접 편집하지 않는다.
 
-## 빌드, 테스트, 개발 명령
-
-Node.js는 `package.json` 기준에 따라 `>=20`을 사용한다.
-
-- `npm run build`: `tsup`으로 `dist/` 빌드.
-- `npm run dev`: `tsup --watch` 실행.
-- `npm test`: 전체 Vitest suite 1회 실행.
-- `npm run test:watch`: Vitest watch mode.
-- `npm run test:unit`: `*.spawn.test.ts` 제외.
-- `npm run test:integration`: build 후 spawn integration test 실행.
-- `npm run lint`: ESLint 검사.
-- `npm run typecheck`: `tsc --noEmit`.
-- `npm run format`: Prettier format.
-- `npm pack --dry-run`: publish package contents 수동 검증.
-
-binary entry나 packaging 변경은 최소한 아래 명령을 실행한다.
-
-```bash
-npm run build
-npm run test:integration
-npm pack --dry-run
-```
-
 ## 코딩 스타일과 네이밍
 
 TypeScript ESM imports/exports를 사용한다. 기존 스타일을 따른다.
