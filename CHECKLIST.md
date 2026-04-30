@@ -88,6 +88,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `context/set-context` — Node-local schema/default merge 구현
 - [x] `context/get-context` — Node-local response를 분석 문서 기준으로 보정
 - [x] `context/get-context-help` — stdio MCP 구조에 맞게 도움말 보정
+- [x] 기존 HTTP header 기반 초기 context를 stdio/npx CLI 옵션으로 대응
 - [x] `schema/list-tables` — `schema.listTables` contract 기반 forward 구현
 - [x] `schema/get-table-details` — `schema.getTableDetails` contract 기반 forward 구현
 - [x] `sql/execute-query` — DDL guard + `sql.executeQuery` contract 기반 forward 구현

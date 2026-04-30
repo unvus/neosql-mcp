@@ -139,7 +139,8 @@ Phase 2-3 구현 정책:
 5. boolean field(`ddlExecute`, `autoCommit`)는 false가 의미 있는 값이므로
    null/undefined와 false를 구분한다.
 6. Electron upstream RPC에는 resolved context를 명시 params로 전달한다.
-7. HTTP header default context는 Phase 2-3 범위에서 지원하지 않는다.
+7. 기존 HTTP header default context는 stdio 구조에서 CLI 초기 context 옵션으로
+   대응한다.
 
 Context store shape:
 
@@ -230,7 +231,7 @@ fields로 변환하거나, 새 handler에서 직접 사용하면 된다.
 
 - MCP SDK request `extra`에서 stdio connection을 안정적으로 구분할 수 있는지 확인한다.
 - multi-client-in-one-process 구조가 필요해지면 `ContextStore`를 connection scoped로 바꾼다.
-- MCP client 설정으로 초기 context를 주입해야 한다는 요구가 생기면 CLI option 또는 config
-  정책을 별도 설계한다. Phase 2-3 기본 범위에는 넣지 않는다.
+- MCP client 설정의 기존 HTTP header 값은 `--project`, `--connection`, `--schema`,
+  `--ddl-execute`, `--auto-commit` CLI option 으로 주입한다.
 - Electron app 쪽 SQL/ERD/log grouping이 `<uuid>` 형식의 session id를 문제없이
   표시하는지 Phase 2-4 이후 e2e에서 확인한다.

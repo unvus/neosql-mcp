@@ -59,4 +59,53 @@ describe('listTables tool', () => {
       expect.any(String),
     );
   });
+
+  it('uses the initial server context when tool arguments do not override it', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: (req) => {
+        received.push(req);
+        return { kind: 'result', result: [] };
+      },
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    const server = createServer({
+      socketPath,
+      initialContext: {
+        projectId: 'project-1',
+        connectionId: '88',
+        schema: 'appdb',
+        ddlExecute: false,
+        autoCommit: false,
+      },
+    });
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
+
+    const result = await client.callTool({
+      name: 'listTables',
+      arguments: { search: 'user' },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(received[0]?.params).toMatchObject({
+      context: {
+        projectId: 'project-1',
+        connectionId: '88',
+        schema: 'appdb',
+        ddlExecute: false,
+        autoCommit: false,
+      },
+      input: { search: 'user' },
+    });
+  });
 });

@@ -5,10 +5,10 @@ import { parseCliArgs } from './cli-args.js';
 import { resolveSocketPath, HTTP_PATH } from '../upstream/endpoint-resolver.js';
 
 const main = async (): Promise<void> => {
-  const { profile } = parseCliArgs(process.argv.slice(2));
+  const { profile, initialContext } = parseCliArgs(process.argv.slice(2));
   const socketPath = resolveSocketPath(profile);
 
-  const server = createServer({ profile, socketPath });
+  const server = createServer({ profile, socketPath, initialContext });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   logger.info({ transport: 'stdio', profile, socketPath, httpPath: HTTP_PATH }, 'neosql-mcp ready');

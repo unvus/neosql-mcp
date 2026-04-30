@@ -3,6 +3,7 @@ import { registerPingTool } from './tools/ping.js';
 import { resolveSocketPath, type Profile } from '../upstream/endpoint-resolver.js';
 import { postRpc as defaultPostRpc } from '../upstream/http-client.js';
 import { createContextStore } from './tools/context/store.js';
+import type { NeosqlContextPatch } from './tools/context/store.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
 import { registerListTablesTool } from './tools/schema/list-tables.js';
 import { registerGetTableDetailsTool } from './tools/schema/get-table-details.js';
@@ -21,6 +22,7 @@ export const SERVER_VERSION = '0.0.1';
 export interface CreateServerOptions {
   profile?: Profile;
   socketPath?: string;
+  initialContext?: NeosqlContextPatch;
 }
 
 export const createServer = (opts: CreateServerOptions = {}): McpServer => {
@@ -28,6 +30,7 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
   const profile = opts.profile ?? 'prod';
   const socketPath = opts.socketPath ?? resolveSocketPath(profile);
   const contextStore = createContextStore();
+  if (opts.initialContext !== undefined) contextStore.set(opts.initialContext);
   const postRpc = <T = unknown>(
     method: string,
     params?: unknown,
