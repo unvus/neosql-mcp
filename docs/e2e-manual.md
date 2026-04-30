@@ -17,10 +17,27 @@ which neosql-mcp    # 경로 확인 (예: ~/.nvm/.../bin/neosql-mcp)
 ## 1. MCP Inspector — LLM 없이 빠른 검증 (권장 첫 단계)
 
 ```bash
+# prod profile (기본)
 npx @modelcontextprotocol/inspector neosql-mcp
+
+# dev profile
+npx @modelcontextprotocol/inspector neosql-mcp --dev
+
+# dev profile + initial context
+npx @modelcontextprotocol/inspector neosql-mcp --dev \
+  --project 6c9fede500f949079f7c553cfd96ec72 \
+  --connection 88 \
+  --schema appdb \
+  --ddl-execute false \
+  --auto-commit false
 ```
 
 - 브라우저 UI가 자동으로 열린다.
+- prod profile 은 `neosql-mcp.sock` / `\\.\pipe\neosql-mcp` 로 연결한다.
+- dev profile 은 `neosql-mcp-dev.sock` / `\\.\pipe\neosql-mcp-dev` 로 연결한다.
+- 초기 context 옵션(`--project`, `--connection`, `--schema`, `--ddl-execute`,
+  `--auto-commit`)의 상세 mapping과 MCP host 설정 예시는
+  [`docs/mcp-client-config.md`](mcp-client-config.md)를 기준으로 한다.
 - **Tools** 탭 → `ping` 선택 → **Run Tool** → 응답 `"pong"` 확인.
 - 핸드셰이크 / `tools/list` / `tools/call` 셋을 한 화면에서 본다. 어디서 끊겼는지 즉시 보이므로 디버깅 효율이 가장 좋다.
 
