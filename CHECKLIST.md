@@ -73,6 +73,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `SchemaTools.java` 분석
 - [x] `SqlTools.java` 분석
 - [x] [`McpContextHolder` 분석/설계](docs/mcp-context-holder-analysis.md) (context 우선순위·session 저장소·Node 이관 정책)
+- [x] HTTP `Mcp-Session-Id` 대응값 설계 반영 — Node process 최초 로드 시 `mcpSessionId` 생성, `getMcpSessionId` 테스트용 툴로 확인
 - [x] `docs/embedded-server-tool-analysis.md` — Java tool / app handler 분석 결과
 - [x] 도구별 Node ↔ Electron 분할 결정
 - [x] `docs/upstream-rpc-contract.md` — 도구별 HTTP 메서드 명세 (이름, request/response schema, 에러 코드)

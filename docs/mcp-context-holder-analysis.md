@@ -165,9 +165,9 @@ interface ContextStore {
 
 Phase 2-3 정책:
 
-- `createServer()` 시점에 `crypto.randomUUID()`로 `upstreamSessionId`를 1회 생성한다.
+- Node process에서 `crypto.randomUUID()`로 `mcpSessionId`를 1회 생성한다.
 - 같은 Node server process/stdio connection 안의 모든 upstream RPC는 같은
-  `upstreamSessionId`를 사용한다.
+  `mcpSessionId`를 사용한다.
 - 값은 Electron app의 grouping key로만 사용한다.
 - 이 값은 MCP Streamable HTTP의 `Mcp-Session-Id` header가 아니며, Node ↔ Electron
   자체 RPC params의 `sessionId`다.
@@ -175,7 +175,7 @@ Phase 2-3 정책:
 권장 형식:
 
 ```text
-neosql-mcp:<uuid>
+<uuid>
 ```
 
 이 방식의 효과:
@@ -232,5 +232,5 @@ fields로 변환하거나, 새 handler에서 직접 사용하면 된다.
 - multi-client-in-one-process 구조가 필요해지면 `ContextStore`를 connection scoped로 바꾼다.
 - MCP client 설정으로 초기 context를 주입해야 한다는 요구가 생기면 CLI option 또는 config
   정책을 별도 설계한다. Phase 2-3 기본 범위에는 넣지 않는다.
-- Electron app 쪽 SQL/ERD/log grouping이 `neosql-mcp:<uuid>` 형식의 session id를 문제없이
+- Electron app 쪽 SQL/ERD/log grouping이 `<uuid>` 형식의 session id를 문제없이
   표시하는지 Phase 2-4 이후 e2e에서 확인한다.

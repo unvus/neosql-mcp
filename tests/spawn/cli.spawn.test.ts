@@ -27,4 +27,24 @@ describe('built CLI via stdio spawn', () => {
     const content = result.content as Array<{ type: string; text?: string }>;
     expect(content[0]?.text).toBe('pong');
   });
+
+  it('returns a stable mcpSessionId within the spawned process', async () => {
+    const transport = new StdioClientTransport({
+      command: 'node',
+      args: [CLI_PATH],
+    });
+    const client = new Client({ name: 'spawn-test-client', version: '0.0.0' });
+    clients.push(client);
+    await client.connect(transport);
+
+    const first = await client.callTool({ name: 'getMcpSessionId', arguments: {} });
+    const second = await client.callTool({ name: 'getMcpSessionId', arguments: {} });
+    const firstContent = first.content as Array<{ type: string; text?: string }>;
+    const secondContent = second.content as Array<{ type: string; text?: string }>;
+
+    expect(first.isError).not.toBe(true);
+    expect(second.isError).not.toBe(true);
+    expect(firstContent[0]?.text).toMatch(/^[0-9a-f-]{36}$/);
+    expect(secondContent[0]?.text).toBe(firstContent[0]?.text);
+  });
 });

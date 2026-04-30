@@ -12,6 +12,8 @@ import { registerGetContextHelpTool } from './tools/context/get-context-help.js'
 import { registerCreateTablesTool } from './tools/ddl/create-tables.js';
 import { registerModifyTablesTool } from './tools/ddl/modify-tables.js';
 import { registerExecuteQueryTool } from './tools/sql/execute-query.js';
+import { mcpSessionId } from './session.js';
+import { registerGetMcpSessionIdTool } from './tools/get-mcp-session-id.js';
 
 export const SERVER_NAME = 'neosql-mcp';
 export const SERVER_VERSION = '0.0.1';
@@ -30,6 +32,7 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
     defaultPostRpc<T>({ socketPath, method, params });
 
   registerPingTool(server);
+  registerGetMcpSessionIdTool(server, mcpSessionId);
   registerGenerateCodeTool(server, { postRpc });
   registerListTablesTool(server, { postRpc });
   registerGetTableDetailsTool(server, { postRpc });
