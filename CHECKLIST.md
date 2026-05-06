@@ -128,9 +128,13 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 #### DdlTools
 
 - [ ] (본체 PR) `ddl.createTables` 구현
-- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables`
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables` (`executeImmediately` 생략)
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables` (`executeImmediately=false`)
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables` (`executeImmediately=true`)
 - [ ] (본체 PR) `ddl.modifyTables` 구현
-- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables`
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables` (`executeImmediately` 생략)
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables` (`executeImmediately=false`)
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables` (`executeImmediately=true`)
 
 #### CodeGenerationTools
 
