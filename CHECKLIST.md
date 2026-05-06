@@ -43,7 +43,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ## Phase 2 · embedded-server MCP 도구 Node 이관 — 진행 중
 
-`PLAN.md` Phase 2 참조. embedded-server 의 9개 도구(5 카테고리)를 Node 로 전면 이관한다. **Option A + pilot** 전략 — Node 일괄 구현 후 SchemaTools 로 real Electron pilot.
+`PLAN.md` Phase 2 참조. embedded-server 의 9개 도구(5 카테고리)를 Node 로 전면 이관한다. Node 핸들러 일괄 구현 후 Phase 2 안에서 본체 HTTP tool 구현과 as-is/to-be 비교 검증까지 진행한다.
 
 ### Phase 2-1 · 채널 인프라 + 9개 시그니처 + mock 라운드트립 — 완료 (2026-04-29)
 
@@ -77,7 +77,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `docs/embedded-server-tool-analysis.md` — Java tool / app handler 분석 결과
 - [x] 도구별 Node ↔ Electron 분할 결정
 - [x] `docs/upstream-rpc-contract.md` — 도구별 HTTP 메서드 명세 (이름, request/response schema, 에러 코드)
-- [x] Phase 2-3 / 2-4 / Phase 3+ 도구별 체크리스트 추가 (`Node 핸들러` / `Electron HTTP 메서드` / `IPC/renderer 연결` / `e2e 검증`)
+- [x] Phase 2-3 / 2-4 도구별 체크리스트 추가 (`Node 핸들러` / `Electron HTTP 메서드` / `IPC/renderer 연결` / `e2e 검증`)
 
 ### Phase 2-3 · Node 핸들러 일괄 구현 (mock UDS) — 완료 (2026-04-30)
 
@@ -143,12 +143,10 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ## Phase 3 이상
 
-Phase 2-4 pilot 완료 시점에 범위·우선순위 재검토 (`PLAN.md` 참조). 핵심: 나머지 Electron 카테고리 일괄(SQL → DDL → CodeGeneration), 미설치/미실행 구분, multi-instance, 인증, Windows ACL 등.
+Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검증까지 진행한다. Phase 3 이상은 tool 이관 완료 후 운영 안정화·보안·배포 UX 범위를 재검토한다.
 
-- [ ] SQL Electron 구현/e2e (`sql.executeQuery`)
-- [ ] DDL Electron 구현/e2e (`ddl.createTables`, `ddl.modifyTables`)
-- [ ] CodeGeneration Electron 구현/e2e (`codeGeneration.generateCode`)
-- [ ] `templatePackId` contract 지원 여부 확정
-- [ ] DDL `executeImmediately=true` 권한 제한 branch 검증
-- [ ] multi-instance / session identity 정책 확정
+- [ ] NeoSQL Desktop 미설치 / 미실행 / stale socket 상태별 사용자-facing error UX 정리
+- [ ] 인증/권한 모델 필요 여부 검토
 - [ ] Windows Named Pipe ACL hardening
+- [ ] 구조화 로그와 진단 정보 확장
+- [ ] 실제 MCP host별 장기 e2e 시나리오 정리
