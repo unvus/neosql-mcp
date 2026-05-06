@@ -96,15 +96,46 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `ddl/modify-tables` — `ddlExecute` default merge + `ddl.modifyTables` forward 구현
 - [x] `code-generation/generate-code` — `tableName` → `tableNames[]` 변환 + `codeGeneration.generateCode` forward 구현
 
-### Phase 2-4 · SchemaTools real Electron pilot
+### Phase 2-4 · Real Electron MCP tool migration
 
 - [x] **test list 제안 → 사람 리뷰 → 합의**
 - [x] (본체 PR) electron-main UDS/Named Pipe HTTP 서버 — listen + `chmod 0600` + stale unlink + dev/prod suffix + `/mcp/rpc` dispatcher
-- [x] (본체 PR) `schema.listTables` 메서드 구현
-- [x] (본체 PR) `schema.getTableDetails` 메서드 구현
-- [x] (본체 PR) renderer IPC 연결 (필요 시)
-- [ ] 본 리포: `tests/e2e/` 신설 + 실 electron 기동 후 도구 호출
-- [ ] `docs/e2e-manual.md` 절차 보강
+- [x] (본체 PR) renderer IPC 연결
+
+#### SchemaTools
+
+- [x] (본체 PR) `schema.listTables` 구현
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `listTables`
+- [x] (본체 PR) `schema.getTableDetails` 구현
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getTableDetails`
+
+#### ContextTools
+
+- [ ] (본 리포) `setContext` Node context store 구현 확인
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `setContext`
+- [ ] (본 리포) `getContext` Node context store 구현 확인
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContext`
+- [ ] (본 리포) `getContextHelp` Node context help 구현 확인
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContextHelp`
+
+#### SqlTools
+
+- [ ] (본체 PR) `sql.executeQuery` 구현
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery`
+
+#### DdlTools
+
+- [ ] (본체 PR) `ddl.createTables` 구현
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables`
+- [ ] (본체 PR) `ddl.modifyTables` 구현
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables`
+
+#### CodeGenerationTools
+
+- [ ] (본체 PR) `codeGeneration.generateCode` 구현
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `generateCode`
+
+- [ ] `docs/e2e-manual.md`에 as-is/to-be 비교 검증 절차와 결과 기록
 - [ ] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정
 - [ ] 분석 결과 open item 확인: DDL restriction branch의 `response` 참조, `templatePackId` 처리 정책
 
