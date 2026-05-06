@@ -15,10 +15,7 @@ export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDe
         'Returns generated file contents based on the specified template.',
       inputSchema: {
         tableName: z.string().min(1).describe('Table name to generate code for'),
-        templatePackId: z
-          .string()
-          .describe('Template pack ID to use for code generation')
-          .optional(),
+        templatePackId: z.string().describe('Template pack ID to use for code generation').min(1),
         schema: z
           .string()
           .describe('Database schema name. If omitted, uses current context schema.')
@@ -31,7 +28,7 @@ export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDe
         'codeGeneration.generateCode',
         {
           tableNames: [args.tableName],
-          ...(args.templatePackId === undefined ? {} : { templatePackId: args.templatePackId }),
+          templatePackId: args.templatePackId,
         },
         { schema: args.schema },
         { timeoutMs: 60_000 },

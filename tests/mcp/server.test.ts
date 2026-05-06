@@ -86,7 +86,8 @@ describe('createServer', () => {
         projectId:
           "Project ID (e.g., '71ef287779c14fc6b3bb86f88acdb216'). Leave empty to keep current value.",
         connectionId: "Connection ID (e.g., '0', '1'). Leave empty to keep current value.",
-        schema: "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
+        schema:
+          "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
         ddlExecute:
           'Whether to execute DDL immediately on the database when creating/modifying tables. Default is false (ERD only).',
         autoCommit:
@@ -131,10 +132,7 @@ describe('createServer', () => {
     for (const [toolName, parameterDescriptions] of Object.entries(expectedDescriptions)) {
       const tool = result.tools.find((t) => t.name === toolName);
       expect(tool, toolName).toBeDefined();
-      const properties = tool!.inputSchema.properties as Record<
-        string,
-        { description?: string }
-      >;
+      const properties = tool!.inputSchema.properties as Record<string, { description?: string }>;
 
       for (const [parameterName, description] of Object.entries(parameterDescriptions)) {
         expect(properties[parameterName]?.description, `${toolName}.${parameterName}`).toBe(
@@ -143,4 +141,106 @@ describe('createServer', () => {
       }
     }
   });
+
+  it('exposes embedded-server-compatible required and nested parameter schemas', async () => {
+    await connectClientToServer();
+    const result = await client!.listTools();
+
+    const setContextSchema = inputSchemaFor(result.tools, 'setContext');
+    expect(requiredFields(setContextSchema)).toEqual([]);
+    expect(propertySchema(setContextSchema, 'ddlExecute').type).toBe('boolean');
+    expect(propertySchema(setContextSchema, 'autoCommit').type).toBe('boolean');
+
+    const generateCodeSchema = inputSchemaFor(result.tools, 'generateCode');
+    expect(requiredFields(generateCodeSchema)).toEqual(['tableName', 'templatePackId']);
+
+    const createTablesSchema = inputSchemaFor(result.tools, 'createTables');
+    expect(requiredFields(createTablesSchema)).toEqual(['tableDefinitions']);
+    const tableDefSchema = arrayItemSchema(propertySchema(createTablesSchema, 'tableDefinitions'));
+    expect(tableDefSchema.additionalProperties).toBe(false);
+    expect(requiredFields(tableDefSchema)).toEqual([
+      'name',
+      'remarks',
+      'columns',
+      'primaryKeys',
+      'importedKeys',
+      'indexes',
+      'constraints',
+    ]);
+    const columnDefSchema = arrayItemSchema(propertySchema(tableDefSchema, 'columns'));
+    expect(columnDefSchema.additionalProperties).toBe(false);
+    expect(requiredFields(columnDefSchema)).toEqual([
+      'name',
+      'type',
+      'size',
+      'decimalDigits',
+      'nullable',
+      'autoIncrement',
+      'defaultValue',
+      'remarks',
+    ]);
+
+    const modifyTablesSchema = inputSchemaFor(result.tools, 'modifyTables');
+    expect(requiredFields(modifyTablesSchema)).toEqual(['alterations']);
+    const alterTableDefSchema = arrayItemSchema(propertySchema(modifyTablesSchema, 'alterations'));
+    expect(alterTableDefSchema.additionalProperties).toBe(false);
+    expect(requiredFields(alterTableDefSchema)).toEqual([
+      'tableName',
+      'newTableName',
+      'newRemarks',
+      'newPrimaryKeys',
+      'columnOperations',
+      'indexOperations',
+      'foreignKeyOperations',
+      'constraintOperations',
+    ]);
+    const columnOperationSchema = arrayItemSchema(
+      propertySchema(alterTableDefSchema, 'columnOperations'),
+    );
+    expect(columnOperationSchema.additionalProperties).toBe(false);
+    expect(requiredFields(columnOperationSchema)).toEqual([
+      'action',
+      'columnName',
+      'newColumnName',
+      'afterColumn',
+      'type',
+      'size',
+      'decimalDigits',
+      'nullable',
+      'autoIncrement',
+      'defaultValue',
+      'remarks',
+    ]);
+  });
 });
+
+interface JsonSchema {
+  additionalProperties?: boolean;
+  items?: JsonSchema;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  type?: string;
+}
+
+const inputSchemaFor = (
+  tools: Array<{ name: string; inputSchema: unknown }>,
+  toolName: string,
+): JsonSchema => {
+  const tool = tools.find((t) => t.name === toolName);
+  expect(tool, toolName).toBeDefined();
+  return tool!.inputSchema as JsonSchema;
+};
+
+const propertySchema = (schema: JsonSchema, propertyName: string): JsonSchema => {
+  const property = schema.properties?.[propertyName];
+  expect(property, propertyName).toBeDefined();
+  return property!;
+};
+
+const arrayItemSchema = (schema: JsonSchema): JsonSchema => {
+  expect(schema.type).toBe('array');
+  expect(schema.items).toBeDefined();
+  return schema.items!;
+};
+
+const requiredFields = (schema: JsonSchema): string[] => schema.required ?? [];

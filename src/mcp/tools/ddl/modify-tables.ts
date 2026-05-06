@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
+import { alterTableDefSchema } from './input-models.js';
 
 export type ModifyTablesDeps = UpstreamToolDeps;
 
@@ -25,8 +26,10 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
         'is done exclusively through the NeoSQL UI by the user.',
       inputSchema: {
         alterations: z
-          .array(z.record(z.unknown()))
-          .describe('List of table alterations. Each specifies a target table and the changes to apply.'),
+          .array(alterTableDefSchema)
+          .describe(
+            'List of table alterations. Each specifies a target table and the changes to apply.',
+          ),
         executeImmediately: z
           .boolean()
           .describe(

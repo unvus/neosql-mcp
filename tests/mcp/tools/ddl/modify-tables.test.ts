@@ -45,7 +45,30 @@ describe('modifyTables tool', () => {
       name: 'modifyTables',
       arguments: {
         alterations: [
-          { tableName: 'users', columnOperations: [{ action: 'ADD', columnName: 'age' }] },
+          {
+            tableName: 'users',
+            newTableName: '',
+            newRemarks: '',
+            newPrimaryKeys: [],
+            columnOperations: [
+              {
+                action: 'ADD',
+                columnName: 'age',
+                newColumnName: '',
+                afterColumn: '',
+                type: 'INT',
+                size: 0,
+                decimalDigits: 0,
+                nullable: true,
+                autoIncrement: false,
+                defaultValue: '',
+                remarks: '',
+              },
+            ],
+            indexOperations: [],
+            foreignKeyOperations: [],
+            constraintOperations: [],
+          },
         ],
         executeImmediately: false,
       },
@@ -60,7 +83,30 @@ describe('modifyTables tool', () => {
       context: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: false },
       input: {
         alterations: [
-          { tableName: 'users', columnOperations: [{ action: 'ADD', columnName: 'age' }] },
+          {
+            tableName: 'users',
+            newTableName: '',
+            newRemarks: '',
+            newPrimaryKeys: [],
+            columnOperations: [
+              {
+                action: 'ADD',
+                columnName: 'age',
+                newColumnName: '',
+                afterColumn: '',
+                type: 'INT',
+                size: 0,
+                decimalDigits: 0,
+                nullable: true,
+                autoIncrement: false,
+                defaultValue: '',
+                remarks: '',
+              },
+            ],
+            indexOperations: [],
+            foreignKeyOperations: [],
+            constraintOperations: [],
+          },
         ],
         executeImmediately: false,
       },

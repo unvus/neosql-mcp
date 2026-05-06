@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
+import { tableDefSchema } from './input-models.js';
 
 export type CreateTablesDeps = UpstreamToolDeps;
 
@@ -24,7 +25,7 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
         'is done exclusively through the NeoSQL UI by the user.',
       inputSchema: {
         tableDefinitions: z
-          .array(z.record(z.unknown()))
+          .array(tableDefSchema)
           .describe(
             'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
           ),

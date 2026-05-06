@@ -22,12 +22,37 @@ const RPC_TOOL_CASES: ToolCase[] = [
   {
     name: 'createTables',
     method: 'ddl.createTables',
-    args: { tableDefinitions: [{ name: 't1', columns: [] }] },
+    args: {
+      tableDefinitions: [
+        {
+          name: 't1',
+          remarks: '',
+          columns: [],
+          primaryKeys: [],
+          importedKeys: [],
+          indexes: [],
+          constraints: [],
+        },
+      ],
+    },
   },
   {
     name: 'modifyTables',
     method: 'ddl.modifyTables',
-    args: { alterations: [{ tableName: 't1', columnOperations: [] }] },
+    args: {
+      alterations: [
+        {
+          tableName: 't1',
+          newTableName: '',
+          newRemarks: '',
+          newPrimaryKeys: [],
+          columnOperations: [],
+          indexOperations: [],
+          foreignKeyOperations: [],
+          constraintOperations: [],
+        },
+      ],
+    },
   },
   { name: 'executeQuery', method: 'sql.executeQuery', args: { sql: 'SELECT 1' } },
 ];

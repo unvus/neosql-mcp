@@ -34,14 +34,12 @@ export const registerSetContextTool = (server: McpServer, store: ContextStore): 
           .describe(
             'Whether to execute DDL immediately on the database when creating/modifying tables. Default is false (ERD only).',
           )
-          .nullable()
           .optional(),
         autoCommit: z
           .boolean()
           .describe(
             'Whether to auto-commit DML statements (INSERT/UPDATE/DELETE) when using executeQuery. Default is false (manual commit in NeoSQL UI).',
           )
-          .nullable()
           .optional(),
       },
     },
@@ -53,14 +51,14 @@ const toContextPatch = (args: {
   projectId?: string | undefined;
   connectionId?: string | undefined;
   schema?: string | undefined;
-  ddlExecute?: boolean | null | undefined;
-  autoCommit?: boolean | null | undefined;
+  ddlExecute?: boolean | undefined;
+  autoCommit?: boolean | undefined;
 }): NeosqlContextPatch => {
   const patch: NeosqlContextPatch = {};
   if (args.projectId !== undefined) patch.projectId = args.projectId;
   if (args.connectionId !== undefined) patch.connectionId = args.connectionId;
   if (args.schema !== undefined) patch.schema = args.schema;
-  if (args.ddlExecute !== undefined && args.ddlExecute !== null) patch.ddlExecute = args.ddlExecute;
-  if (args.autoCommit !== undefined && args.autoCommit !== null) patch.autoCommit = args.autoCommit;
+  if (args.ddlExecute !== undefined) patch.ddlExecute = args.ddlExecute;
+  if (args.autoCommit !== undefined) patch.autoCommit = args.autoCommit;
   return patch;
 };

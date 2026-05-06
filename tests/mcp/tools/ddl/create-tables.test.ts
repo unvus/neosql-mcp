@@ -47,7 +47,17 @@ describe('createTables tool', () => {
     const result = await client.callTool({
       name: 'createTables',
       arguments: {
-        tableDefinitions: [{ name: 'users', columns: [] }],
+        tableDefinitions: [
+          {
+            name: 'users',
+            remarks: '',
+            columns: [],
+            primaryKeys: [],
+            importedKeys: [],
+            indexes: [],
+            constraints: [],
+          },
+        ],
       },
     });
 
@@ -59,7 +69,17 @@ describe('createTables tool', () => {
     expect(received[0]?.params).toMatchObject({
       context: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: true },
       input: {
-        tableDefinitions: [{ name: 'users', columns: [] }],
+        tableDefinitions: [
+          {
+            name: 'users',
+            remarks: '',
+            columns: [],
+            primaryKeys: [],
+            importedKeys: [],
+            indexes: [],
+            constraints: [],
+          },
+        ],
         executeImmediately: true,
       },
     });
