@@ -33,7 +33,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 - [x] **test list 제안 → 사람 리뷰 → 합의** (`docs/testing.md` 워크플로 1–2단계)
 - [x] `endpointResolver` 모듈 — profile (prod / dev) → socket path 산출, HTTP path 상수 (`/mcp/rpc`) 보유
-- [x] profile 인지: `--dev` / `--prod` CLI 플래그 파싱 (`src/cli-args.ts`)
+- [x] profile 인지: `--profile <prod|dev>` CLI 인자 파싱 (`src/cli-args.ts`)
 - [x] `healthCheck` 모듈 — `http.request({ socketPath })` 로 connect + HTTP response 시도. 결과: `running` / `not_running` / `stale_socket` / `timeout`
 - [x] 테스트: prod·dev path 산출(3) / cli-args(6) / health-check 5건 (running·not_running·timeout 양 OS, stale_socket 2건은 POSIX-only `it.skipIf`)
 - [x] `docs/endpoint-resolver.md` (경로 산출 규칙, profile suffix, OS 별 차이, sun_path 한계)

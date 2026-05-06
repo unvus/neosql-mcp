@@ -14,6 +14,8 @@ export const parseCliArgs = (argv: readonly string[]): ParsedCliArgs => {
     const arg = argv[i] ?? '';
     if (arg === '--dev') profile = 'dev';
     else if (arg === '--prod') profile = 'prod';
+    else if (arg === '--profile') profile = parseProfile(argv[++i]) ?? profile;
+    else if (arg.startsWith('--profile=')) profile = parseProfile(valueAfterEquals(arg)) ?? profile;
     else if (arg === '--project') initialContext.projectId = argv[++i];
     else if (arg.startsWith('--project=')) initialContext.projectId = valueAfterEquals(arg);
     else if (arg === '--connection') initialContext.connectionId = argv[++i];
@@ -32,6 +34,11 @@ export const parseCliArgs = (argv: readonly string[]): ParsedCliArgs => {
 };
 
 const valueAfterEquals = (arg: string): string => arg.slice(arg.indexOf('=') + 1);
+
+const parseProfile = (value: string | undefined): Profile | undefined => {
+  if (value === 'prod' || value === 'dev') return value;
+  return undefined;
+};
 
 const parseBoolean = (value: string | undefined): boolean | undefined => {
   if (value === undefined) return undefined;

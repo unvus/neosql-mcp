@@ -6,20 +6,37 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs([])).toEqual({ profile: 'prod', initialContext: {} });
   });
 
-  it('selects dev profile when --dev is given', () => {
-    expect(parseCliArgs(['--dev'])).toEqual({ profile: 'dev', initialContext: {} });
+  it('selects dev profile when --profile dev is given', () => {
+    expect(parseCliArgs(['--profile', 'dev'])).toEqual({ profile: 'dev', initialContext: {} });
   });
 
-  it('selects prod profile when --prod is given', () => {
-    expect(parseCliArgs(['--prod'])).toEqual({ profile: 'prod', initialContext: {} });
+  it('selects prod profile when --profile prod is given', () => {
+    expect(parseCliArgs(['--profile', 'prod'])).toEqual({ profile: 'prod', initialContext: {} });
   });
 
-  it('uses the last profile flag when --dev then --prod are given', () => {
-    expect(parseCliArgs(['--dev', '--prod'])).toEqual({ profile: 'prod', initialContext: {} });
+  it('parses equals-form profile flags', () => {
+    expect(parseCliArgs(['--profile=dev'])).toEqual({ profile: 'dev', initialContext: {} });
   });
 
-  it('uses the last profile flag when --prod then --dev are given', () => {
-    expect(parseCliArgs(['--prod', '--dev'])).toEqual({ profile: 'dev', initialContext: {} });
+  it('uses the last profile value when multiple profile flags are given', () => {
+    expect(parseCliArgs(['--profile', 'dev', '--profile', 'prod'])).toEqual({
+      profile: 'prod',
+      initialContext: {},
+    });
+  });
+
+  it('ignores invalid profile values and keeps the previous profile', () => {
+    expect(parseCliArgs(['--profile', 'dev', '--profile', 'staging'])).toEqual({
+      profile: 'dev',
+      initialContext: {},
+    });
+  });
+
+  it('keeps --dev and --prod as legacy profile aliases', () => {
+    expect(parseCliArgs(['--dev', '--prod', '--profile', 'dev'])).toEqual({
+      profile: 'dev',
+      initialContext: {},
+    });
   });
 
   it('ignores unknown arguments and falls back to prod', () => {
