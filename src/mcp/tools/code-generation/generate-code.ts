@@ -9,7 +9,10 @@ export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDe
     'generateCode',
     {
       title: 'generateCode',
-      description: 'Generate code from NeoSQL schema metadata.',
+      description:
+        'Generate source code from a database table using a template pack. ' +
+        'Uses the current context (project/connection/schema) for database connection. ' +
+        'Returns generated file contents based on the specified template.',
       inputSchema: {
         tableName: z.string().min(1),
         templatePackId: z.string().optional(),

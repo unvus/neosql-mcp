@@ -6,7 +6,10 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
     'getContextHelp',
     {
       title: 'getContextHelp',
-      description: 'Describe the context fields accepted by setContext.',
+      description:
+        'Get information about how to find project and connection IDs. ' +
+        'NeoSQL project and connection information is managed by the NeoSQL application (UI). ' +
+        'This tool explains where to find the IDs needed for set_context.',
       inputSchema: {},
     },
     async () =>

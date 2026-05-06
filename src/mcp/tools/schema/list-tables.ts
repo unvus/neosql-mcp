@@ -9,10 +9,10 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
     'listTables',
     {
       title: 'listTables',
-      // TODO description 보충 필요
-      description: 'List tables from the active NeoSQL context.',
+      description:
+        'List all tables and views in a database schema. Returns table names, types (TABLE/VIEW), and comments. ' +
+        'Uses the current context (project/connection/schema) if parameters are not specified.',
       inputSchema: {
-        // TODO z.string(), optional() 의미 확인
         schema: z.string().optional(),
         search: z.string().optional(),
       },

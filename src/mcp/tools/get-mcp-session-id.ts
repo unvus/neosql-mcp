@@ -5,7 +5,7 @@ export const registerGetMcpSessionIdTool = (server: McpServer, mcpSessionId: str
     'getMcpSessionId',
     {
       title: 'getMcpSessionId',
-      description: 'Test helper tool. Returns the process-scoped MCP session id.',
+      description: 'Get Mcp-Session-Id',
       inputSchema: {},
     },
     async () => ({

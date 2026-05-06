@@ -8,7 +8,10 @@ export const registerSetContextTool = (server: McpServer, store: ContextStore): 
     'setContext',
     {
       title: 'setContext',
-      description: 'Set the in-memory NeoSQL context for later tool calls.',
+      description:
+        'Set the current working context (project, connection, schema) for subsequent tool calls. ' +
+        'Once set, all other tools will use this context automatically until changed. ' +
+        'You only need to provide the fields you want to change — unspecified fields keep their current values.',
       inputSchema: {
         projectId: z.string().optional(),
         connectionId: z.string().optional(),

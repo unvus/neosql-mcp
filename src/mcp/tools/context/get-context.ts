@@ -7,7 +7,9 @@ export const registerGetContextTool = (server: McpServer, store: ContextStore): 
     'getContext',
     {
       title: 'getContext',
-      description: 'Return the current in-memory NeoSQL context.',
+      description:
+        'Get the current working context (project, connection, schema). ' +
+        'Shows the active context that other tools will use for their operations.',
       inputSchema: {},
     },
     async () =>

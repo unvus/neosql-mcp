@@ -10,7 +10,17 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
     'executeQuery',
     {
       title: 'executeQuery',
-      description: 'Execute SQL through NeoSQL.',
+      description:
+        'Execute a SQL query on the database through NeoSQL. ' +
+        'Supports SELECT, INSERT, UPDATE, DELETE, and EXPLAIN statements. ' +
+        'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use createTables or modifyTables tools instead. ' +
+        'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
+        'IMPORTANT: For DML (INSERT/UPDATE/DELETE), you MUST ask the user whether to auto-commit or use manual commit BEFORE executing. ' +
+        'Do NOT default to autoCommit=true on your own. ' +
+        'Manual commit (default, autoCommit omitted or false): the transaction stays open in NeoSQL SQL Editor ' +
+        'so the user can review the changes and COMMIT or ROLLBACK from the NeoSQL UI. This is the safer option. ' +
+        'Auto-commit (autoCommit=true): commits immediately with no chance to review. Only use when the user explicitly agrees. ' +
+        'Uses the current context (project/connection/schema).',
       inputSchema: {
         sql: z.string().min(1),
         autoCommit: z.boolean().optional(),
