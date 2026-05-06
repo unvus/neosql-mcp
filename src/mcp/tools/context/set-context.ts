@@ -13,11 +13,36 @@ export const registerSetContextTool = (server: McpServer, store: ContextStore): 
         'Once set, all other tools will use this context automatically until changed. ' +
         'You only need to provide the fields you want to change — unspecified fields keep their current values.',
       inputSchema: {
-        projectId: z.string().optional(),
-        connectionId: z.string().optional(),
-        schema: z.string().optional(),
-        ddlExecute: z.boolean().nullable().optional(),
-        autoCommit: z.boolean().nullable().optional(),
+        projectId: z
+          .string()
+          .describe(
+            "Project ID (e.g., '71ef287779c14fc6b3bb86f88acdb216'). Leave empty to keep current value.",
+          )
+          .optional(),
+        connectionId: z
+          .string()
+          .describe("Connection ID (e.g., '0', '1'). Leave empty to keep current value.")
+          .optional(),
+        schema: z
+          .string()
+          .describe(
+            "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
+          )
+          .optional(),
+        ddlExecute: z
+          .boolean()
+          .describe(
+            'Whether to execute DDL immediately on the database when creating/modifying tables. Default is false (ERD only).',
+          )
+          .nullable()
+          .optional(),
+        autoCommit: z
+          .boolean()
+          .describe(
+            'Whether to auto-commit DML statements (INSERT/UPDATE/DELETE) when using executeQuery. Default is false (manual commit in NeoSQL UI).',
+          )
+          .nullable()
+          .optional(),
       },
     },
     async (args) => jsonTextResult({ context: store.set(toContextPatch(args)) }),

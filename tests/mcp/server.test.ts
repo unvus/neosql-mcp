@@ -76,4 +76,71 @@ describe('createServer', () => {
       ]),
     );
   });
+
+  it('exposes embedded-server ToolParam descriptions in tools/list', async () => {
+    await connectClientToServer();
+    const result = await client!.listTools();
+
+    const expectedDescriptions: Record<string, Record<string, string>> = {
+      setContext: {
+        projectId:
+          "Project ID (e.g., '71ef287779c14fc6b3bb86f88acdb216'). Leave empty to keep current value.",
+        connectionId: "Connection ID (e.g., '0', '1'). Leave empty to keep current value.",
+        schema: "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
+        ddlExecute:
+          'Whether to execute DDL immediately on the database when creating/modifying tables. Default is false (ERD only).',
+        autoCommit:
+          'Whether to auto-commit DML statements (INSERT/UPDATE/DELETE) when using executeQuery. Default is false (manual commit in NeoSQL UI).',
+      },
+      listTables: {
+        schema:
+          "Database schema name (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
+        search:
+          'Search keyword to filter tables by name or comment (case-insensitive). If omitted, returns all tables.',
+      },
+      getTableDetails: {
+        tableNames: 'List of table names to get details for (e.g. ["users", "orders", "products"])',
+        schema: 'Database schema name. If omitted, uses current context schema.',
+      },
+      createTables: {
+        tableDefinitions:
+          'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
+        executeImmediately:
+          'If true, execute DDL immediately on the database. Overrides context ddlExecute setting.',
+      },
+      modifyTables: {
+        alterations:
+          'List of table alterations. Each specifies a target table and the changes to apply.',
+        executeImmediately:
+          'If true, execute DDL immediately on the database. Overrides context ddlExecute setting.',
+      },
+      executeQuery: {
+        sql: 'The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).',
+        autoCommit:
+          'Whether to commit DML immediately. Default is false (manual commit, safer). ' +
+          'MUST ask the user before setting to true. ' +
+          'When false, the user can review and COMMIT/ROLLBACK in NeoSQL UI.',
+      },
+      generateCode: {
+        tableName: 'Table name to generate code for',
+        templatePackId: 'Template pack ID to use for code generation',
+        schema: 'Database schema name. If omitted, uses current context schema.',
+      },
+    };
+
+    for (const [toolName, parameterDescriptions] of Object.entries(expectedDescriptions)) {
+      const tool = result.tools.find((t) => t.name === toolName);
+      expect(tool, toolName).toBeDefined();
+      const properties = tool!.inputSchema.properties as Record<
+        string,
+        { description?: string }
+      >;
+
+      for (const [parameterName, description] of Object.entries(parameterDescriptions)) {
+        expect(properties[parameterName]?.description, `${toolName}.${parameterName}`).toBe(
+          description,
+        );
+      }
+    }
+  });
 });

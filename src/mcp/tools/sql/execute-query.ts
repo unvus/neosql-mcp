@@ -22,8 +22,18 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'Auto-commit (autoCommit=true): commits immediately with no chance to review. Only use when the user explicitly agrees. ' +
         'Uses the current context (project/connection/schema).',
       inputSchema: {
-        sql: z.string().min(1),
-        autoCommit: z.boolean().optional(),
+        sql: z
+          .string()
+          .min(1)
+          .describe('The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).'),
+        autoCommit: z
+          .boolean()
+          .describe(
+            'Whether to commit DML immediately. Default is false (manual commit, safer). ' +
+              'MUST ask the user before setting to true. ' +
+              'When false, the user can review and COMMIT/ROLLBACK in NeoSQL UI.',
+          )
+          .optional(),
       },
     },
     async (args) => {

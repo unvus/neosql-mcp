@@ -24,8 +24,15 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
         'to apply pending changes — this would cause a duplicate error. Database application of pending designs ' +
         'is done exclusively through the NeoSQL UI by the user.',
       inputSchema: {
-        alterations: z.array(z.record(z.unknown())),
-        executeImmediately: z.boolean().optional(),
+        alterations: z
+          .array(z.record(z.unknown()))
+          .describe('List of table alterations. Each specifies a target table and the changes to apply.'),
+        executeImmediately: z
+          .boolean()
+          .describe(
+            'If true, execute DDL immediately on the database. Overrides context ddlExecute setting.',
+          )
+          .optional(),
       },
     },
     async (args) => {

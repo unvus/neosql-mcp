@@ -23,8 +23,17 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
         'to apply pending changes — this would cause a duplicate error. Database application of pending designs ' +
         'is done exclusively through the NeoSQL UI by the user.',
       inputSchema: {
-        tableDefinitions: z.array(z.record(z.unknown())),
-        executeImmediately: z.boolean().optional(),
+        tableDefinitions: z
+          .array(z.record(z.unknown()))
+          .describe(
+            'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
+          ),
+        executeImmediately: z
+          .boolean()
+          .describe(
+            'If true, execute DDL immediately on the database. Overrides context ddlExecute setting.',
+          )
+          .optional(),
       },
     },
     async (args) => {
