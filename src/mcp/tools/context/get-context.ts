@@ -15,7 +15,7 @@ export const registerGetContextTool = (server: McpServer, store: ContextStore): 
     async () =>
       jsonTextResult({
         context: store.get(),
-        source: 'Session context (set via setContext tool)',
+        source: 'Session context (set via set_context tool)',
       }),
   );
 };

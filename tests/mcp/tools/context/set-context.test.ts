@@ -29,11 +29,64 @@ describe('setContext tool', () => {
     expect(result.isError).not.toBe(true);
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as {
+      success?: boolean;
+      message?: string;
       context: { projectId?: string; schema?: string; ddlExecute?: boolean };
     };
+    expect(data.success).toBe(true);
+    expect(data.message).toBe('Context updated successfully');
     expect(data.context.projectId).toBe('proj-1');
     expect(data.context.schema).toBe('public');
     expect(data.context.ddlExecute).toBe(true);
+  });
+
+  it('returns the existing context in the success envelope when called without arguments', async () => {
+    const server = createServer();
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
+
+    await client.callTool({
+      name: 'setContext',
+      arguments: {
+        projectId: '35c1fe0d425a428a92b4c71eaaeacc26',
+        connectionId: '57',
+        schema: 'skrulldb',
+        ddlExecute: false,
+        autoCommit: false,
+      },
+    });
+    const result = await client.callTool({
+      name: 'setContext',
+      arguments: {},
+    });
+
+    expect(result.isError).not.toBe(true);
+    const content = result.content as Array<{ type: string; text: string }>;
+    const data = JSON.parse(content[0]?.text ?? '{}') as {
+      success?: boolean;
+      message?: string;
+      context: {
+        projectId?: string;
+        connectionId?: string;
+        schema?: string;
+        ddlExecute?: boolean;
+        autoCommit?: boolean;
+      };
+    };
+    expect(data).toEqual({
+      success: true,
+      message: 'Context updated successfully',
+      context: {
+        projectId: '35c1fe0d425a428a92b4c71eaaeacc26',
+        connectionId: '57',
+        schema: 'skrulldb',
+        ddlExecute: false,
+        autoCommit: false,
+      },
+    });
   });
 
   it('keeps existing string values when blank strings are provided', async () => {
@@ -56,8 +109,12 @@ describe('setContext tool', () => {
     expect(result.isError).not.toBe(true);
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as {
+      success?: boolean;
+      message?: string;
       context: { projectId?: string; connectionId?: string; schema?: string };
     };
+    expect(data.success).toBe(true);
+    expect(data.message).toBe('Context updated successfully');
     expect(data.context).toMatchObject({
       projectId: 'proj-1',
       connectionId: '0',
@@ -85,8 +142,12 @@ describe('setContext tool', () => {
     expect(result.isError).not.toBe(true);
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as {
+      success?: boolean;
+      message?: string;
       context: { ddlExecute?: boolean; autoCommit?: boolean };
     };
+    expect(data.success).toBe(true);
+    expect(data.message).toBe('Context updated successfully');
     expect(data.context.ddlExecute).toBe(false);
     expect(data.context.autoCommit).toBe(false);
   });

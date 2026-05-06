@@ -111,12 +111,12 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 #### ContextTools
 
-- [ ] (본 리포) `setContext` Node context store 구현 확인
-- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `setContext`
-- [ ] (본 리포) `getContext` Node context store 구현 확인
-- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContext`
-- [ ] (본 리포) `getContextHelp` Node context help 구현 확인
-- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContextHelp`
+- [x] (본 리포) `setContext` Node context store 구현 확인
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `setContext`
+- [x] (본 리포) `getContext` Node context store 구현 확인
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContext`
+- [x] (본 리포) `getContextHelp` Node context help 구현 확인
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContextHelp`
 
 #### SqlTools
 

@@ -14,13 +14,40 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
     },
     async () =>
       jsonTextResult({
-        description:
-          'Use setContext to store projectId, connectionId, schema, ddlExecute, and autoCommit for later stdio MCP tool calls.',
-        projectId: 'NeoSQL project identifier.',
-        connectionId: 'NeoSQL connection identifier.',
-        schema: 'Database schema name.',
-        ddlExecute: 'Default executeImmediately value for DDL tools.',
-        autoCommit: 'Default autoCommit value for SQL execution.',
+        description: 'NeoSQL context configuration guide',
+        projectId: {
+          example: '71ef287779c14fc6b3bb86f88acdb216',
+          location: '{project-root}/.neosql/project-config.json',
+          description:
+            'Project ID can be found in the NeoSQL UI project settings, or in the .neosql/project-config.json file',
+        },
+        connectionId: {
+          example: '0',
+          location: '{project-root}/.neosql/connections/ directory',
+          description:
+            "Connection ID is the index of the connection in the project's connection list (starting from 0)",
+        },
+        schema: {
+          example: 'public',
+          description:
+            "Database schema name. Use 'default' for single-schema databases, or the actual schema name (e.g., 'public', 'dbo')",
+        },
+        headerConfig: {
+          example: {
+            mcpServers: {
+              neosql: {
+                url: 'http://localhost:8098/mcp',
+                headers: {
+                  'x-neosql-schema': 'default',
+                  'x-neosql-project': 'YOUR_PROJECT_ID',
+                  'x-neosql-connection': '0',
+                },
+                type: 'http',
+              },
+            },
+          },
+          description: 'You can also set default context via MCP client headers in .mcp.json',
+        },
       }),
   );
 };

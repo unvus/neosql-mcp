@@ -39,6 +39,6 @@ describe('getContext tool', () => {
     expect(data.context.projectId).toBe('p');
     expect(data.context.connectionId).toBe('0');
     expect(data.context.schema).toBe('s');
-    expect(data.source).toBe('Session context (set via setContext tool)');
+    expect(data.source).toBe('Session context (set via set_context tool)');
   });
 });

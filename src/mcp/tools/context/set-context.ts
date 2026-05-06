@@ -43,7 +43,28 @@ export const registerSetContextTool = (server: McpServer, store: ContextStore): 
           .optional(),
       },
     },
-    async (args) => jsonTextResult({ context: store.set(toContextPatch(args)) }),
+    async (args) => {
+      try {
+        return jsonTextResult({
+          success: true,
+          message: 'Context updated successfully',
+          context: store.set(toContextPatch(args)),
+        });
+      } catch (err) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: false,
+                message: readableErrorMessage(err),
+              }),
+            },
+          ],
+        };
+      }
+    },
   );
 };
 
@@ -61,4 +82,9 @@ const toContextPatch = (args: {
   if (args.ddlExecute !== undefined) patch.ddlExecute = args.ddlExecute;
   if (args.autoCommit !== undefined) patch.autoCommit = args.autoCommit;
   return patch;
+};
+
+const readableErrorMessage = (err: unknown): string => {
+  if (err instanceof Error) return err.message;
+  return String(err);
 };
