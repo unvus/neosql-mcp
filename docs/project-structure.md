@@ -8,7 +8,7 @@
 src/                            (프로덕션 코드만)
 ├── cli/         바이너리 진입점 + CLI 인자 파싱
 │   ├── cli.ts                  package.json#bin 타깃
-│   └── cli-args.ts             --dev/--prod 플래그 파싱
+│   └── cli-args.ts             --profile prod/dev 인자 파싱
 ├── mcp/         MCP stdio 서버 + tool 카탈로그
 │   ├── server.ts               createServer 팩토리
 │   └── tools/                  MCP 도구 등록
@@ -25,7 +25,8 @@ src/                            (프로덕션 코드만)
 │   ├── http-client.ts          JSON-RPC over HTTP POST 클라이언트
 │   └── sse-parser.ts           GET SSE 채널용 event-stream 파서
 └── infra/       횡단 관심사
-    └── logger.ts               pino → stderr
+    ├── log-path.ts             Electron-style OS별 로그 경로 계산
+    └── logger.ts               pino → log file, 실패 시 stderr fallback
 
 tests/                          (모든 테스트 코드)
 ├── cli/                        src/cli/ 미러링 (단위 테스트)

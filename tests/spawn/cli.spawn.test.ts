@@ -1,4 +1,7 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -9,15 +12,27 @@ const CLI_PATH = resolve(__dirname, '../../dist/cli.js');
 
 describe('built CLI via stdio spawn', () => {
   const clients: Client[] = [];
+  let logParentDir: string;
 
   afterAll(async () => {
     await Promise.all(clients.map((c) => c.close()));
   });
 
+  beforeEach(() => {
+    logParentDir = mkdtempSync(path.join(os.tmpdir(), 'neosql-mcp-spawn-logs-'));
+  });
+
+  afterEach(() => {
+    rmSync(logParentDir, { recursive: true, force: true });
+  });
+
   it('responds to ping over stdio after spawn', async () => {
     const transport = new StdioClientTransport({
-      command: 'node',
+      command: process.execPath,
       args: [CLI_PATH],
+      env: {
+        NEOSQL_MCP_LOG_PARENT_DIR: logParentDir,
+      },
     });
     const client = new Client({ name: 'spawn-test-client', version: '0.0.0' });
     clients.push(client);
@@ -30,8 +45,11 @@ describe('built CLI via stdio spawn', () => {
 
   it('returns a stable mcpSessionId within the spawned process', async () => {
     const transport = new StdioClientTransport({
-      command: 'node',
+      command: process.execPath,
       args: [CLI_PATH],
+      env: {
+        NEOSQL_MCP_LOG_PARENT_DIR: logParentDir,
+      },
     });
     const client = new Client({ name: 'spawn-test-client', version: '0.0.0' });
     clients.push(client);

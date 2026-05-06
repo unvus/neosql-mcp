@@ -5,6 +5,7 @@ import {
   type NeosqlContext,
   type NeosqlContextPatch,
 } from './context/store.js';
+import { logger } from '../../infra/logger.js';
 
 export interface ToolTextResult {
   [key: string]: unknown;
@@ -50,6 +51,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     const result = await deps.postRpc<TResult>(method, params, opts);
     return jsonTextResult(result);
   } catch (err) {
+    logger.error(err);
     return toolErrorResult(err);
   }
 };

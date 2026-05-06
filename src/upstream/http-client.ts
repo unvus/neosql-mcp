@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { HTTP_PATH } from './endpoint-resolver.js';
+import { logger } from '../infra/logger.js';
 
 export type HttpClientErrorKind =
   | 'not-running'
@@ -58,6 +59,7 @@ interface JsonRpcFailure {
 let nextId = 1;
 
 export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => {
+  // TODO id는 필수인가? 역할은?
   const id = opts.id ?? nextId++;
   const body = JSON.stringify({
     jsonrpc: '2.0',
@@ -96,6 +98,8 @@ export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => 
           chunks.push(chunk);
         });
         res.on('end', () => {
+          // TODO log level은 어떻게 설정하지? 로그 형식이 필요할 것 같음
+          logger.debug(`POST res status ${res.statusCode}`);
           const responseBody = Buffer.concat(chunks).toString('utf8');
           const status = res.statusCode ?? 0;
 
@@ -171,6 +175,8 @@ export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => 
     );
 
     req.on('error', (cause: NodeJS.ErrnoException) => {
+      // TODO log level은 어떻게 설정하지? 로그 형식이 필요할 것 같음
+      logger.error(`POST req error ${cause.message}`);
       if (cause instanceof HttpClientError) {
         settleReject(cause);
         return;
