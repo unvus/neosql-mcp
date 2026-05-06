@@ -137,18 +137,44 @@ describe('executeQuery tool', () => {
 }`);
   });
 
-  it('returns SQL error payloads using the same Jackson-style pretty JSON text', async () => {
+  it.each([
+    {
+      name: 'unknown column',
+      sql: 'SELECT not_exist_col FROM skrulldb.nv_auth_log_copy',
+      upstreamMessage: "(conn=57) Unknown column 'not_exist_col' in 'field list'",
+      expectedMessage:
+        "Failed to execute query: (conn=57) Unknown column 'not_exist_col' in 'field list'",
+    },
+    {
+      name: 'unknown table',
+      sql: 'SELECT * FROM skrulldb.no_such_table',
+      upstreamMessage: "(conn=57) Table 'skrulldb.no_such_table' doesn't exist",
+      expectedMessage:
+        "Failed to execute query: (conn=57) Table 'skrulldb.no_such_table' doesn't exist",
+    },
+    {
+      name: 'syntax error',
+      sql: 'SELEC 1',
+      upstreamMessage:
+        "(conn=57) You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version",
+      expectedMessage:
+        'Failed to execute query: (conn=57) You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version',
+    },
+    {
+      name: 'lock wait timeout',
+      sql: "INSERT INTO skrulldb.nv_auth_log_copy (al_login_id) VALUES ('system')",
+      upstreamMessage: '(conn=57) Lock wait timeout exceeded; try restarting transaction',
+      expectedMessage:
+        'Failed to execute query: (conn=57) Lock wait timeout exceeded; try restarting transaction',
+    },
+  ])('returns $name JSON-RPC errors as normal success=false payloads', async (testCase) => {
     const socketPath = makeTestSocketPath();
     const mock = await startMockRpcServer({
       socketPath,
       handler: () => ({
-        kind: 'result',
-        result: {
-          type: 'ERROR',
-          sql: 'SELECT missing_column FROM users',
-          executionTimeMs: 3,
-          message: 'Unknown column missing_column',
-        },
+        kind: 'rpc-error',
+        code: -32000,
+        message: testCase.upstreamMessage,
       }),
     });
     cleanups.push(async () => {
@@ -165,20 +191,18 @@ describe('executeQuery tool', () => {
 
     const result = await client.callTool({
       name: 'executeQuery',
-      arguments: { sql: 'SELECT missing_column FROM users' },
+      arguments: { sql: testCase.sql },
     });
 
     expect(result.isError).not.toBe(true);
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]?.text).toBe(`{
-  "type" : "ERROR",
-  "sql" : "SELECT missing_column FROM users",
-  "executionTimeMs" : 3,
-  "message" : "Unknown column missing_column"
+  "success" : false,
+  "message" : ${JSON.stringify(testCase.expectedMessage)}
 }`);
   });
 
-  it('rejects DDL statements before calling upstream', async () => {
+  it('returns DDL rejections as normal success=false payloads before calling upstream', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -205,7 +229,12 @@ describe('executeQuery tool', () => {
       arguments: { sql: 'CREATE TABLE users (id int)' },
     });
 
-    expect(result.isError).toBe(true);
+    expect(result.isError).not.toBe(true);
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]?.text).toBe(`{
+  "success" : false,
+  "message" : "Failed to execute query: DDL statements are not allowed in executeQuery. Use createTables or modifyTables."
+}`);
     expect(received).toHaveLength(0);
   });
 });

@@ -19,6 +19,7 @@ export type PostRpc = <T = unknown>(
 ) => Promise<T>;
 
 export type JsonStringifier = (payload: unknown) => string;
+export type ErrorResultMapper = (err: unknown) => ToolTextResult | undefined;
 
 export interface UpstreamToolDeps {
   postRpc: PostRpc;
@@ -44,7 +45,11 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
   method: string,
   input: TInput,
   contextPatch: NeosqlContextPatch = {},
-  opts: { timeoutMs?: number; stringifyResult?: JsonStringifier } = {},
+  opts: {
+    timeoutMs?: number;
+    stringifyResult?: JsonStringifier;
+    mapErrorResult?: ErrorResultMapper;
+  } = {},
 ): Promise<ToolTextResult> => {
   try {
     const context = mergeContext(deps.contextStore.get(), contextPatch);
@@ -57,6 +62,9 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     const result = await deps.postRpc<TResult>(method, params, rpcOpts);
     return jsonTextResult(result, opts.stringifyResult);
   } catch (err) {
+    const mappedError = opts.mapErrorResult?.(err);
+    if (mappedError !== undefined) return mappedError;
+
     logger.error({ component: 'McpTool', err }, 'Upstream tool call failed');
     return toolErrorResult(err);
   }

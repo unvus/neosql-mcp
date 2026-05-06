@@ -1,8 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { toolErrorResult } from '../../error-map.js';
+import { HttpClientError } from '../../../upstream/http-client.js';
 import {
   callUpstreamTool,
+  jsonTextResult,
   jacksonPrettyJsonStringify,
   type UpstreamToolDeps,
 } from '../shared.js';
@@ -41,10 +42,8 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
     },
     async (args) => {
       if (isDdlStatement(args.sql)) {
-        return toolErrorResult(
-          new Error(
-            'DDL statements are not allowed in executeQuery. Use createTables or modifyTables.',
-          ),
+        return executeQueryErrorResult(
+          'DDL statements are not allowed in executeQuery. Use createTables or modifyTables.',
         );
       }
 
@@ -56,10 +55,36 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'sql.executeQuery',
         { ...args, autoCommit },
         { autoCommit },
-        { timeoutMs: 60_000, stringifyResult: jacksonPrettyJsonStringify },
+        {
+          timeoutMs: 60_000,
+          stringifyResult: jacksonPrettyJsonStringify,
+          mapErrorResult: mapExecuteQueryErrorResult,
+        },
       );
     },
   );
+};
+
+const mapExecuteQueryErrorResult = (err: unknown) => {
+  if (err instanceof HttpClientError && err.kind === 'rpc-error') {
+    return executeQueryErrorResult(err.message);
+  }
+
+  return undefined;
+};
+
+const executeQueryErrorResult = (message: string) =>
+  jsonTextResult(
+    {
+      success: false,
+      message: withExecuteQueryErrorPrefix(message),
+    },
+    jacksonPrettyJsonStringify,
+  );
+
+const withExecuteQueryErrorPrefix = (message: string): string => {
+  const prefix = 'Failed to execute query: ';
+  return message.startsWith(prefix) ? message : `${prefix}${message}`;
 };
 
 const isDdlStatement = (sql: string): boolean => {
