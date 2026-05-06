@@ -121,7 +121,9 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 #### SqlTools
 
 - [ ] (본체 PR) `sql.executeQuery` 구현
-- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery`
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` SELECT
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` INSERT (`autoCommit=false`)
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` INSERT (`autoCommit=true`)
 
 #### DdlTools
 
