@@ -98,8 +98,10 @@ export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => 
           chunks.push(chunk);
         });
         res.on('end', () => {
-          // TODO log level은 어떻게 설정하지? 로그 형식이 필요할 것 같음
-          logger.debug(`POST res status ${res.statusCode}`);
+          logger.info(
+            { component: 'McpRpc', status: res.statusCode },
+            'POST response received',
+          );
           const responseBody = Buffer.concat(chunks).toString('utf8');
           const status = res.statusCode ?? 0;
 
@@ -175,8 +177,7 @@ export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => 
     );
 
     req.on('error', (cause: NodeJS.ErrnoException) => {
-      // TODO log level은 어떻게 설정하지? 로그 형식이 필요할 것 같음
-      logger.error(`POST req error ${cause.message}`);
+      logger.error({ component: 'McpRpc', error: cause.message }, 'POST request failed');
       if (cause instanceof HttpClientError) {
         settleReject(cause);
         return;

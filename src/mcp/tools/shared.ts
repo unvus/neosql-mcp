@@ -51,7 +51,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     const result = await deps.postRpc<TResult>(method, params, opts);
     return jsonTextResult(result);
   } catch (err) {
-    logger.error(err);
+    logger.error({ component: 'McpTool', err }, 'Upstream tool call failed');
     return toolErrorResult(err);
   }
 };
