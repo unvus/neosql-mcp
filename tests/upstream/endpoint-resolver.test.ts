@@ -4,12 +4,20 @@ import path from 'node:path';
 import { resolveSocketPath, HTTP_PATH } from '../../src/upstream/endpoint-resolver.js';
 
 describe('resolveSocketPath', () => {
-  it('returns os.tmpdir()/neosql-mcp.sock for prod profile on POSIX', () => {
-    expect(resolveSocketPath('prod')).toBe(path.join(os.tmpdir(), 'neosql-mcp.sock'));
+  it('returns the current OS socket path for the prod profile', () => {
+    const expected =
+      process.platform === 'win32'
+        ? '\\\\.\\pipe\\neosql-mcp'
+        : path.join(os.tmpdir(), 'neosql-mcp.sock');
+    expect(resolveSocketPath('prod')).toBe(expected);
   });
 
-  it('returns os.tmpdir()/neosql-mcp-dev.sock for dev profile on POSIX', () => {
-    expect(resolveSocketPath('dev')).toBe(path.join(os.tmpdir(), 'neosql-mcp-dev.sock'));
+  it('returns the current OS socket path for the dev profile', () => {
+    const expected =
+      process.platform === 'win32'
+        ? '\\\\.\\pipe\\neosql-mcp-dev'
+        : path.join(os.tmpdir(), 'neosql-mcp-dev.sock');
+    expect(resolveSocketPath('dev')).toBe(expected);
   });
 });
 
