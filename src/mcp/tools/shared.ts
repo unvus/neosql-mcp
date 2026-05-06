@@ -18,6 +18,8 @@ export type PostRpc = <T = unknown>(
   opts?: { timeoutMs?: number },
 ) => Promise<T>;
 
+export type JsonStringifier = (payload: unknown) => string;
+
 export interface UpstreamToolDeps {
   postRpc: PostRpc;
   contextStore: ContextStore;
@@ -30,8 +32,11 @@ export interface UpstreamToolParams<TInput> {
   input: TInput;
 }
 
-export const jsonTextResult = (payload: unknown): ToolTextResult => ({
-  content: [{ type: 'text', text: JSON.stringify(payload) }],
+export const jsonTextResult = (
+  payload: unknown,
+  stringify: JsonStringifier = JSON.stringify,
+): ToolTextResult => ({
+  content: [{ type: 'text', text: stringify(payload) }],
 });
 
 export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
@@ -39,7 +44,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
   method: string,
   input: TInput,
   contextPatch: NeosqlContextPatch = {},
-  opts: { timeoutMs?: number } = {},
+  opts: { timeoutMs?: number; stringifyResult?: JsonStringifier } = {},
 ): Promise<ToolTextResult> => {
   try {
     const context = mergeContext(deps.contextStore.get(), contextPatch);
@@ -48,10 +53,52 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
       context,
       input,
     };
-    const result = await deps.postRpc<TResult>(method, params, opts);
-    return jsonTextResult(result);
+    const rpcOpts = opts.timeoutMs === undefined ? undefined : { timeoutMs: opts.timeoutMs };
+    const result = await deps.postRpc<TResult>(method, params, rpcOpts);
+    return jsonTextResult(result, opts.stringifyResult);
   } catch (err) {
     logger.error({ component: 'McpTool', err }, 'Upstream tool call failed');
     return toolErrorResult(err);
   }
 };
+
+export const jacksonPrettyJsonStringify = (payload: unknown): string => {
+  const compact = JSON.stringify(payload);
+  if (compact === undefined) return 'null';
+  return formatJacksonPrettyValue(JSON.parse(compact), 0);
+};
+
+const formatJacksonPrettyValue = (value: unknown, indentLevel: number): string => {
+  if (Array.isArray(value)) return formatJacksonPrettyArray(value, indentLevel);
+  if (value !== null && typeof value === 'object') {
+    return formatJacksonPrettyObject(value as Record<string, unknown>, indentLevel);
+  }
+  return JSON.stringify(value);
+};
+
+const formatJacksonPrettyObject = (
+  value: Record<string, unknown>,
+  indentLevel: number,
+): string => {
+  const entries = Object.entries(value);
+  if (entries.length === 0) return '{ }';
+
+  const nextIndent = indent(indentLevel + 1);
+  const currentIndent = indent(indentLevel);
+  const lines = entries.map(
+    ([key, entryValue]) =>
+      `${nextIndent}${JSON.stringify(key)} : ${formatJacksonPrettyValue(
+        entryValue,
+        indentLevel + 1,
+      )}`,
+  );
+  return `{\n${lines.join(',\n')}\n${currentIndent}}`;
+};
+
+const formatJacksonPrettyArray = (value: unknown[], indentLevel: number): string => {
+  if (value.length === 0) return '[ ]';
+  const items = value.map((entry) => formatJacksonPrettyValue(entry, indentLevel));
+  return `[ ${items.join(', ')} ]`;
+};
+
+const indent = (level: number): string => '  '.repeat(level);

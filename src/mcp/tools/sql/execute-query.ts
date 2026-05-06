@@ -1,7 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { toolErrorResult } from '../../error-map.js';
-import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
+import {
+  callUpstreamTool,
+  jacksonPrettyJsonStringify,
+  type UpstreamToolDeps,
+} from '../shared.js';
 
 export type ExecuteQueryDeps = UpstreamToolDeps;
 
@@ -52,7 +56,7 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'sql.executeQuery',
         { ...args, autoCommit },
         { autoCommit },
-        { timeoutMs: 60_000 },
+        { timeoutMs: 60_000, stringifyResult: jacksonPrettyJsonStringify },
       );
     },
   );
