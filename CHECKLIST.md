@@ -98,11 +98,11 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ### Phase 2-4 · SchemaTools real Electron pilot
 
-- [ ] **test list 제안 → 사람 리뷰 → 합의**
-- [ ] (본체 PR) electron-main UDS/Named Pipe HTTP 서버 — listen + `chmod 0600` + stale unlink + dev/prod suffix + `/mcp/rpc` dispatcher
-- [ ] (본체 PR) `schema.listTables` 메서드 구현
-- [ ] (본체 PR) `schema.getTableDetails` 메서드 구현
-- [ ] (본체 PR) renderer IPC 연결 (필요 시)
+- [x] **test list 제안 → 사람 리뷰 → 합의**
+- [x] (본체 PR) electron-main UDS/Named Pipe HTTP 서버 — listen + `chmod 0600` + stale unlink + dev/prod suffix + `/mcp/rpc` dispatcher
+- [x] (본체 PR) `schema.listTables` 메서드 구현
+- [x] (본체 PR) `schema.getTableDetails` 메서드 구현
+- [x] (본체 PR) renderer IPC 연결 (필요 시)
 - [ ] 본 리포: `tests/e2e/` 신설 + 실 electron 기동 후 도구 호출
 - [ ] `docs/e2e-manual.md` 절차 보강
 - [ ] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정
