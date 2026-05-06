@@ -153,6 +153,14 @@ describe('createServer', () => {
 
     const generateCodeSchema = inputSchemaFor(result.tools, 'generateCode');
     expect(requiredFields(generateCodeSchema)).toEqual(['tableName', 'templatePackId']);
+    expect(propertySchema(generateCodeSchema, 'tableName').minLength).toBeUndefined();
+    expect(propertySchema(generateCodeSchema, 'templatePackId').minLength).toBeUndefined();
+
+    const getTableDetailsSchema = inputSchemaFor(result.tools, 'getTableDetails');
+    expect(propertySchema(getTableDetailsSchema, 'tableNames').minItems).toBeUndefined();
+
+    const executeQuerySchema = inputSchemaFor(result.tools, 'executeQuery');
+    expect(propertySchema(executeQuerySchema, 'sql').minLength).toBeUndefined();
 
     const createTablesSchema = inputSchemaFor(result.tools, 'createTables');
     expect(requiredFields(createTablesSchema)).toEqual(['tableDefinitions']);
@@ -217,6 +225,8 @@ describe('createServer', () => {
 interface JsonSchema {
   additionalProperties?: boolean;
   items?: JsonSchema;
+  minItems?: number;
+  minLength?: number;
   properties?: Record<string, JsonSchema>;
   required?: string[];
   type?: string;

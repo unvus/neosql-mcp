@@ -16,8 +16,9 @@ export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDet
       inputSchema: {
         tableNames: z
           .array(z.string())
-          .min(1)
-          .describe('List of table names to get details for (e.g. ["users", "orders", "products"])'),
+          .describe(
+            'List of table names to get details for (e.g. ["users", "orders", "products"])',
+          ),
         schema: z
           .string()
           .describe('Database schema name. If omitted, uses current context schema.')

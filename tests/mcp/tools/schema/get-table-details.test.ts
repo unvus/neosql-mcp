@@ -60,8 +60,22 @@ describe('getTableDetails tool', () => {
     });
   });
 
-  it('returns a tool error when tableNames is empty', async () => {
-    const server = createServer();
+  it('allows an empty tableNames array to match the embedded-server schema', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: (req) => {
+        received.push(req);
+        return { kind: 'result', result: { tables: [] } };
+      },
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    const server = createServer({ socketPath });
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
     const client = new Client({ name: 'test', version: '0.0.0' });
@@ -73,6 +87,9 @@ describe('getTableDetails tool', () => {
       arguments: { tableNames: [] },
     });
 
-    expect(result.isError).toBe(true);
+    expect(result.isError).not.toBe(true);
+    expect(received[0]?.params).toMatchObject({
+      input: { tableNames: [] },
+    });
   });
 });

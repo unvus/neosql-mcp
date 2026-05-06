@@ -24,7 +24,6 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
       inputSchema: {
         sql: z
           .string()
-          .min(1)
           .describe('The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).'),
         autoCommit: z
           .boolean()

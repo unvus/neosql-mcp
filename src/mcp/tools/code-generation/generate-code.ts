@@ -14,8 +14,8 @@ export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDe
         'Uses the current context (project/connection/schema) for database connection. ' +
         'Returns generated file contents based on the specified template.',
       inputSchema: {
-        tableName: z.string().min(1).describe('Table name to generate code for'),
-        templatePackId: z.string().describe('Template pack ID to use for code generation').min(1),
+        tableName: z.string().describe('Table name to generate code for'),
+        templatePackId: z.string().describe('Template pack ID to use for code generation'),
         schema: z
           .string()
           .describe('Database schema name. If omitted, uses current context schema.')
