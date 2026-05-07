@@ -53,6 +53,37 @@
 `docs/project-structure.md`)를 우선한다. `CLAUDE.md`가 참조하는
 `~/workspace/neosql/docs/` 하위 외부 문서는 main-app 맥락이 필요한 작업에서만 읽는다.
 
+## neosql main app 참조 규칙
+
+neosql Electron app 설치 감지, 앱 실행, readiness 확인, Node ↔ electron-main RPC
+계약, renderer IPC 연결, embedded-server 기존 동작 비교처럼 main app 동작에 의존하는
+작업은 문서만 보고 추측하지 않는다. 반드시 sibling clone의 실제 소스코드를 먼저
+확인한다.
+
+- 기본 참조 경로는 이 저장소 기준 `../neosql`이며, 동일 위치를 가리키는
+  `~/workspace/neosql`도 사용할 수 있다.
+- 우선 확인할 본체 소스:
+  - `../neosql/app/src-electron/`: Electron main, MCP RPC server, app lifecycle,
+    preload/IPC 경계.
+  - `../neosql/app/src/services/mcp-handler/`: 기존 Electron-side MCP action 처리.
+  - `../neosql/embedded-server/src/main/java/com/unvus/neosql/embedded/mcp/`:
+    기존 Spring AI MCP tool, context/session 처리.
+  - `../neosql/app/quasar.config.ts`, `../neosql/app/package.json`,
+    `../neosql/package.json`: product name, app id, dev/build 실행 방식, packaging 설정.
+  - `../neosql/web/`: 설치/다운로드 안내나 배포 URL을 구현해야 할 때만 확인.
+- Electron dev 실행은 현재 본체 소스 기준 `../neosql/app`에서 `npm run dev:e`를
+  우선 확인한다. 실행 명령, product name, app id, socket suffix는 본체 소스가 바뀔 수
+  있으므로 작업 시점에 다시 검증한다.
+- `neosql-mcp`는 embedded-server JAR을 직접 실행하거나 설치하지 않는다. app 설치
+  여부 감지, 사용자-facing 안내, 필요 시 Electron app detached 실행, upstream
+  readiness polling만 담당한다.
+- 설치 위치, 다운로드 URL, OS별 앱 실행 방법은 하드코딩하기 전에 반드시 본체 packaging
+  설정과 web/download 소스를 확인한다. 확인되지 않은 경로는 문서화된 fallback 또는
+  명확한 error 안내로 처리한다.
+- main app 소스와 이 저장소의 계획 문서가 충돌하면, 현재 구현 사실은 main app 소스에서
+  확인하고, `PLAN.md`/`CHECKLIST.md`/contract 문서는 함께 갱신해야 한다. 단,
+  TCP port 도입처럼 아키텍처 결정을 바꾸는 변경은 명시적 계획 변경 없이는 하지 않는다.
+
 ## 프로젝트 구조와 모듈 배치
 
 전체 디렉토리 레이아웃과 새 파일 배치 규칙은 `docs/project-structure.md`를
