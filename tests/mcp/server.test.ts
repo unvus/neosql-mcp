@@ -195,12 +195,21 @@ describe('createServer', () => {
     expect(requiredFields(alterTableDefSchema)).toEqual([
       'tableName',
       'newTableName',
-      'newRemarks',
       'columnOperations',
       'indexOperations',
       'foreignKeyOperations',
       'constraintOperations',
     ]);
+    const remarksOperationSchema = nonNullSchema(
+      propertySchema(alterTableDefSchema, 'remarksOperation'),
+    );
+    expect(remarksOperationSchema.additionalProperties).toBe(false);
+    expect(requiredFields(remarksOperationSchema)).toEqual([]);
+    const primaryKeyOperationSchema = arrayItemSchema(
+      nonNullSchema(propertySchema(alterTableDefSchema, 'primaryKeyOperations')),
+    );
+    expect(primaryKeyOperationSchema.additionalProperties).toBe(false);
+    expect(requiredFields(primaryKeyOperationSchema)).toEqual(['action', 'columnName']);
     const columnOperationSchema = arrayItemSchema(
       propertySchema(alterTableDefSchema, 'columnOperations'),
     );
@@ -223,6 +232,7 @@ describe('createServer', () => {
 
 interface JsonSchema {
   additionalProperties?: boolean;
+  anyOf?: JsonSchema[];
   items?: JsonSchema;
   minItems?: number;
   minLength?: number;
@@ -251,5 +261,8 @@ const arrayItemSchema = (schema: JsonSchema): JsonSchema => {
   expect(schema.items).toBeDefined();
   return schema.items!;
 };
+
+const nonNullSchema = (schema: JsonSchema): JsonSchema =>
+  schema.anyOf?.find((candidate) => candidate.type !== 'null') ?? schema;
 
 const requiredFields = (schema: JsonSchema): string[] => schema.required ?? [];

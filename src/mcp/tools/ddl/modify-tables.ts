@@ -12,10 +12,13 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
       title: 'modifyTables',
       description:
         'Modify one or more existing tables in the NeoSQL application. ' +
-        'Each alteration can include: table rename, comment change, primary key change, ' +
+        'Each alteration can include: table rename, comment operation, primary key operations, ' +
         'column operations (ADD/DROP/MODIFY/RENAME), index operations (ADD/DROP), ' +
         'foreign key operations (ADD/DROP), and table-level constraint operations ' +
         '(UNIQUE / CHECK / EXCLUSION; ADD/DROP). ' +
+        'For table comments, use remarksOperation.modify=true when an empty string is an intended comment change. ' +
+        'For primary keys, omit primaryKeyOperations or pass [] for no change; dropping every PK column requires ' +
+        'an explicit DROP operation for each current PK column. ' +
         'Pass multiple alterations to modify several tables in a single call. ' +
         'Uses the current context (project/connection). ' +
         'Set executeImmediately=true to also execute the ALTER TABLE DDL on the actual database. ' +

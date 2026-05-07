@@ -44,8 +44,8 @@ const RPC_TOOL_CASES: ToolCase[] = [
         {
           tableName: 't1',
           newTableName: '',
-          newRemarks: '',
-          newPrimaryKeys: [],
+          remarksOperation: { modify: true, remarks: '' },
+          primaryKeyOperations: [{ action: 'ADD', columnName: 'code' }],
           columnOperations: [],
           indexOperations: [],
           foreignKeyOperations: [],

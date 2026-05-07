@@ -407,8 +407,8 @@ Java 입력:
 {
   "tableName": "users",
   "newTableName": "app_users",
-  "newRemarks": "renamed",
-  "newPrimaryKeys": ["id"],
+  "remarksOperation": { "modify": true, "remarks": "renamed" },
+  "primaryKeyOperations": [{ "action": "ADD", "columnName": "code" }],
   "columnOperations": [
     {
       "action": "ADD",
@@ -426,6 +426,7 @@ Java 입력:
 지원 operation:
 
 - column: `ADD`, `DROP`, `MODIFY`, `RENAME`
+- primary key: `ADD`, `DROP`
 - index: `ADD`, `DROP`
 - foreign key: `ADD`, `DROP`
 - table constraint: `ADD`, `DROP`

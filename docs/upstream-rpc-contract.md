@@ -375,12 +375,22 @@ interface ModifyTablesInput {
 interface McpAlterTableDef {
   tableName: string;
   newTableName?: string | null;
-  newRemarks?: string | null;
-  newPrimaryKeys?: string[] | null;
+  remarksOperation?: McpRemarksOperation | null;
+  primaryKeyOperations?: McpPrimaryKeyOperation[] | null;
   columnOperations?: McpColumnOperation[] | null;
   indexOperations?: McpIndexOperation[] | null;
   foreignKeyOperations?: McpForeignKeyOperation[] | null;
   constraintOperations?: McpConstraintOperation[] | null;
+}
+
+interface McpRemarksOperation {
+  modify?: boolean;
+  remarks?: string;
+}
+
+interface McpPrimaryKeyOperation {
+  action: 'ADD' | 'DROP';
+  columnName: string;
 }
 
 interface McpColumnOperation {
@@ -425,6 +435,20 @@ interface McpConstraintOperation {
   initiallyDeferred?: boolean | null;
 }
 ```
+
+Remarks operation semantics:
+
+- `null`, omitted, or `modify: false`: no table comment change.
+- `{ modify: true, remarks: "..." }`: apply the comment. Empty string is an intentional
+  comment update.
+
+Primary key operation semantics:
+
+- `null`, omitted, or `[]`: no primary key change.
+- `ADD`: append the column to the current primary key.
+- `DROP`: remove that column from the current primary key.
+- Dropping all primary key columns requires one explicit `DROP` operation per current PK column.
+- Legacy `newRemarks` and `newPrimaryKeys` inputs are rejected by the Node MCP tool schema.
 
 Result:
 

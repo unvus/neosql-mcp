@@ -147,15 +147,49 @@ const constraintOperationSchema = z
   })
   .strict();
 
+export const remarksOperationSchema = z
+  .object({
+    modify: z
+      .boolean()
+      .optional()
+      .describe(
+        'Apply table comment only when true. Use true to intentionally set an empty comment.',
+      ),
+    remarks: z.string().optional().describe('New table comment. Empty string is allowed.'),
+  })
+  .strict();
+
+export type McpRemarksOperation = z.infer<typeof remarksOperationSchema>;
+
+export const primaryKeyOperationSchema = z
+  .object({
+    action: z.enum(['ADD', 'DROP']).describe('Primary key operation type: ADD or DROP'),
+    columnName: z.string().describe('Primary key column name to add or drop'),
+  })
+  .strict();
+
+export type McpPrimaryKeyOperation = z.infer<typeof primaryKeyOperationSchema>;
+
 export const alterTableDefSchema = z
   .object({
     tableName: z.string().describe('Target table name to modify'),
     newTableName: z.string().describe('New table name (for rename). Omit if not renaming.'),
-    newRemarks: z.string().describe('New table comment. Omit if not changing.'),
-    newPrimaryKeys: stringArraySchema
+    remarksOperation: remarksOperationSchema
       .nullable()
       .optional()
-      .describe('New primary key column names. Omit if not changing PK.'),
+      .describe(
+        'Table comment operation. Omit, null, or set modify=false for no change. ' +
+          'Set modify=true to apply remarks, including an intentional empty string.',
+      ),
+    primaryKeyOperations: z
+      .array(primaryKeyOperationSchema)
+      .nullable()
+      .optional()
+      .describe(
+        'Primary key operations. Omit, null, or [] for no change. ' +
+          'Use ADD to append a column to the current PK and DROP to remove one PK column. ' +
+          'To drop all PK columns, send one DROP operation per current PK column.',
+      ),
     columnOperations: z
       .array(columnOperationSchema)
       .describe('Column operations (ADD, DROP, MODIFY, RENAME)'),
