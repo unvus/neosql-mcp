@@ -150,30 +150,32 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 ## Phase 3 · Desktop lifecycle UX
 
 Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검증까지 진행한 뒤
-착수한다. Phase 3은 NeoSQL Desktop 미실행/미설치 UX와 명시적 실행 tool 제공을
+착수한다. Phase 3은 NeoSQL Desktop 미실행/미설치 UX와 자동 launch 흐름 제공을
 목표로 한다.
 
-### Phase 3-1 · 미실행 감지와 MCP UX
+### Phase 3-1 · 미실행 감지와 자동 launch
 
 - [ ] **test list 제안 → 사람 리뷰 → 합의**
 - [ ] upstream 의존 tool 공통 error/result 상태 정리: `not_running` / `stale_socket` / `timeout` / `app_not_ready`
-- [ ] Desktop 미실행 사용자-facing 메시지에 `launchNeoSqlDesktop` 호출 안내 추가
+- [ ] `timeout` 은 미실행으로 보지 않고 unresponsive/timeout UX 로 반환
+- [ ] upstream 의존 tool 호출 전 `ensureDesktopReady()` 공통 흐름 추가
+- [ ] `running` 이면 추가 작업 없이 원 tool 요청 실행
+- [ ] 원 요청은 readiness 확인 후 같은 handler 흐름에서 1회 실행
+- [ ] 이미 upstream 에 전달된 요청의 timeout 은 자동 재시도하지 않도록 검증
+- [ ] OS 별 detached launch 모듈 추가
+- [ ] `not_running` / `stale_socket` 에서만 자동 detached launch
+- [ ] `timeout` 에서는 자동 launch 하지 않도록 검증
+- [ ] launch 후 deterministic socket path readiness polling
+- [ ] polling 성공 시 원 tool 요청을 1회 실행
+- [ ] polling timeout 시 원 tool 요청을 실행하지 않고 `not_ready_timeout` 반환
+- [ ] 결과 상태 정리: `launched` / `not_installed` / `launch_failed` / `not_ready_timeout`
 - [ ] stale POSIX socket 과 listener 부재를 사용자 UX 에서는 같은 미실행 범주로 매핑
 - [ ] 로그/진단 정보에서는 `not_running` 과 `stale_socket` 을 구분 가능하게 유지
-- [ ] MCP host 별 미실행 UX 수동 검증 절차를 `docs/e2e-manual.md`에 추가
-
-### Phase 3-2 · NeoSQL Desktop 실행 tool
-
-- [ ] **test list 제안 → 사람 리뷰 → 합의**
-- [ ] `launchNeoSqlDesktop` MCP tool signature 추가
-- [ ] OS 별 detached launch 모듈 추가
-- [ ] launch 전 health check 로 `already_running` 반환
-- [ ] launch 후 deterministic socket path readiness polling
-- [ ] 결과 상태 정리: `already_running` / `launched` / `not_installed` / `launch_failed` / `not_ready_timeout`
 - [ ] launched app stdout/stderr 가 MCP stdout(JSON-RPC)과 섞이지 않도록 검증
 - [ ] neosql-mcp 종료 시 Electron app 을 종료하지 않는 lifecycle 정책 검증
+- [ ] MCP host 별 Desktop readiness UX 수동 검증 절차를 `docs/e2e-manual.md`에 추가
 
-### Phase 3-3 · 미설치 감지와 설치 안내
+### Phase 3-2 · 미설치 감지와 설치 안내
 
 - [ ] **test list 제안 → 사람 리뷰 → 합의**
 - [ ] OS 별 NeoSQL Desktop 설치 위치 탐색 정책 정리
