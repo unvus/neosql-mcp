@@ -147,11 +147,44 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ---
 
-## Phase 3 이상
+## Phase 3 · Desktop lifecycle UX
 
-Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검증까지 진행한다. Phase 3 이상은 tool 이관 완료 후 운영 안정화·보안·배포 UX 범위를 재검토한다.
+Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검증까지 진행한 뒤
+착수한다. Phase 3은 NeoSQL Desktop 미실행/미설치 UX와 명시적 실행 tool 제공을
+목표로 한다.
 
-- [ ] NeoSQL Desktop 미설치 / 미실행 / stale socket 상태별 사용자-facing error UX 정리
+### Phase 3-1 · 미실행 감지와 MCP UX
+
+- [ ] **test list 제안 → 사람 리뷰 → 합의**
+- [ ] upstream 의존 tool 공통 error/result 상태 정리: `not_running` / `stale_socket` / `timeout` / `app_not_ready`
+- [ ] Desktop 미실행 사용자-facing 메시지에 `launchNeoSqlDesktop` 호출 안내 추가
+- [ ] stale POSIX socket 과 listener 부재를 사용자 UX 에서는 같은 미실행 범주로 매핑
+- [ ] 로그/진단 정보에서는 `not_running` 과 `stale_socket` 을 구분 가능하게 유지
+- [ ] MCP host 별 미실행 UX 수동 검증 절차를 `docs/e2e-manual.md`에 추가
+
+### Phase 3-2 · NeoSQL Desktop 실행 tool
+
+- [ ] **test list 제안 → 사람 리뷰 → 합의**
+- [ ] `launchNeoSqlDesktop` MCP tool signature 추가
+- [ ] OS 별 detached launch 모듈 추가
+- [ ] launch 전 health check 로 `already_running` 반환
+- [ ] launch 후 deterministic socket path readiness polling
+- [ ] 결과 상태 정리: `already_running` / `launched` / `not_installed` / `launch_failed` / `not_ready_timeout`
+- [ ] launched app stdout/stderr 가 MCP stdout(JSON-RPC)과 섞이지 않도록 검증
+- [ ] neosql-mcp 종료 시 Electron app 을 종료하지 않는 lifecycle 정책 검증
+
+### Phase 3-3 · 미설치 감지와 설치 안내
+
+- [ ] **test list 제안 → 사람 리뷰 → 합의**
+- [ ] OS 별 NeoSQL Desktop 설치 위치 탐색 정책 정리
+- [ ] prod/dev product name 및 app id 기준 반영 (`NeoSQL`, `NeoSQLDev`, `com.unvus.neosql`, `com.unvus.neosql.dev`)
+- [ ] 미설치 사용자-facing 설치 안내 메시지 정리
+- [ ] 자동 다운로드/설치 여부는 별도 결정 전까지 범위 밖으로 명시
+- [ ] 설치 위치를 확정할 수 없는 환경에서 추측 실행하지 않고 안내만 반환하도록 검증
+
+## Phase 4 이상
+
+- [ ] multi-instance 처리 정책 검토
 - [ ] 인증/권한 모델 필요 여부 검토
 - [ ] Windows Named Pipe ACL hardening
 - [ ] 구조화 로그와 진단 정보 확장
