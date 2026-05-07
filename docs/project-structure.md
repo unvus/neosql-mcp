@@ -46,6 +46,7 @@ tests/                          (모든 테스트 코드)
     └── socket.ts
 
 docs/   사용자/에이전트 가이드 (이 문서 포함)
+├── supabase-cli/              Supabase CLI 참조 분석 문서 (`../cli` sibling clone 대상)
 poc/    transport 실험 (프로덕션 아님)
 dist/   tsup 빌드 산출물 (편집 금지)
 ```
@@ -90,6 +91,8 @@ tests ─► src          (테스트는 항상 ../../src/... 로 import)
 
 - 분류가 모호한 파일은 PR 설명에 분류 근거를 명시한다.
 - 새 경계가 필요해 보이면 코드 변경 PR과 **함께 이 문서도 갱신**한다.
+- Supabase CLI 소스 분석 문서는 `docs/supabase-cli/` 아래에 둔다. 분석 대상
+  원본 소스는 이 저장소 기준 `../cli`에 있는 sibling clone이다.
 
 ## 테스트 배치 규칙
 

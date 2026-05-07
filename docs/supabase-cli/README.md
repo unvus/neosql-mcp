@@ -2,7 +2,7 @@
 
 `neosql-mcp`(npx로 배포되는 TypeScript 모듈, embedded-server JAR을 spawn하는 중계자)를 만들면서 **Supabase CLI**의 아키텍처·배포·실행 패턴을 참고하기 위한 자료집.
 
-원본 소스: `~/workspace/cli` (clone) / 업스트림: <https://github.com/supabase/cli>
+원본 소스: `../cli` (sibling clone, `~/workspace/cli`) / 업스트림: <https://github.com/supabase/cli>
 
 ## 이 디렉토리의 목적
 
@@ -23,7 +23,7 @@
 - Supabase CLI는 Go이고 neosql-mcp는 TypeScript. **코드가 아니라 설계만 빌린다.**
 - 02 문서는 각 패턴마다 "**neosql-mcp 적용 포인트**" 섹션을 포함하고, 우리 사용 케이스에 직접 매핑되지 않는 패턴은 의도적으로 배제한다.
 - 원본 코드 경로(`file:line`)는 추적 가능성을 위해 인용하되, 코드 자체를 길게 옮겨오지 않는다.
-- 보다 깊이 봐야 할 일이 생기면 `~/workspace/cli`를 직접 읽는다 (이 문서에 모든 디테일을 담지 않는다).
+- 보다 깊이 봐야 할 일이 생기면 `../cli`를 직접 읽는다 (이 문서에 모든 디테일을 담지 않는다).
 
 ## 관련 문서
 

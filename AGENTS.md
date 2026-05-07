@@ -74,6 +74,8 @@
 - 테스트는 `import ... from '../../src/<dir>/foo.js'` 형태로 `src`를 참조한다.
   `src`는 `tests`를 절대 import하지 않는다.
 - 보조 문서: `docs/testing.md`, `docs/e2e-manual.md`, `docs/spawn.md`.
+- Supabase CLI 참조 분석 문서는 `docs/supabase-cli/`에 둔다. 분석 대상 원본
+  소스는 이 저장소 기준 sibling clone인 `../cli`다.
 - `poc/`는 transport 실험 코드이며 프로덕션 코드가 아니다.
 - `dist/`는 빌드 산출물이다. 직접 편집하지 않는다.
 
