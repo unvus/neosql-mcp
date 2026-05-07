@@ -152,9 +152,10 @@ export const alterTableDefSchema = z
     tableName: z.string().describe('Target table name to modify'),
     newTableName: z.string().describe('New table name (for rename). Omit if not renaming.'),
     newRemarks: z.string().describe('New table comment. Omit if not changing.'),
-    newPrimaryKeys: stringArraySchema.describe(
-      'New primary key column names. Omit if not changing PK.',
-    ),
+    newPrimaryKeys: stringArraySchema
+      .nullable()
+      .optional()
+      .describe('New primary key column names. Omit if not changing PK.'),
     columnOperations: z
       .array(columnOperationSchema)
       .describe('Column operations (ADD, DROP, MODIFY, RENAME)'),

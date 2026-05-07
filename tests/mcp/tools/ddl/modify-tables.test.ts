@@ -112,4 +112,66 @@ describe('modifyTables tool', () => {
       },
     });
   });
+
+  it('allows newPrimaryKeys to be omitted from table alterations', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: (req) => {
+        received.push(req);
+        return { kind: 'result', result: { modified: ['users'] } };
+      },
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    const server = createServer({ socketPath });
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
+
+    const result = await client.callTool({
+      name: 'modifyTables',
+      arguments: {
+        alterations: [
+          {
+            tableName: 'users',
+            newTableName: '',
+            newRemarks: '',
+            columnOperations: [],
+            indexOperations: [],
+            foreignKeyOperations: [],
+            constraintOperations: [],
+          },
+        ],
+      },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(received[0]?.params).toMatchObject({
+      input: {
+        alterations: [
+          {
+            tableName: 'users',
+            newTableName: '',
+            newRemarks: '',
+            columnOperations: [],
+            indexOperations: [],
+            foreignKeyOperations: [],
+            constraintOperations: [],
+          },
+        ],
+        executeImmediately: false,
+      },
+    });
+    const params = received[0]?.params as {
+      input?: { alterations?: Array<Record<string, unknown>> };
+    };
+    expect(params.input?.alterations?.[0]).not.toHaveProperty('newPrimaryKeys');
+  });
 });

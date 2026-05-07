@@ -196,7 +196,6 @@ describe('createServer', () => {
       'tableName',
       'newTableName',
       'newRemarks',
-      'newPrimaryKeys',
       'columnOperations',
       'indexOperations',
       'foreignKeyOperations',
