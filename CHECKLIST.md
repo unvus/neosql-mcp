@@ -158,21 +158,18 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 - [ ] **test list 제안 → 사람 리뷰 → 합의**
 - [ ] upstream 의존 tool 공통 error/result 상태 정리: `not_running` / `stale_socket` / `timeout` / `app_not_ready`
 - [ ] `timeout` 은 미실행으로 보지 않고 unresponsive/timeout UX 로 반환
-- [ ] upstream 의존 tool 호출 전 `ensureDesktopReady()` 공통 흐름 추가
+- [ ] upstream 의존 tool 호출 전 요청 시점 `ensureDesktopReady()` 공통 흐름 추가
 - [ ] `running` 이면 추가 작업 없이 원 tool 요청 실행
-- [ ] 원 요청은 readiness 확인 후 같은 handler 흐름에서 1회 실행
+- [ ] `not_running` / `stale_socket` 에서 launch 명령을 내리면 원 tool 요청은 실행하지 않음
 - [ ] 이미 upstream 에 전달된 요청의 timeout 은 자동 재시도하지 않도록 검증
 - [ ] OS 별 detached launch 모듈 추가
 - [ ] `not_running` / `stale_socket` 에서만 자동 detached launch
 - [ ] `timeout` 에서는 자동 launch 하지 않도록 검증
-- [ ] launch 후 deterministic socket path readiness polling
-- [ ] polling 성공 시 원 tool 요청을 1회 실행
-- [ ] polling timeout 시 원 tool 요청을 실행하지 않고 `not_ready_timeout` 반환
-- [ ] 결과 상태 정리: `launched` / `not_installed` / `launch_failed` / `not_ready_timeout`
+- [ ] launch 후 readiness polling 없이 `launch_requested` 계열 응답 반환
+- [ ] 결과 상태 정리: `launch_requested` / `not_installed` / `launch_failed`
 - [ ] stale POSIX socket 과 listener 부재를 사용자 UX 에서는 같은 미실행 범주로 매핑
 - [ ] 로그/진단 정보에서는 `not_running` 과 `stale_socket` 을 구분 가능하게 유지
 - [ ] launched app stdout/stderr 가 MCP stdout(JSON-RPC)과 섞이지 않도록 검증
-- [ ] neosql-mcp 종료 시 Electron app 을 종료하지 않는 lifecycle 정책 검증
 - [ ] MCP host 별 Desktop readiness UX 수동 검증 절차를 `docs/e2e-manual.md`에 추가
 
 ### Phase 3-2 · 미설치 감지와 설치 안내
