@@ -40,9 +40,7 @@ Request:
     "context": {
       "projectId": "project-id",
       "connectionId": "0",
-      "schema": "public",
-      "ddlExecute": false,
-      "autoCommit": false
+      "schema": "public"
     },
     "input": {}
   }
@@ -84,8 +82,6 @@ interface UpstreamToolParams<TInput> {
     projectId?: string;
     connectionId?: string;
     schema?: string;
-    ddlExecute?: boolean;
-    autoCommit?: boolean;
   };
   input: TInput;
 }
@@ -95,7 +91,6 @@ Node responsibility:
 
 - MCP tool input schema validation
 - context store merge
-- tool parameter override 적용
 - JSON-RPC method 호출
 - JSON-RPC error를 MCP `tools/call` error result로 변환
 
@@ -233,7 +228,6 @@ Input:
 ```ts
 interface ExecuteQueryInput {
   sql: string;
-  autoCommit?: boolean;
 }
 ```
 
@@ -241,9 +235,6 @@ Rules:
 
 - DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`) is rejected.
 - SELECT/EXPLAIN returns up to 200 rows.
-- DML with `autoCommit=false` keeps a transaction open in a NeoSQL SQL Editor tab.
-- Node must not set `autoCommit=true` unless the user explicitly requested it or context
-  already contains `autoCommit=true`.
 
 Result:
 
@@ -281,7 +272,6 @@ Input:
 ```ts
 interface CreateTablesInput {
   tableDefinitions: McpTableDef[];
-  executeImmediately?: boolean;
 }
 
 interface McpTableDef {
@@ -332,13 +322,6 @@ interface McpConstraintDef {
 }
 ```
 
-Rules:
-
-- `executeImmediately` overrides context `ddlExecute`.
-- If both are absent, default is false.
-- `executeImmediately=false` means ERD/schema design only. The user applies pending DB
-  changes through NeoSQL UI.
-
 Result:
 
 ```ts
@@ -369,7 +352,6 @@ Input:
 ```ts
 interface ModifyTablesInput {
   alterations: McpAlterTableDef[];
-  executeImmediately?: boolean;
 }
 
 interface McpAlterTableDef {
@@ -501,9 +483,6 @@ interface GenerateCodeResult {
 
 ## Open Items
 
-- Electron app DDL restriction branch references `response` in current handler code. This is
-  not fixed in `neosql-mcp`; `executeImmediately` is planned for removal, so the app-side fix is
-  deferred unless that parameter remains supported.
 - `templatePackId` is accepted by the old Java tool and forwarded by Node for compatibility, but
   the current app handler uses the project-configured template pack. No separate code change is
   required for the current Phase 2 MCP server scope.

@@ -20,24 +20,11 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'Supports SELECT, INSERT, UPDATE, DELETE, and EXPLAIN statements. ' +
         'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use createTables or modifyTables tools instead. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
-        'IMPORTANT: For DML (INSERT/UPDATE/DELETE), you MUST ask the user whether to auto-commit or use manual commit BEFORE executing. ' +
-        'Do NOT default to autoCommit=true on your own. ' +
-        'Manual commit (default, autoCommit omitted or false): the transaction stays open in NeoSQL SQL Editor ' +
-        'so the user can review the changes and COMMIT or ROLLBACK from the NeoSQL UI. This is the safer option. ' +
-        'Auto-commit (autoCommit=true): commits immediately with no chance to review. Only use when the user explicitly agrees. ' +
         'Uses the current context (project/connection/schema).',
       inputSchema: {
         sql: z
           .string()
           .describe('The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).'),
-        autoCommit: z
-          .boolean()
-          .describe(
-            'Whether to commit DML immediately. Default is false (manual commit, safer). ' +
-              'MUST ask the user before setting to true. ' +
-              'When false, the user can review and COMMIT/ROLLBACK in NeoSQL UI.',
-          )
-          .optional(),
       },
     },
     async (args) => {
@@ -47,14 +34,11 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         );
       }
 
-      const storedContext = deps.contextStore.get();
-      const autoCommit = args.autoCommit ?? storedContext.autoCommit ?? false;
-
       return callUpstreamTool(
         deps,
         'sql.executeQuery',
-        { ...args, autoCommit },
-        { autoCommit },
+        args,
+        {},
         {
           timeoutMs: 60_000,
           stringifyResult: jacksonPrettyJsonStringify,

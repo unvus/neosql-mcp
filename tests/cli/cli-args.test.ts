@@ -52,10 +52,6 @@ describe('parseCliArgs', () => {
         '88',
         '--schema',
         'appdb',
-        '--ddl-execute',
-        'false',
-        '--auto-commit',
-        'true',
       ]),
     ).toEqual({
       profile: 'prod',
@@ -63,8 +59,6 @@ describe('parseCliArgs', () => {
         projectId: '6c9fede500f949079f7c553cfd96ec72',
         connectionId: '88',
         schema: 'appdb',
-        ddlExecute: false,
-        autoCommit: true,
       },
     });
   });
@@ -75,8 +69,6 @@ describe('parseCliArgs', () => {
         '--project=project-1',
         '--connection=0',
         '--schema=public',
-        '--ddl-execute=true',
-        '--auto-commit=false',
       ]),
     ).toEqual({
       profile: 'prod',
@@ -84,8 +76,25 @@ describe('parseCliArgs', () => {
         projectId: 'project-1',
         connectionId: '0',
         schema: 'public',
-        ddlExecute: true,
-        autoCommit: false,
+      },
+    });
+  });
+
+  it('ignores removed commit and DDL execution flags', () => {
+    expect(
+      parseCliArgs([
+        '--project=project-1',
+        '--ddl-execute=true',
+        '--ddl-execute',
+        'false',
+        '--auto-commit=true',
+        '--auto-commit',
+        'false',
+      ]),
+    ).toEqual({
+      profile: 'prod',
+      initialContext: {
+        projectId: 'project-1',
       },
     });
   });

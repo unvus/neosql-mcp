@@ -15,7 +15,7 @@ describe('executeQuery tool', () => {
     }
   });
 
-  it('calls sql.executeQuery with resolved autoCommit and input envelope', async () => {
+  it('calls sql.executeQuery with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -53,12 +53,12 @@ describe('executeQuery tool', () => {
     cleanups.push(() => client.close());
     await client.callTool({
       name: 'setContext',
-      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public', autoCommit: true },
+      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
     });
 
     const result = await client.callTool({
       name: 'executeQuery',
-      arguments: { sql: 'SELECT id FROM users', autoCommit: false },
+      arguments: { sql: 'SELECT id FROM users' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -86,9 +86,8 @@ describe('executeQuery tool', () => {
         projectId: 'proj-1',
         connectionId: '0',
         schema: 'public',
-        autoCommit: false,
       },
-      input: { sql: 'SELECT id FROM users', autoCommit: false },
+      input: { sql: 'SELECT id FROM users' },
     });
   });
 
@@ -122,7 +121,7 @@ describe('executeQuery tool', () => {
 
     const result = await client.callTool({
       name: 'executeQuery',
-      arguments: { sql: 'INSERT INTO users (id) VALUES (1)', autoCommit: false },
+      arguments: { sql: 'INSERT INTO users (id) VALUES (1)' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -135,6 +134,43 @@ describe('executeQuery tool', () => {
   "autoCommit" : false,
   "message" : "1 row affected. Transaction is open in NeoSQL UI."
 }`);
+  });
+
+  it('does not forward removed autoCommit input to upstream', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: (req) => {
+        received.push(req);
+        return { kind: 'result', result: {} };
+      },
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    const server = createServer({ socketPath });
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
+
+    const result = await client.callTool({
+      name: 'executeQuery',
+      arguments: { sql: 'SELECT id FROM users', autoCommit: false },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(received).toHaveLength(1);
+    const params = received[0]?.params as {
+      context?: Record<string, unknown>;
+      input?: Record<string, unknown>;
+    };
+    expect(params.context).not.toHaveProperty('autoCommit');
+    expect(params.input).not.toHaveProperty('autoCommit');
   });
 
   it.each([

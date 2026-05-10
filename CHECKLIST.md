@@ -92,8 +92,8 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `schema/list-tables` — `schema.listTables` contract 기반 forward 구현
 - [x] `schema/get-table-details` — `schema.getTableDetails` contract 기반 forward 구현
 - [x] `sql/execute-query` — DDL guard + `sql.executeQuery` contract 기반 forward 구현
-- [x] `ddl/create-tables` — `ddlExecute` default merge + `ddl.createTables` forward 구현
-- [x] `ddl/modify-tables` — `ddlExecute` default merge + `ddl.modifyTables` forward 구현
+- [x] `ddl/create-tables` — `ddl.createTables` forward 구현
+- [x] `ddl/modify-tables` — `ddl.modifyTables` forward 구현
 - [x] `code-generation/generate-code` — `tableName` → `tableNames[]` 변환 + `codeGeneration.generateCode` forward 구현
 
 ### Phase 2-4 · Real Electron MCP tool migration
@@ -122,19 +122,14 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 - [x] (본체 PR) `sql.executeQuery` 구현
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` SELECT
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` INSERT (`autoCommit=false`)
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` INSERT (`autoCommit=true`)
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` INSERT
 
 #### DdlTools
 
 - [x] (본체 PR) `ddl.createTables` 구현
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables` (`executeImmediately` 생략)
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables` (`executeImmediately=false`)
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables` (`executeImmediately=true`)
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables`
 - [x] (본체 PR) `ddl.modifyTables` 구현
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables` (`executeImmediately` 생략)
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables` (`executeImmediately=false`)
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables` (`executeImmediately=true`)
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables`
 
 #### CodeGenerationTools
 

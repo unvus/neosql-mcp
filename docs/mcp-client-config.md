@@ -28,9 +28,7 @@ npx neosql-mcp --project=6c9fede500f949079f7c553cfd96ec72 --connection=88 --sche
         "--profile=prod",
         "--project=6c9fede500f949079f7c553cfd96ec72",
         "--connection=88",
-        "--schema=appdb",
-        "--ddl-execute=false",
-        "--auto-commit=false"
+        "--schema=appdb"
       ]
     }
   }
@@ -49,8 +47,6 @@ args = [
   "--project=6c9fede500f949079f7c553cfd96ec72",
   "--connection=88",
   "--schema=appdb",
-  "--ddl-execute=false",
-  "--auto-commit=false",
 ]
 ```
 
@@ -67,9 +63,7 @@ args = [
         "--profile=prod",
         "--project=6c9fede500f949079f7c553cfd96ec72",
         "--connection=88",
-        "--schema=appdb",
-        "--ddl-execute=false",
-        "--auto-commit=false"
+        "--schema=appdb"
       ]
     }
   }
@@ -111,9 +105,7 @@ listen하는 경우 MCP server에도 `--profile=dev`를 전달한다.
       "headers": {
         "x-neosql-project": "6c9fede500f949079f7c553cfd96ec72",
         "x-neosql-connection": "88",
-        "x-neosql-schema": "appdb",
-        "x-neosql-ddl-execute": "false",
-        "x-neosql-auto-commit": "false"
+        "x-neosql-schema": "appdb"
       }
     }
   }
@@ -130,8 +122,6 @@ to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initi
 | `x-neosql-project`     | `--project`     | `projectId`    | string  |
 | `x-neosql-connection`  | `--connection`  | `connectionId` | string  |
 | `x-neosql-schema`      | `--schema`      | `schema`       | string  |
-| `x-neosql-ddl-execute` | `--ddl-execute` | `ddlExecute`   | boolean |
-| `x-neosql-auto-commit` | `--auto-commit` | `autoCommit`   | boolean |
 
 ## CLI Option Rules
 
@@ -144,10 +134,6 @@ to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initi
 --connection=<value>
 --schema <value>
 --schema=<value>
---ddl-execute <true|false>
---ddl-execute=<true|false>
---auto-commit <true|false>
---auto-commit=<true|false>
 --profile <prod|dev>
 --profile=<prod|dev>
 ```
@@ -156,8 +142,6 @@ to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initi
 
 - MCP host 설정 예시는 한 option을 한 문자열로 다루기 쉬운 `--key=value` 형식을 기본으로 쓴다.
 - `project`, `connection`, `schema`는 string으로 저장한다.
-- `ddl-execute`, `auto-commit`은 `true` 또는 `false`만 boolean으로 해석한다.
-- boolean 값이 없거나 `true`/`false`가 아니면 초기 context에 반영하지 않는다.
 - `profile`은 `prod` 또는 `dev`만 해석한다. 값이 없거나 유효하지 않으면 기존 profile을 유지한다.
 - string 값이 빈 문자열이면 context store merge 단계에서 기존 값을 유지한다.
 - `connectionId`는 숫자처럼 보여도 string으로 유지한다. Electron app handler가 필요한
@@ -187,8 +171,6 @@ interface UpstreamToolParams<TInput> {
     projectId?: string;
     connectionId?: string;
     schema?: string;
-    ddlExecute?: boolean;
-    autoCommit?: boolean;
   };
   input: TInput;
 }

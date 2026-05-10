@@ -88,10 +88,6 @@ describe('createServer', () => {
         connectionId: "Connection ID (e.g., '0', '1'). Leave empty to keep current value.",
         schema:
           "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
-        ddlExecute:
-          'Whether to execute DDL immediately on the database when creating/modifying tables. Default is false (ERD only).',
-        autoCommit:
-          'Whether to auto-commit DML statements (INSERT/UPDATE/DELETE) when using executeQuery. Default is false (manual commit in NeoSQL UI).',
       },
       listTables: {
         schema:
@@ -106,21 +102,13 @@ describe('createServer', () => {
       createTables: {
         tableDefinitions:
           'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
-        executeImmediately:
-          'If true, execute DDL immediately on the database. Overrides context ddlExecute setting.',
       },
       modifyTables: {
         alterations:
           'List of table alterations. Each specifies a target table and the changes to apply.',
-        executeImmediately:
-          'If true, execute DDL immediately on the database. Overrides context ddlExecute setting.',
       },
       executeQuery: {
         sql: 'The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).',
-        autoCommit:
-          'Whether to commit DML immediately. Default is false (manual commit, safer). ' +
-          'MUST ask the user before setting to true. ' +
-          'When false, the user can review and COMMIT/ROLLBACK in NeoSQL UI.',
       },
       generateCode: {
         tableName: 'Table name to generate code for',
@@ -148,8 +136,8 @@ describe('createServer', () => {
 
     const setContextSchema = inputSchemaFor(result.tools, 'setContext');
     expect(requiredFields(setContextSchema)).toEqual([]);
-    expect(propertySchema(setContextSchema, 'ddlExecute').type).toBe('boolean');
-    expect(propertySchema(setContextSchema, 'autoCommit').type).toBe('boolean');
+    expect(setContextSchema.properties).not.toHaveProperty('ddlExecute');
+    expect(setContextSchema.properties).not.toHaveProperty('autoCommit');
 
     const generateCodeSchema = inputSchemaFor(result.tools, 'generateCode');
     expect(requiredFields(generateCodeSchema)).toEqual(['tableName', 'templatePackId']);
@@ -161,9 +149,11 @@ describe('createServer', () => {
 
     const executeQuerySchema = inputSchemaFor(result.tools, 'executeQuery');
     expect(propertySchema(executeQuerySchema, 'sql').minLength).toBeUndefined();
+    expect(executeQuerySchema.properties).not.toHaveProperty('autoCommit');
 
     const createTablesSchema = inputSchemaFor(result.tools, 'createTables');
     expect(requiredFields(createTablesSchema)).toEqual(['tableDefinitions']);
+    expect(createTablesSchema.properties).not.toHaveProperty('executeImmediately');
     const tableDefSchema = arrayItemSchema(propertySchema(createTablesSchema, 'tableDefinitions'));
     expect(tableDefSchema.additionalProperties).toBe(false);
     expect(requiredFields(tableDefSchema)).toEqual([
@@ -190,6 +180,7 @@ describe('createServer', () => {
 
     const modifyTablesSchema = inputSchemaFor(result.tools, 'modifyTables');
     expect(requiredFields(modifyTablesSchema)).toEqual(['alterations']);
+    expect(modifyTablesSchema.properties).not.toHaveProperty('executeImmediately');
     const alterTableDefSchema = arrayItemSchema(propertySchema(modifyTablesSchema, 'alterations'));
     expect(alterTableDefSchema.additionalProperties).toBe(false);
     expect(requiredFields(alterTableDefSchema)).toEqual([

@@ -81,8 +81,6 @@ describe('listTables tool', () => {
         projectId: 'project-1',
         connectionId: '88',
         schema: 'appdb',
-        ddlExecute: false,
-        autoCommit: false,
       },
     });
     const [st, ct] = InMemoryTransport.createLinkedPair();
@@ -102,8 +100,6 @@ describe('listTables tool', () => {
         projectId: 'project-1',
         connectionId: '88',
         schema: 'appdb',
-        ddlExecute: false,
-        autoCommit: false,
       },
       input: { search: 'user' },
     });

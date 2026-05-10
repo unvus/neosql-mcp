@@ -15,7 +15,7 @@ describe('modifyTables tool', () => {
     }
   });
 
-  it('calls ddl.modifyTables with explicit executeImmediately overriding context', async () => {
+  it('calls ddl.modifyTables with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -38,7 +38,7 @@ describe('modifyTables tool', () => {
     cleanups.push(() => client.close());
     await client.callTool({
       name: 'setContext',
-      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: true },
+      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
     });
 
     const result = await client.callTool({
@@ -73,7 +73,6 @@ describe('modifyTables tool', () => {
             constraintOperations: [],
           },
         ],
-        executeImmediately: false,
       },
     });
 
@@ -83,7 +82,7 @@ describe('modifyTables tool', () => {
     expect(data.modified).toEqual(['users']);
     expect(received[0]?.method).toBe('ddl.modifyTables');
     expect(received[0]?.params).toMatchObject({
-      context: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: false },
+      context: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
       input: {
         alterations: [
           {
@@ -114,7 +113,6 @@ describe('modifyTables tool', () => {
             constraintOperations: [],
           },
         ],
-        executeImmediately: false,
       },
     });
   });
@@ -170,7 +168,6 @@ describe('modifyTables tool', () => {
             constraintOperations: [],
           },
         ],
-        executeImmediately: false,
       },
     });
     const params = received[0]?.params as {
@@ -224,5 +221,54 @@ describe('modifyTables tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]?.text).toMatch(/newRemarks|newPrimaryKeys/);
     expect(received).toHaveLength(0);
+  });
+
+  it('does not forward removed executeImmediately input to upstream', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: (req) => {
+        received.push(req);
+        return { kind: 'result', result: { modified: ['users'] } };
+      },
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    const server = createServer({ socketPath });
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
+
+    const result = await client.callTool({
+      name: 'modifyTables',
+      arguments: {
+        alterations: [
+          {
+            tableName: 'users',
+            newTableName: '',
+            columnOperations: [],
+            indexOperations: [],
+            foreignKeyOperations: [],
+            constraintOperations: [],
+          },
+        ],
+        executeImmediately: false,
+      },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(received).toHaveLength(1);
+    const params = received[0]?.params as {
+      context?: Record<string, unknown>;
+      input?: Record<string, unknown>;
+    };
+    expect(params.context).not.toHaveProperty('ddlExecute');
+    expect(params.input).not.toHaveProperty('executeImmediately');
   });
 });

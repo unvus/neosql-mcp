@@ -2,16 +2,12 @@ export interface NeosqlContext {
   projectId?: string;
   connectionId?: string;
   schema?: string;
-  ddlExecute?: boolean;
-  autoCommit?: boolean;
 }
 
 export interface NeosqlContextPatch {
   projectId?: string | undefined;
   connectionId?: string | undefined;
   schema?: string | undefined;
-  ddlExecute?: boolean | undefined;
-  autoCommit?: boolean | undefined;
 }
 
 export interface ContextStore {
@@ -25,8 +21,6 @@ export const mergeContext = (current: NeosqlContext, patch: NeosqlContextPatch):
   assignString(next, 'projectId', patch.projectId);
   assignString(next, 'connectionId', patch.connectionId);
   assignString(next, 'schema', patch.schema);
-  assignBoolean(next, 'ddlExecute', patch.ddlExecute);
-  assignBoolean(next, 'autoCommit', patch.autoCommit);
 
   return next;
 };
@@ -49,14 +43,5 @@ const assignString = (
   value: string | undefined,
 ): void => {
   if (value === undefined || value.trim() === '') return;
-  target[key] = value;
-};
-
-const assignBoolean = (
-  target: NeosqlContext,
-  key: 'ddlExecute' | 'autoCommit',
-  value: boolean | undefined,
-): void => {
-  if (value === undefined) return;
   target[key] = value;
 };

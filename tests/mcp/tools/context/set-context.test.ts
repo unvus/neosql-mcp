@@ -23,7 +23,7 @@ describe('setContext tool', () => {
 
     const result = await client.callTool({
       name: 'setContext',
-      arguments: { projectId: 'proj-1', schema: 'public', ddlExecute: true },
+      arguments: { projectId: 'proj-1', schema: 'public' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -31,13 +31,12 @@ describe('setContext tool', () => {
     const data = JSON.parse(content[0]?.text ?? '{}') as {
       success?: boolean;
       message?: string;
-      context: { projectId?: string; schema?: string; ddlExecute?: boolean };
+      context: { projectId?: string; schema?: string };
     };
     expect(data.success).toBe(true);
     expect(data.message).toBe('Context updated successfully');
     expect(data.context.projectId).toBe('proj-1');
     expect(data.context.schema).toBe('public');
-    expect(data.context.ddlExecute).toBe(true);
   });
 
   it('returns the existing context in the success envelope when called without arguments', async () => {
@@ -54,8 +53,6 @@ describe('setContext tool', () => {
         projectId: '35c1fe0d425a428a92b4c71eaaeacc26',
         connectionId: '57',
         schema: 'skrulldb',
-        ddlExecute: false,
-        autoCommit: false,
       },
     });
     const result = await client.callTool({
@@ -72,8 +69,6 @@ describe('setContext tool', () => {
         projectId?: string;
         connectionId?: string;
         schema?: string;
-        ddlExecute?: boolean;
-        autoCommit?: boolean;
       };
     };
     expect(data).toEqual({
@@ -83,8 +78,6 @@ describe('setContext tool', () => {
         projectId: '35c1fe0d425a428a92b4c71eaaeacc26',
         connectionId: '57',
         schema: 'skrulldb',
-        ddlExecute: false,
-        autoCommit: false,
       },
     });
   });
@@ -122,7 +115,7 @@ describe('setContext tool', () => {
     });
   });
 
-  it('stores false boolean values as explicit context values', async () => {
+  it('ignores removed commit and DDL execution context fields', async () => {
     const server = createServer();
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
@@ -130,25 +123,19 @@ describe('setContext tool', () => {
     await client.connect(ct);
     cleanups.push(() => client.close());
 
-    await client.callTool({
-      name: 'setContext',
-      arguments: { ddlExecute: true, autoCommit: true },
-    });
     const result = await client.callTool({
       name: 'setContext',
-      arguments: { ddlExecute: false, autoCommit: false },
+      arguments: { ddlExecute: true, autoCommit: true },
     });
 
     expect(result.isError).not.toBe(true);
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as {
       success?: boolean;
-      message?: string;
-      context: { ddlExecute?: boolean; autoCommit?: boolean };
+      context: Record<string, unknown>;
     };
     expect(data.success).toBe(true);
-    expect(data.message).toBe('Context updated successfully');
-    expect(data.context.ddlExecute).toBe(false);
-    expect(data.context.autoCommit).toBe(false);
+    expect(data.context).not.toHaveProperty('ddlExecute');
+    expect(data.context).not.toHaveProperty('autoCommit');
   });
 });

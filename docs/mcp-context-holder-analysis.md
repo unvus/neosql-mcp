@@ -136,8 +136,7 @@ Phase 2-3 구현 정책:
 2. `setContext`, `getContext`, `getContextHelp`는 Node-local tool로 유지한다.
 3. context resolution은 `tool parameter override > Node context store > empty context` 순서다.
 4. string field(`projectId`, `connectionId`, `schema`)는 blank string이면 기존 값 유지로 처리한다.
-5. boolean field(`ddlExecute`, `autoCommit`)는 false가 의미 있는 값이므로
-   null/undefined와 false를 구분한다.
+5. `ddlExecute`/`autoCommit` context field는 Node MCP server surface에서 제거한다.
 6. Electron upstream RPC에는 resolved context를 명시 params로 전달한다.
 7. 기존 HTTP header default context는 stdio 구조에서 CLI 초기 context 옵션으로
    대응한다. MCP host 설정의 단일 진실은
@@ -150,8 +149,6 @@ interface NeosqlContext {
   projectId?: string;
   connectionId?: string;
   schema?: string;
-  ddlExecute?: boolean;
-  autoCommit?: boolean;
 }
 
 interface ContextStore {
@@ -208,8 +205,6 @@ interface UpstreamToolParams<TInput> {
     projectId?: string;
     connectionId?: string;
     schema?: string;
-    ddlExecute?: boolean;
-    autoCommit?: boolean;
   };
   input: TInput;
 }
@@ -232,8 +227,8 @@ fields로 변환하거나, 새 handler에서 직접 사용하면 된다.
 
 - MCP SDK request `extra`에서 stdio connection을 안정적으로 구분할 수 있는지 확인한다.
 - multi-client-in-one-process 구조가 필요해지면 `ContextStore`를 connection scoped로 바꾼다.
-- MCP client 설정의 기존 HTTP header 값은 `--project`, `--connection`, `--schema`,
-  `--ddl-execute`, `--auto-commit` CLI option 으로 주입한다. 상세 mapping은
+- MCP client 설정의 기존 HTTP header 값은 `--project`, `--connection`, `--schema`
+  CLI option 으로 주입한다. 상세 mapping은
   [`mcp-client-config.md`](mcp-client-config.md)를 따른다.
 - Electron app 쪽 SQL/ERD/log grouping이 `<uuid>` 형식의 session id를 문제없이
   표시하는지 Phase 2-4 이후 e2e에서 확인한다.

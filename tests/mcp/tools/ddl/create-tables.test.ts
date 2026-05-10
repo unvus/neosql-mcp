@@ -15,7 +15,7 @@ describe('createTables tool', () => {
     }
   });
 
-  it('calls ddl.createTables with executeImmediately defaulted from context', async () => {
+  it('calls ddl.createTables with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -41,7 +41,7 @@ describe('createTables tool', () => {
     cleanups.push(() => client.close());
     await client.callTool({
       name: 'setContext',
-      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: true },
+      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
     });
 
     const result = await client.callTool({
@@ -67,8 +67,48 @@ describe('createTables tool', () => {
     expect(data.created).toEqual(['users']);
     expect(received[0]?.method).toBe('ddl.createTables');
     expect(received[0]?.params).toMatchObject({
-      context: { projectId: 'proj-1', connectionId: '0', schema: 'public', ddlExecute: true },
+      context: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
       input: {
+        tableDefinitions: [
+          {
+            name: 'users',
+            remarks: '',
+            columns: [],
+            primaryKeys: [],
+            importedKeys: [],
+            indexes: [],
+            constraints: [],
+          },
+        ],
+      },
+    });
+  });
+
+  it('does not forward removed executeImmediately input to upstream', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: (req) => {
+        received.push(req);
+        return { kind: 'result', result: {} };
+      },
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    const server = createServer({ socketPath });
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
+
+    const result = await client.callTool({
+      name: 'createTables',
+      arguments: {
         tableDefinitions: [
           {
             name: 'users',
@@ -83,5 +123,14 @@ describe('createTables tool', () => {
         executeImmediately: true,
       },
     });
+
+    expect(result.isError).not.toBe(true);
+    expect(received).toHaveLength(1);
+    const params = received[0]?.params as {
+      context?: Record<string, unknown>;
+      input?: Record<string, unknown>;
+    };
+    expect(params.context).not.toHaveProperty('ddlExecute');
+    expect(params.input).not.toHaveProperty('executeImmediately');
   });
 });

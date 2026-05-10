@@ -20,37 +20,15 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
         'For primary keys, omit primaryKeyOperations or pass [] for no change; dropping every PK column requires ' +
         'an explicit DROP operation for each current PK column. ' +
         'Pass multiple alterations to modify several tables in a single call. ' +
-        'Uses the current context (project/connection). ' +
-        'Set executeImmediately=true to also execute the ALTER TABLE DDL on the actual database. ' +
-        'IMPORTANT - Human-in-the-loop: When executeImmediately is false (or context ddlExecute is false), ' +
-        'changes are applied to the ERD/schema design only. The user will review changes in the NeoSQL UI ' +
-        'and decide whether to apply them to the database. Do NOT re-call this tool with executeImmediately=true ' +
-        'to apply pending changes — this would cause a duplicate error. Database application of pending designs ' +
-        'is done exclusively through the NeoSQL UI by the user.',
+        'Uses the current context (project/connection).',
       inputSchema: {
         alterations: z
           .array(alterTableDefSchema)
           .describe(
             'List of table alterations. Each specifies a target table and the changes to apply.',
           ),
-        executeImmediately: z
-          .boolean()
-          .describe(
-            'If true, execute DDL immediately on the database. Overrides context ddlExecute setting.',
-          )
-          .optional(),
       },
     },
-    async (args) => {
-      const executeImmediately =
-        args.executeImmediately ?? deps.contextStore.get().ddlExecute ?? false;
-      return callUpstreamTool(
-        deps,
-        'ddl.modifyTables',
-        { ...args, executeImmediately },
-        { ddlExecute: executeImmediately },
-        { timeoutMs: 60_000 },
-      );
-    },
+    async (args) => callUpstreamTool(deps, 'ddl.modifyTables', args, {}, { timeoutMs: 60_000 }),
   );
 };
