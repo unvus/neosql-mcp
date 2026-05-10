@@ -484,8 +484,9 @@ interface GenerateCodeElectronInput {
 Rules:
 
 - Current app handler uses the project-configured template pack.
-- `templatePackId` is kept in the MCP/contract surface for compatibility, but Electron
-  support must be verified or added before Phase 3 completion.
+- `templatePackId` is kept in the MCP/contract surface for compatibility. The current
+  server/app behavior is acceptable as-is, so no additional code change is required for
+  `CodeGenerationTools` unless the template-pack selection policy changes.
 
 Result:
 
@@ -500,9 +501,12 @@ interface GenerateCodeResult {
 
 ## Open Items
 
-- Electron app DDL restriction branch references `response` in current handler code; verify
-  and fix in the app repository before enabling `executeImmediately=true` through HTTP RPC.
-- `templatePackId` is accepted by the old Java tool but ignored by current app handler.
+- Electron app DDL restriction branch references `response` in current handler code. This is
+  not fixed in `neosql-mcp`; `executeImmediately` is planned for removal, so the app-side fix is
+  deferred unless that parameter remains supported.
+- `templatePackId` is accepted by the old Java tool and forwarded by Node for compatibility, but
+  the current app handler uses the project-configured template pack. No separate code change is
+  required for the current Phase 2 MCP server scope.
 - Node generates an upstream `sessionId` once per server instance/stdio connection. This
   is not the MCP Streamable HTTP `Mcp-Session-Id` header; it is a NeoSQL upstream grouping
   key.

@@ -138,12 +138,13 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 #### CodeGenerationTools
 
-- [ ] (본체 PR) `codeGeneration.generateCode` 구현
+- [x] (본체 source 확인) `codeGeneration.generateCode` dispatcher/renderer handler 연결 확인
+- [x] 현 상태에서는 `neosql-mcp` / 본체 모두 별도 코드 수정 불필요 확인
 - [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `generateCode`
 
-- [ ] `docs/e2e-manual.md`에 as-is/to-be 비교 검증 절차와 결과 기록
-- [ ] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정
-- [ ] 분석 결과 open item 확인: DDL restriction branch의 `response` 참조, `templatePackId` 처리 정책
+- [x] `docs/e2e-manual.md`에 as-is/to-be 비교 검증 절차와 결과 기록 슬롯 추가
+- [x] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정
+- [x] 분석 결과 open item 확인: DDL restriction branch의 `response` 참조, `templatePackId` 처리 정책
 
 ---
 
