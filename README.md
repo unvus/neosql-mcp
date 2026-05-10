@@ -54,6 +54,7 @@
 - 프로젝트 전반: `CLAUDE.md` (세션 context 에 자동 로드)
 - 단계별 구현 계획: `PLAN.md`
 - MCP host 설정 contract: `docs/mcp-client-config.md`
+- npm 배포 절차: `docs/npm-publish.md`
 - 수동 e2e 검증 (실제 MCP 클라이언트 연동): `docs/e2e-manual.md`
 - 통신 계층 정리 (RPC vs Transport): `docs/통신 스택 계층 (RPC vs Transport).md`
 - neosql 실행 모드/포트 결정: `~/workspace/neosql/docs/architecture/execution-modes.md`
