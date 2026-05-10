@@ -155,23 +155,23 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 
 ### Phase 3-1 · 미실행 감지와 app activation request
 
-- [ ] **test list 제안 → 사람 리뷰 → 합의**
-- [ ] upstream 의존 tool 공통 error/result 상태 정리: `not_running` / `stale_socket` / `timeout` / `app_not_ready`
-- [ ] `timeout` 은 미실행으로 보지 않고 unresponsive/timeout UX 로 반환
-- [ ] upstream 의존 tool 호출 전 요청 시점 `ensureDesktopReady()` 공통 흐름 추가
-- [ ] `running` 이면 추가 작업 없이 원 tool 요청 실행
-- [ ] `not_running` / `stale_socket` 에서 activation request 를 보내면 원 tool 요청은 실행하지 않음
-- [ ] 이미 upstream 에 전달된 요청의 timeout 은 자동 재시도하지 않도록 검증
-- [ ] OS 별 app activation request 모듈 추가
-- [ ] NeoSQL Desktop singleton model 명시: `neosql-mcp` N개 → Electron app 0..1개
-- [ ] `not_running` / `stale_socket` 에서만 activation request 전송
-- [ ] `timeout` 에서는 activation request 를 보내지 않도록 검증
-- [ ] activation 후 readiness polling 없이 `activation_requested` 계열 응답 반환
-- [ ] 결과 상태 정리: `ready` / `activation_requested` / `unresponsive`
-- [ ] 정밀 `not_installed` 판정은 Phase 3-2 범위로 유지
-- [ ] stale POSIX socket 과 listener 부재를 사용자 UX 에서는 같은 미실행 범주로 매핑
-- [ ] 로그/진단 정보에서는 `not_running` 과 `stale_socket` 을 구분 가능하게 유지
-- [ ] MCP host 별 Desktop readiness UX 수동 검증 절차를 `docs/e2e-manual.md`에 추가
+- [x] **test list 제안 → 진행 지시를 합의로 간주**
+- [x] upstream 의존 tool 공통 error/result 상태 정리: `not_running` / `stale_socket` / `timeout` / `app_not_ready`
+- [x] `timeout` 은 미실행으로 보지 않고 unresponsive/timeout UX 로 반환
+- [x] upstream 의존 tool 호출 전 요청 시점 `ensureDesktopReady()` 공통 흐름 추가
+- [x] `running` 이면 추가 작업 없이 원 tool 요청 실행
+- [x] `not_running` / `stale_socket` 에서 activation request 를 보내면 원 tool 요청은 실행하지 않음
+- [x] 이미 upstream 에 전달된 요청의 timeout 은 자동 재시도하지 않도록 검증
+- [x] OS 별 app activation request 모듈 추가
+- [x] NeoSQL Desktop singleton model 명시: `neosql-mcp` N개 → Electron app 0..1개
+- [x] `not_running` / `stale_socket` 에서만 activation request 전송
+- [x] `timeout` 에서는 activation request 를 보내지 않도록 검증
+- [x] activation 후 readiness polling 없이 `activation_requested` 계열 응답 반환
+- [x] 결과 상태 정리: `ready` / `activation_requested` / `unresponsive`
+- [x] 정밀 `not_installed` 판정은 Phase 3-2 범위로 유지
+- [x] stale POSIX socket 과 listener 부재를 사용자 UX 에서는 같은 미실행 범주로 매핑
+- [x] 로그/진단 정보에서는 `not_running` 과 `stale_socket` 을 구분 가능하게 유지
+- [x] MCP host 별 Desktop readiness UX 수동 검증 절차를 `docs/e2e-manual.md`에 추가
 
 ### Phase 3-2 · 미설치 감지와 설치 안내
 

@@ -20,6 +20,8 @@ src/                            (프로덕션 코드만)
 │       ├── schema/
 │       └── sql/
 ├── upstream/    electron-main HTTP 채널 (UDS / Named Pipe)
+│   ├── app-activation.ts       OS-level NeoSQL Desktop activation request
+│   ├── desktop-readiness.ts    tool 호출 전 Desktop health/activation 공통 흐름
 │   ├── endpoint-resolver.ts    profile → socket path 산출, /mcp/rpc 상수
 │   ├── health-check.ts         socket path connect 시도
 │   ├── http-client.ts          JSON-RPC over HTTP POST 클라이언트
@@ -129,3 +131,4 @@ tests ─► src          (테스트는 항상 ../../src/... 로 import)
 
 - 2026-04-29: `src/` 평면 → `cli/mcp/upstream/infra` 4분할, `src/` ↔ `tests/` 분리 도입.
 - 2026-04-29: Phase 2-1 채널 인프라(`http-client`, `sse-parser`)와 9개 MCP tool 시그니처, mock UDS 통합 테스트 추가.
+- 2026-05-11: Phase 3-1 Desktop readiness/activation 모듈 추가.

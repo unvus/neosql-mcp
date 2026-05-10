@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest';
+import { ensureDesktopReady } from '../../src/upstream/desktop-readiness.js';
+import type { ActivationResult } from '../../src/upstream/app-activation.js';
+import type { HealthResult } from '../../src/upstream/health-check.js';
+
+const activationResult: ActivationResult = {
+  status: 'requested',
+  target: {
+    profile: 'prod',
+    productName: 'NeoSQL',
+    appId: 'com.unvus.neosql',
+    activationUrl: 'neosql://mcp/activate',
+  },
+};
+
+describe('ensureDesktopReady', () => {
+  it('returns ready without activation when the upstream health check is running', async () => {
+    const activationCalls: string[] = [];
+
+    const result = await ensureDesktopReady({
+      socketPath: '/tmp/neosql-mcp.sock',
+      profile: 'prod',
+      checkHealth: async (): Promise<HealthResult> => ({ status: 'running' }),
+      requestActivation: async () => {
+        activationCalls.push('called');
+        return activationResult;
+      },
+    });
+
+    expect(result).toEqual({ status: 'ready', healthStatus: 'running' });
+    expect(activationCalls).toEqual([]);
+  });
+
+  it.each(['not_running', 'stale_socket'] as const)(
+    'requests activation and does not mark ready when health status is %s',
+    async (healthStatus) => {
+      const activationCalls: string[] = [];
+
+      const result = await ensureDesktopReady({
+        socketPath: '/tmp/neosql-mcp.sock',
+        profile: 'prod',
+        checkHealth: async () => ({ status: healthStatus }),
+        requestActivation: async () => {
+          activationCalls.push(healthStatus);
+          return activationResult;
+        },
+      });
+
+      expect(result).toEqual({
+        status: 'activation_requested',
+        healthStatus,
+        activation: activationResult,
+      });
+      expect(activationCalls).toEqual([healthStatus]);
+    },
+  );
+
+  it('returns unresponsive without activation when the health check times out', async () => {
+    const activationCalls: string[] = [];
+
+    const result = await ensureDesktopReady({
+      socketPath: '/tmp/neosql-mcp.sock',
+      profile: 'prod',
+      checkHealth: async (): Promise<HealthResult> => ({ status: 'timeout' }),
+      requestActivation: async () => {
+        activationCalls.push('called');
+        return activationResult;
+      },
+    });
+
+    expect(result).toEqual({ status: 'unresponsive', healthStatus: 'timeout' });
+    expect(activationCalls).toEqual([]);
+  });
+});

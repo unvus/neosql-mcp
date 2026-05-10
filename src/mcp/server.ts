@@ -2,6 +2,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerPingTool } from './tools/ping.js';
 import { resolveSocketPath, type Profile } from '../upstream/endpoint-resolver.js';
 import { postRpc as defaultPostRpc } from '../upstream/http-client.js';
+import { ensureDesktopReady as defaultEnsureDesktopReady } from '../upstream/desktop-readiness.js';
+import type { AppActivationRequester } from '../upstream/desktop-readiness.js';
 import { createContextStore } from './tools/context/store.js';
 import type { NeosqlContextPatch } from './tools/context/store.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
@@ -23,6 +25,8 @@ export interface CreateServerOptions {
   profile?: Profile;
   socketPath?: string;
   initialContext?: NeosqlContextPatch;
+  desktopHealthTimeoutMs?: number;
+  requestAppActivation?: AppActivationRequester;
 }
 
 export const createServer = (opts: CreateServerOptions = {}): McpServer => {
@@ -42,7 +46,18 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
       params,
       ...(rpcOpts?.timeoutMs === undefined ? {} : { timeoutMs: rpcOpts.timeoutMs }),
     });
-  const upstreamDeps = { postRpc, contextStore, sessionId: mcpSessionId };
+  const ensureDesktopReady = () =>
+    defaultEnsureDesktopReady({
+      socketPath,
+      profile,
+      ...(opts.desktopHealthTimeoutMs === undefined
+        ? {}
+        : { timeoutMs: opts.desktopHealthTimeoutMs }),
+      ...(opts.requestAppActivation === undefined
+        ? {}
+        : { requestActivation: opts.requestAppActivation }),
+    });
+  const upstreamDeps = { postRpc, contextStore, sessionId: mcpSessionId, ensureDesktopReady };
 
   registerPingTool(server);
   registerGetMcpSessionIdTool(server, mcpSessionId);

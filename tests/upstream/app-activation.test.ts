@@ -1,0 +1,96 @@
+import { EventEmitter } from 'node:events';
+import { describe, expect, it } from 'vitest';
+import {
+  activationTargetForProfile,
+  requestAppActivation,
+  type ProcessLauncher,
+} from '../../src/upstream/app-activation.js';
+
+describe('app activation', () => {
+  it('resolves product names and app ids from the MCP profile', () => {
+    expect(activationTargetForProfile('prod')).toEqual({
+      profile: 'prod',
+      productName: 'NeoSQL',
+      appId: 'com.unvus.neosql',
+      activationUrl: 'neosql://mcp/activate',
+    });
+    expect(activationTargetForProfile('dev')).toEqual({
+      profile: 'dev',
+      productName: 'NeoSQLDev',
+      appId: 'com.unvus.neosql.dev',
+      activationUrl: 'neosql://mcp/activate',
+    });
+  });
+
+  it('requests macOS activation with open -a and the profile product name', async () => {
+    const launched: Array<{ command: string; args: string[]; detached: boolean | undefined }> = [];
+    const launcher: ProcessLauncher = (command, args, options) => {
+      launched.push({ command, args, detached: options.detached });
+      const child = new EventEmitter() as ReturnType<ProcessLauncher>;
+      child.unref = () => undefined;
+      queueMicrotask(() => child.emit('spawn'));
+      return child;
+    };
+
+    const result = await requestAppActivation({
+      profile: 'dev',
+      platform: 'darwin',
+      launcher,
+    });
+
+    expect(result).toMatchObject({ status: 'requested', target: { productName: 'NeoSQLDev' } });
+    expect(launched).toEqual([
+      {
+        command: 'open',
+        args: ['-a', 'NeoSQLDev', 'neosql://mcp/activate'],
+        detached: true,
+      },
+    ]);
+  });
+
+  it('requests Windows activation through the registered neosql URL scheme', async () => {
+    const launched: Array<{ command: string; args: string[] }> = [];
+    const launcher: ProcessLauncher = (command, args) => {
+      launched.push({ command, args });
+      const child = new EventEmitter() as ReturnType<ProcessLauncher>;
+      child.unref = () => undefined;
+      queueMicrotask(() => child.emit('spawn'));
+      return child;
+    };
+
+    const result = await requestAppActivation({
+      profile: 'prod',
+      platform: 'win32',
+      launcher,
+    });
+
+    expect(result.status).toBe('requested');
+    expect(launched).toEqual([
+      {
+        command: 'cmd',
+        args: ['/d', '/s', '/c', 'start "" "neosql://mcp/activate"'],
+      },
+    ]);
+  });
+
+  it('reports request_failed when the OS activation command cannot be spawned', async () => {
+    const launcher: ProcessLauncher = () => {
+      const child = new EventEmitter() as ReturnType<ProcessLauncher>;
+      child.unref = () => undefined;
+      queueMicrotask(() => child.emit('error', new Error('spawn failed')));
+      return child;
+    };
+
+    const result = await requestAppActivation({
+      profile: 'prod',
+      platform: 'linux',
+      launcher,
+    });
+
+    expect(result).toMatchObject({
+      status: 'request_failed',
+      target: { productName: 'NeoSQL' },
+      error: 'spawn failed',
+    });
+  });
+});

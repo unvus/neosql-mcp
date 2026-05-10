@@ -81,6 +81,35 @@ describe('postRpc', () => {
     expect(e.message).toBe('method not found');
   });
 
+  it('preserves JSON-RPC error data.kind for lifecycle error mapping', async () => {
+    const socketPath = makeTestSocketPath();
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: -32002,
+            message: 'NeoSQL renderer is not ready.',
+            data: { kind: 'app-not-ready' },
+          },
+        }),
+      );
+    });
+    cleanups.push(async () => {
+      await closeServer(server);
+      removeSocketFile(socketPath);
+    });
+    await listen(server, socketPath);
+
+    await expect(postRpc({ socketPath, method: 'schema.listTables' })).rejects.toMatchObject({
+      kind: 'rpc-error',
+      rpcCode: -32002,
+      rpcKind: 'app-not-ready',
+    });
+  });
+
   it('throws HttpClientError(http-4xx) on a 4xx HTTP response', async () => {
     const socketPath = makeTestSocketPath();
     const mock = await startMockRpcServer({

@@ -1,4 +1,6 @@
 import { toolErrorResult } from '../error-map.js';
+import { HttpClientError } from '../../upstream/http-client.js';
+import type { DesktopReadyResult } from '../../upstream/desktop-readiness.js';
 import {
   mergeContext,
   type ContextStore,
@@ -9,6 +11,7 @@ import { logger } from '../../infra/logger.js';
 
 export interface ToolTextResult {
   [key: string]: unknown;
+  isError?: true;
   content: Array<{ type: 'text'; text: string }>;
 }
 
@@ -25,6 +28,7 @@ export interface UpstreamToolDeps {
   postRpc: PostRpc;
   contextStore: ContextStore;
   sessionId: string;
+  ensureDesktopReady?: () => Promise<DesktopReadyResult>;
 }
 
 export interface UpstreamToolParams<TInput> {
@@ -52,6 +56,11 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
   } = {},
 ): Promise<ToolTextResult> => {
   try {
+    if (deps.ensureDesktopReady !== undefined) {
+      const desktopReady = await deps.ensureDesktopReady();
+      if (desktopReady.status !== 'ready') return desktopLifecycleResult(desktopReady);
+    }
+
     const context = mergeContext(deps.contextStore.get(), contextPatch);
     const params: UpstreamToolParams<TInput> = {
       sessionId: deps.sessionId,
@@ -62,6 +71,9 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     const result = await deps.postRpc<TResult>(method, params, rpcOpts);
     return jsonTextResult(result, opts.stringifyResult);
   } catch (err) {
+    const desktopLifecycleError = desktopLifecycleErrorResult(err);
+    if (desktopLifecycleError !== undefined) return desktopLifecycleError;
+
     const mappedError = opts.mapErrorResult?.(err);
     if (mappedError !== undefined) return mappedError;
 
@@ -75,6 +87,67 @@ export const jacksonPrettyJsonStringify = (payload: unknown): string => {
   if (compact === undefined) return 'null';
   return formatJacksonPrettyValue(JSON.parse(compact), 0);
 };
+
+const desktopLifecycleResult = (result: Exclude<DesktopReadyResult, { status: 'ready' }>) => {
+  if (result.status === 'activation_requested') {
+    return jsonToolErrorResult({
+      status: 'activation_requested',
+      healthStatus: result.healthStatus,
+      message:
+        'NeoSQL Desktop is not running. Activation was requested. Run the tool again after NeoSQL Desktop is ready.',
+      activation: result.activation,
+      desktop: {
+        singleton: 'neosql-mcp processes share one NeoSQL Desktop instance.',
+      },
+    });
+  }
+
+  return jsonToolErrorResult({
+    status: 'unresponsive',
+    healthStatus: result.healthStatus,
+    reason: 'health_timeout',
+    message:
+      'NeoSQL Desktop did not respond to the readiness check. The original tool request was not sent.',
+  });
+};
+
+const desktopLifecycleErrorResult = (err: unknown): ToolTextResult | undefined => {
+  if (!(err instanceof HttpClientError)) return undefined;
+
+  if (err.kind === 'timeout') {
+    return jsonToolErrorResult({
+      status: 'unresponsive',
+      reason: 'request_timeout',
+      message:
+        'NeoSQL Desktop did not respond before the request timeout. The request was sent once and was not retried.',
+    });
+  }
+
+  if (err.kind === 'rpc-error' && err.rpcKind === 'app-not-ready') {
+    return jsonToolErrorResult({
+      status: 'app_not_ready',
+      reason: err.rpcKind,
+      message:
+        'NeoSQL Desktop is running, but the renderer is not ready yet. Run the tool again after the app finishes loading.',
+    });
+  }
+
+  if (err.kind === 'rpc-error' && err.rpcKind === 'timeout') {
+    return jsonToolErrorResult({
+      status: 'unresponsive',
+      reason: 'renderer_timeout',
+      message:
+        'NeoSQL Desktop did not respond before the renderer timeout. The request was sent once and was not retried.',
+    });
+  }
+
+  return undefined;
+};
+
+const jsonToolErrorResult = (payload: unknown): ToolTextResult => ({
+  isError: true,
+  content: [{ type: 'text', text: JSON.stringify(payload) }],
+});
 
 const formatJacksonPrettyValue = (value: unknown, indentLevel: number): string => {
   if (Array.isArray(value)) return formatJacksonPrettyArray(value, indentLevel);

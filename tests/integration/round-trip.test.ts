@@ -142,7 +142,23 @@ describe('round-trip integration', () => {
 
   it('returns a tool error with "not running" when upstream socket is absent', async () => {
     const socketPath = makeTestSocketPath();
-    const client = await setupClientServer(socketPath);
+    const server = createServer({
+      socketPath,
+      requestAppActivation: async ({ profile }) => ({
+        status: 'requested',
+        target: {
+          profile,
+          productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
+          appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
+          activationUrl: 'neosql://mcp/activate',
+        },
+      }),
+    });
+    const [st, ct] = InMemoryTransport.createLinkedPair();
+    await server.connect(st);
+    const client = new Client({ name: 'test', version: '0.0.0' });
+    await client.connect(ct);
+    cleanups.push(() => client.close());
     const result = await client.callTool({
       name: 'listTables',
       arguments: {},

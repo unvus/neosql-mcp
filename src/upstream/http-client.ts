@@ -16,6 +16,7 @@ export interface HttpClientErrorOptions {
   message: string;
   status?: number;
   rpcCode?: number;
+  rpcKind?: string;
   cause?: unknown;
 }
 
@@ -23,6 +24,7 @@ export class HttpClientError extends Error {
   readonly kind: HttpClientErrorKind;
   readonly status: number | undefined;
   readonly rpcCode: number | undefined;
+  readonly rpcKind: string | undefined;
 
   constructor(opts: HttpClientErrorOptions) {
     super(opts.message, opts.cause !== undefined ? { cause: opts.cause } : undefined);
@@ -30,6 +32,7 @@ export class HttpClientError extends Error {
     this.kind = opts.kind;
     this.status = opts.status;
     this.rpcCode = opts.rpcCode;
+    this.rpcKind = opts.rpcKind;
   }
 }
 
@@ -53,6 +56,9 @@ interface JsonRpcFailure {
   error: {
     code: number;
     message: string;
+    data?: {
+      kind?: string;
+    };
   };
 }
 
@@ -155,6 +161,9 @@ export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => 
               new HttpClientError({
                 kind: 'rpc-error',
                 rpcCode: parsed.error.code,
+                ...(parsed.error.data?.kind === undefined
+                  ? {}
+                  : { rpcKind: parsed.error.data.kind }),
                 message: parsed.error.message,
               }),
             );
