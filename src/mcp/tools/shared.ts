@@ -23,12 +23,14 @@ export type PostRpc = <T = unknown>(
 
 export type JsonStringifier = (payload: unknown) => string;
 export type ErrorResultMapper = (err: unknown) => ToolTextResult | undefined;
+export type DesktopFocusRequester = () => Promise<void>;
 
 export interface UpstreamToolDeps {
   postRpc: PostRpc;
   contextStore: ContextStore;
   sessionId: string;
   ensureDesktopReady?: () => Promise<DesktopReadyResult>;
+  requestDesktopFocus?: DesktopFocusRequester;
 }
 
 export interface UpstreamToolParams<TInput> {
@@ -71,7 +73,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     const result = await deps.postRpc<TResult>(method, params, rpcOpts);
     return jsonTextResult(result, opts.stringifyResult);
   } catch (err) {
-    const desktopLifecycleError = desktopLifecycleErrorResult(err);
+    const desktopLifecycleError = desktopLifecycleErrorResult(err, deps);
     if (desktopLifecycleError !== undefined) return desktopLifecycleError;
 
     const mappedError = opts.mapErrorResult?.(err);
@@ -122,7 +124,10 @@ const desktopLifecycleResult = (result: Exclude<DesktopReadyResult, { status: 'r
   });
 };
 
-const desktopLifecycleErrorResult = (err: unknown): ToolTextResult | undefined => {
+const desktopLifecycleErrorResult = (
+  err: unknown,
+  deps: UpstreamToolDeps,
+): ToolTextResult | undefined => {
   if (!(err instanceof HttpClientError)) return undefined;
 
   if (err.kind === 'timeout') {
@@ -144,6 +149,7 @@ const desktopLifecycleErrorResult = (err: unknown): ToolTextResult | undefined =
   }
 
   if (err.kind === 'rpc-error' && err.rpcKind === 'unauthenticated') {
+    requestDesktopFocusWithoutBlockingResponse(deps);
     return jsonToolErrorResult({
       status: 'unauthenticated',
       reason: err.rpcKind,
@@ -162,6 +168,18 @@ const desktopLifecycleErrorResult = (err: unknown): ToolTextResult | undefined =
   }
 
   return undefined;
+};
+
+const requestDesktopFocusWithoutBlockingResponse = (deps: UpstreamToolDeps): void => {
+  // Intentionally fire-and-forget so focus failures never alter MCP tool responses.
+  try {
+    const focusRequest = deps.requestDesktopFocus?.();
+    void Promise.resolve(focusRequest).catch((focusErr) => {
+      logger.warn({ component: 'McpTool', err: focusErr }, 'Desktop focus request failed');
+    });
+  } catch (focusErr) {
+    logger.warn({ component: 'McpTool', err: focusErr }, 'Desktop focus request failed');
+  }
 };
 
 const jsonToolErrorResult = (payload: unknown): ToolTextResult => ({

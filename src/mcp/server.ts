@@ -7,6 +7,7 @@ import type {
   AppActivationRequester,
   DesktopInstallationChecker,
 } from '../upstream/desktop-readiness.js';
+import { requestAppActivation as defaultRequestAppActivation } from '../upstream/app-activation.js';
 import { createContextStore } from './tools/context/store.js';
 import type { ContextStore, NeosqlContextPatch } from './tools/context/store.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
@@ -64,6 +65,7 @@ const createUpstreamToolDeps = (
   contextStore,
   sessionId: mcpSessionId,
   ensureDesktopReady: createDesktopReadyChecker(opts, profile, socketPath),
+  requestDesktopFocus: createDesktopFocusRequester(opts, profile),
 });
 
 const createPostRpc =
@@ -95,6 +97,11 @@ const createDesktopReadyChecker =
         ? {}
         : { checkInstallation: opts.checkDesktopInstallation }),
     });
+
+const createDesktopFocusRequester = (opts: CreateServerOptions, profile: Profile) => async () => {
+  const activationRequester = opts.requestAppActivation ?? defaultRequestAppActivation;
+  await activationRequester({ profile });
+};
 
 const registerTools = (
   server: McpServer,

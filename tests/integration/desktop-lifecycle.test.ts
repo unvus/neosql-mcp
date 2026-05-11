@@ -54,6 +54,7 @@ describe('desktop lifecycle integration', () => {
   it('returns unauthenticated when the desktop is running but NeoSQL is not signed in', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
+    const activationCalls: string[] = [];
     const mock = await startMockRpcServer({
       socketPath,
       handler: (req) => {
@@ -71,7 +72,20 @@ describe('desktop lifecycle integration', () => {
       removeSocketFile(socketPath);
     });
 
-    const client = await setupClient(socketPath);
+    const client = await setupClient(socketPath, {
+      requestAppActivation: async ({ profile }) => {
+        activationCalls.push(profile);
+        return {
+          status: 'requested',
+          target: {
+            profile,
+            productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
+            appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
+            activationUrl: 'neosql://mcp/activate',
+          },
+        };
+      },
+    });
     const result = await client.callTool({ name: 'listTables', arguments: {} });
 
     expect(result.isError).toBe(true);
@@ -85,6 +99,7 @@ describe('desktop lifecycle integration', () => {
       reason: 'unauthenticated',
     });
     expect(received.map((req) => req.method)).toEqual(['schema.listTables']);
+    expect(activationCalls).toEqual(['prod']);
   });
 
   it('requests activation and skips the original tool request when the socket is absent', async () => {

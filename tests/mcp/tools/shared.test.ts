@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { HttpClientError } from '../../../src/upstream/http-client.js';
 import { callUpstreamTool, type UpstreamToolDeps } from '../../../src/mcp/tools/shared.js';
 import { createContextStore } from '../../../src/mcp/tools/context/store.js';
@@ -141,6 +141,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
   });
 
   it('maps unauthenticated JSON-RPC errors to a sign-in required tool result', async () => {
+    const requestDesktopFocus = vi.fn(async () => undefined);
     const deps: UpstreamToolDeps = {
       postRpc: async () => {
         throw new HttpClientError({
@@ -153,6 +154,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      requestDesktopFocus,
     };
 
     const result = await callUpstreamTool(deps, 'schema.listTables', {});
@@ -168,5 +170,42 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       reason: 'unauthenticated',
     });
     expect(payload.message).toMatch(/Sign in to NeoSQL Desktop/);
+    expect(requestDesktopFocus).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the unauthenticated tool result when desktop focus request fails', async () => {
+    const requestDesktopFocusMock = vi.fn(() => {
+      throw new Error('focus failed');
+    });
+    const requestDesktopFocus = requestDesktopFocusMock as unknown as () => Promise<void>;
+    const deps: UpstreamToolDeps = {
+      postRpc: async () => {
+        throw new HttpClientError({
+          kind: 'rpc-error',
+          rpcCode: -32001,
+          rpcKind: 'unauthenticated',
+          message: 'User is not authenticated. Sign in to the NeoSQL app first.',
+        });
+      },
+      contextStore: createContextStore(),
+      sessionId: 'session-1',
+      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      requestDesktopFocus,
+    };
+
+    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+
+    expect(result.isError).toBe(true);
+    const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
+      status?: string;
+      reason?: string;
+      focus?: unknown;
+    };
+    expect(payload).toMatchObject({
+      status: 'unauthenticated',
+      reason: 'unauthenticated',
+    });
+    expect(payload.focus).toBeUndefined();
+    expect(requestDesktopFocusMock).toHaveBeenCalledTimes(1);
   });
 });
