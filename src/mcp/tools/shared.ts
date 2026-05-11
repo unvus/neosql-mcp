@@ -102,6 +102,17 @@ const desktopLifecycleResult = (result: Exclude<DesktopReadyResult, { status: 'r
     });
   }
 
+  if (result.status === 'not_installed') {
+    return jsonToolErrorResult({
+      status: 'not_installed',
+      healthStatus: result.healthStatus,
+      message:
+        'NeoSQL Desktop was not found in the supported macOS application directories. Install NeoSQL Desktop or move the app to /Applications or ~/Applications, then run the tool again. See the install guide for details.',
+      installGuideUrl: result.installation.installGuideUrl,
+      installation: result.installation,
+    });
+  }
+
   return jsonToolErrorResult({
     status: 'unresponsive',
     healthStatus: result.healthStatus,
@@ -157,10 +168,7 @@ const formatJacksonPrettyValue = (value: unknown, indentLevel: number): string =
   return JSON.stringify(value);
 };
 
-const formatJacksonPrettyObject = (
-  value: Record<string, unknown>,
-  indentLevel: number,
-): string => {
+const formatJacksonPrettyObject = (value: Record<string, unknown>, indentLevel: number): string => {
   const entries = Object.entries(value);
   if (entries.length === 0) return '{ }';
 

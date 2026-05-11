@@ -9,6 +9,8 @@ src/                            (프로덕션 코드만)
 ├── cli/         바이너리 진입점 + CLI 인자 파싱
 │   ├── cli.ts                  package.json#bin 타깃
 │   └── cli-args.ts             --profile prod/dev 인자 파싱
+│   └── check-desktop-installation.ts
+│                               macOS 설치 감지 수동 진단 스크립트
 ├── mcp/         MCP stdio 서버 + tool 카탈로그
 │   ├── server.ts               createServer 팩토리
 │   └── tools/                  MCP 도구 등록
@@ -118,7 +120,7 @@ tests ─► src          (테스트는 항상 ../../src/... 로 import)
 ## 빌드 진입점
 
 - `package.json#bin` → `dist/cli.js`
-- `tsup.config.ts#entry` → `src/cli/cli.ts`
+- `tsup.config.ts#entry` → `src/cli/cli.ts`, `src/cli/check-desktop-installation.ts`
 - 진입점 변경 시 두 파일을 동시에 수정한다.
 
 ## tsconfig / vitest

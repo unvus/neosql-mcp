@@ -171,12 +171,14 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 
 ### Phase 3-2 · 미설치 감지와 설치 안내
 
-- [ ] **test list 제안 → 사람 리뷰 → 합의**
-- [ ] OS 별 NeoSQL Desktop 설치 위치 탐색 정책 정리
-- [ ] prod/dev product name 및 app id 기준 반영 (`NeoSQL`, `NeoSQLDev`, `com.unvus.neosql`, `com.unvus.neosql.dev`)
-- [ ] 미설치 사용자-facing 설치 안내 메시지 정리
-- [ ] 자동 다운로드/설치 여부는 별도 결정 전까지 범위 밖으로 명시
-- [ ] 설치 위치를 확정할 수 없는 환경에서 추측 실행하지 않고 안내만 반환하도록 검증
+- [x] **test list 제안 → macOS 일반 설치 디렉토리 우선 구현 지시를 합의로 간주**
+- [x] macOS NeoSQL Desktop 설치 위치 탐색 정책 정리 (`/Applications`, `~/Applications`)
+- [ ] Windows 설치 위치 탐색 정책 정리 (설치/portable 기준 확인 후 진행)
+- [x] prod/dev product name 및 app id 기준 반영 (`NeoSQL`, `NeoSQLDev`, `com.unvus.neosql`, `com.unvus.neosql.dev`)
+- [x] macOS 미설치 사용자-facing 설치 안내 메시지와 설치 안내 링크 제공
+- [x] 자동 다운로드/설치 여부는 별도 결정 전까지 범위 밖으로 명시
+- [x] macOS 지원 설치 위치에서 실행 파일을 찾지 못하면 activation 없이 `not_installed` 반환하도록 검증
+- [x] Windows/기타 OS 는 현재 설치 판별하지 않고 기존 activation 흐름 유지
 
 ## Phase 4 이상
 

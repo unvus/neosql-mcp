@@ -25,6 +25,18 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
             activationUrl: 'neosql://mcp/activate',
           },
         },
+        installation: {
+          status: 'installed',
+          platform: 'darwin',
+          target: {
+            profile: 'prod',
+            productName: 'NeoSQL',
+            appId: 'com.unvus.neosql',
+            activationUrl: 'neosql://mcp/activate',
+          },
+          executablePath: '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+          checkedExecutablePaths: ['/Applications/NeoSQL.app/Contents/MacOS/NeoSQL'],
+        },
       }),
     };
 
@@ -57,6 +69,53 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
     };
     expect(payload).toMatchObject({ status: 'unresponsive', reason: 'request_timeout' });
     expect(rpcCalls).toEqual(['schema.listTables']);
+  });
+
+  it('does not call upstream RPC when desktop is not installed', async () => {
+    const rpcCalls: string[] = [];
+    const deps: UpstreamToolDeps = {
+      postRpc: async (method) => {
+        rpcCalls.push(method);
+        return { ok: true } as never;
+      },
+      contextStore: createContextStore(),
+      sessionId: 'session-1',
+      ensureDesktopReady: async () => ({
+        status: 'not_installed',
+        healthStatus: 'not_running',
+        installation: {
+          status: 'not_installed',
+          platform: 'darwin',
+          target: {
+            profile: 'prod',
+            productName: 'NeoSQL',
+            appId: 'com.unvus.neosql',
+            activationUrl: 'neosql://mcp/activate',
+          },
+          checkedExecutablePaths: [
+            '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+            '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+          ],
+          installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+        },
+      }),
+    };
+
+    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+
+    expect(result.isError).toBe(true);
+    const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
+      status?: string;
+      installGuideUrl?: string;
+      installation?: { checkedExecutablePaths?: string[] };
+    };
+    expect(payload.status).toBe('not_installed');
+    expect(payload.installGuideUrl).toBe('https://neosql.unvus.com/ko/docs/install');
+    expect(payload.installation?.checkedExecutablePaths).toEqual([
+      '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+      '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+    ]);
+    expect(rpcCalls).toEqual([]);
   });
 
   it('maps app-not-ready JSON-RPC errors to the shared desktop lifecycle result', async () => {

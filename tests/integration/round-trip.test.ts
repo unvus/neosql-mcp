@@ -140,10 +140,25 @@ describe('round-trip integration', () => {
     expect(content[0]?.text).toMatch(/Server error/);
   });
 
-  it('returns a tool error with "not running" when upstream socket is absent', async () => {
+  it('returns a not_installed tool error with an install guide link when macOS app paths are absent', async () => {
     const socketPath = makeTestSocketPath();
     const server = createServer({
       socketPath,
+      checkDesktopInstallation: async ({ profile }) => ({
+        status: 'not_installed',
+        platform: 'darwin',
+        target: {
+          profile,
+          productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
+          appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
+          activationUrl: 'neosql://mcp/activate',
+        },
+        checkedExecutablePaths: [
+          '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+          '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+        ],
+        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+      }),
       requestAppActivation: async ({ profile }) => ({
         status: 'requested',
         target: {
@@ -165,6 +180,13 @@ describe('round-trip integration', () => {
     });
     expect(result.isError).toBe(true);
     const content = result.content as Array<{ type: string; text: string }>;
-    expect(content[0]?.text).toMatch(/not running/);
+    const payload = JSON.parse(content[0]?.text ?? '{}') as {
+      status?: string;
+      installGuideUrl?: string;
+    };
+    expect(payload).toMatchObject({
+      status: 'not_installed',
+      installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+    });
   });
 });

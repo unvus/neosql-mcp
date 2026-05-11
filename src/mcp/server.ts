@@ -3,7 +3,10 @@ import { registerPingTool } from './tools/ping.js';
 import { resolveSocketPath, type Profile } from '../upstream/endpoint-resolver.js';
 import { postRpc as defaultPostRpc } from '../upstream/http-client.js';
 import { ensureDesktopReady as defaultEnsureDesktopReady } from '../upstream/desktop-readiness.js';
-import type { AppActivationRequester } from '../upstream/desktop-readiness.js';
+import type {
+  AppActivationRequester,
+  DesktopInstallationChecker,
+} from '../upstream/desktop-readiness.js';
 import { createContextStore } from './tools/context/store.js';
 import type { NeosqlContextPatch } from './tools/context/store.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
@@ -27,6 +30,7 @@ export interface CreateServerOptions {
   initialContext?: NeosqlContextPatch;
   desktopHealthTimeoutMs?: number;
   requestAppActivation?: AppActivationRequester;
+  checkDesktopInstallation?: DesktopInstallationChecker;
 }
 
 export const createServer = (opts: CreateServerOptions = {}): McpServer => {
@@ -56,6 +60,9 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
       ...(opts.requestAppActivation === undefined
         ? {}
         : { requestActivation: opts.requestAppActivation }),
+      ...(opts.checkDesktopInstallation === undefined
+        ? {}
+        : { checkInstallation: opts.checkDesktopInstallation }),
     });
   const upstreamDeps = { postRpc, contextStore, sessionId: mcpSessionId, ensureDesktopReady };
 
