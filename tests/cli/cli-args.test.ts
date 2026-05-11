@@ -48,9 +48,9 @@ describe('parseCliArgs', () => {
       parseCliArgs([
         '--project',
         '6c9fede500f949079f7c553cfd96ec72',
-        '--connection',
+        '--default-connection',
         '88',
-        '--schema',
+        '--default-schema',
         'appdb',
       ]),
     ).toEqual({
@@ -67,8 +67,8 @@ describe('parseCliArgs', () => {
     expect(
       parseCliArgs([
         '--project=project-1',
-        '--connection=0',
-        '--schema=public',
+        '--default-connection=0',
+        '--default-schema=public',
       ]),
     ).toEqual({
       profile: 'prod',

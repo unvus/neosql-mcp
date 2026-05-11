@@ -227,7 +227,7 @@ fields로 변환하거나, 새 handler에서 직접 사용하면 된다.
 
 - MCP SDK request `extra`에서 stdio connection을 안정적으로 구분할 수 있는지 확인한다.
 - multi-client-in-one-process 구조가 필요해지면 `ContextStore`를 connection scoped로 바꾼다.
-- MCP client 설정의 기존 HTTP header 값은 `--project`, `--connection`, `--schema`
+- MCP client 설정의 기존 HTTP header 값은 `--project`, `--default-connection`, `--default-schema`
   CLI option 으로 주입한다. 상세 mapping은
   [`mcp-client-config.md`](mcp-client-config.md)를 따른다.
 - Electron app 쪽 SQL/ERD/log grouping이 `<uuid>` 형식의 session id를 문제없이

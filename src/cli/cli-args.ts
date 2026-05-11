@@ -18,10 +18,10 @@ export const parseCliArgs = (argv: readonly string[]): ParsedCliArgs => {
     else if (arg.startsWith('--profile=')) profile = parseProfile(valueAfterEquals(arg)) ?? profile;
     else if (arg === '--project') initialContext.projectId = argv[++i];
     else if (arg.startsWith('--project=')) initialContext.projectId = valueAfterEquals(arg);
-    else if (arg === '--connection') initialContext.connectionId = argv[++i];
-    else if (arg.startsWith('--connection=')) initialContext.connectionId = valueAfterEquals(arg);
-    else if (arg === '--schema') initialContext.schema = argv[++i];
-    else if (arg.startsWith('--schema=')) initialContext.schema = valueAfterEquals(arg);
+    else if (arg === '--default-connection') initialContext.connectionId = argv[++i];
+    else if (arg.startsWith('--default-connection=')) initialContext.connectionId = valueAfterEquals(arg);
+    else if (arg === '--default-schema') initialContext.schema = argv[++i];
+    else if (arg.startsWith('--default-schema=')) initialContext.schema = valueAfterEquals(arg);
   }
   return { profile, initialContext };
 };
