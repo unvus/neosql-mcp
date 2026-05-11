@@ -51,6 +51,42 @@ describe('desktop lifecycle integration', () => {
     expect(received.map((req) => req.method)).toEqual(['schema.listTables']);
   });
 
+  it('returns unauthenticated when the desktop is running but NeoSQL is not signed in', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: (req) => {
+        received.push(req);
+        return {
+          kind: 'rpc-error',
+          code: -32001,
+          message: 'User is not authenticated. Sign in to the NeoSQL app first.',
+          rpcKind: 'unauthenticated',
+        };
+      },
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    const client = await setupClient(socketPath);
+    const result = await client.callTool({ name: 'listTables', arguments: {} });
+
+    expect(result.isError).toBe(true);
+    const content = result.content as Array<{ type: string; text: string }>;
+    const payload = JSON.parse(content[0]?.text ?? '{}') as {
+      status?: string;
+      reason?: string;
+    };
+    expect(payload).toMatchObject({
+      status: 'unauthenticated',
+      reason: 'unauthenticated',
+    });
+    expect(received.map((req) => req.method)).toEqual(['schema.listTables']);
+  });
+
   it('requests activation and skips the original tool request when the socket is absent', async () => {
     const socketPath = makeTestSocketPath();
     const activationCalls: string[] = [];

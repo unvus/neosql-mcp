@@ -143,6 +143,15 @@ const desktopLifecycleErrorResult = (err: unknown): ToolTextResult | undefined =
     });
   }
 
+  if (err.kind === 'rpc-error' && err.rpcKind === 'unauthenticated') {
+    return jsonToolErrorResult({
+      status: 'unauthenticated',
+      reason: err.rpcKind,
+      message:
+        'NeoSQL Desktop is running, but no user is signed in. Sign in to NeoSQL Desktop, then run the tool again.',
+    });
+  }
+
   if (err.kind === 'rpc-error' && err.rpcKind === 'timeout') {
     return jsonToolErrorResult({
       status: 'unresponsive',

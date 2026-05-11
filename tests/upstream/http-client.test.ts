@@ -83,30 +83,47 @@ describe('postRpc', () => {
 
   it('preserves JSON-RPC error data.kind for lifecycle error mapping', async () => {
     const socketPath = makeTestSocketPath();
-    const server = http.createServer((_req, res) => {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          error: {
-            code: -32002,
-            message: 'NeoSQL renderer is not ready.',
-            data: { kind: 'app-not-ready' },
-          },
-        }),
-      );
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: () => ({
+        kind: 'rpc-error',
+        code: -32002,
+        message: 'NeoSQL renderer is not ready.',
+        rpcKind: 'app-not-ready',
+      }),
     });
     cleanups.push(async () => {
-      await closeServer(server);
+      await mock.close();
       removeSocketFile(socketPath);
     });
-    await listen(server, socketPath);
 
     await expect(postRpc({ socketPath, method: 'schema.listTables' })).rejects.toMatchObject({
       kind: 'rpc-error',
       rpcCode: -32002,
       rpcKind: 'app-not-ready',
+    });
+  });
+
+  it('preserves unauthenticated JSON-RPC error kind from the renderer handler', async () => {
+    const socketPath = makeTestSocketPath();
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: () => ({
+        kind: 'rpc-error',
+        code: -32001,
+        message: 'User is not authenticated. Sign in to the NeoSQL app first.',
+        rpcKind: 'unauthenticated',
+      }),
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+
+    await expect(postRpc({ socketPath, method: 'schema.listTables' })).rejects.toMatchObject({
+      kind: 'rpc-error',
+      rpcCode: -32001,
+      rpcKind: 'unauthenticated',
     });
   });
 

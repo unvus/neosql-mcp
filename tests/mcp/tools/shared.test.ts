@@ -139,4 +139,34 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as { status?: string };
     expect(payload.status).toBe('app_not_ready');
   });
+
+  it('maps unauthenticated JSON-RPC errors to a sign-in required tool result', async () => {
+    const deps: UpstreamToolDeps = {
+      postRpc: async () => {
+        throw new HttpClientError({
+          kind: 'rpc-error',
+          rpcCode: -32001,
+          rpcKind: 'unauthenticated',
+          message: 'User is not authenticated. Sign in to the NeoSQL app first.',
+        });
+      },
+      contextStore: createContextStore(),
+      sessionId: 'session-1',
+      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+    };
+
+    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+
+    expect(result.isError).toBe(true);
+    const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
+      status?: string;
+      reason?: string;
+      message?: string;
+    };
+    expect(payload).toMatchObject({
+      status: 'unauthenticated',
+      reason: 'unauthenticated',
+    });
+    expect(payload.message).toMatch(/Sign in to NeoSQL Desktop/);
+  });
 });

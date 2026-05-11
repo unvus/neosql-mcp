@@ -9,7 +9,7 @@ export interface MockRpcRequest {
 
 export type MockRpcResponse =
   | { kind: 'result'; result: unknown }
-  | { kind: 'rpc-error'; code: number; message: string }
+  | { kind: 'rpc-error'; code: number; message: string; rpcKind?: string }
   | { kind: 'http'; status: number; body?: string; contentType?: string };
 
 export interface StartMockOpts {
@@ -65,7 +65,13 @@ export const startMockRpcServer = async (opts: StartMockOpts): Promise<StartedMo
               JSON.stringify({
                 jsonrpc: '2.0',
                 id: responseId,
-                error: { code: handlerResult.code, message: handlerResult.message },
+                error: {
+                  code: handlerResult.code,
+                  message: handlerResult.message,
+                  ...(handlerResult.rpcKind === undefined
+                    ? {}
+                    : { data: { kind: handlerResult.rpcKind } }),
+                },
               }),
             );
             break;
