@@ -8,7 +8,7 @@ import type {
   DesktopInstallationChecker,
 } from '../upstream/desktop-readiness.js';
 import { createContextStore } from './tools/context/store.js';
-import type { NeosqlContextPatch } from './tools/context/store.js';
+import type { ContextStore, NeosqlContextPatch } from './tools/context/store.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
 import { registerListTablesTool } from './tools/schema/list-tables.js';
 import { registerGetTableDetailsTool } from './tools/schema/get-table-details.js';
@@ -20,6 +20,7 @@ import { registerModifyTablesTool } from './tools/ddl/modify-tables.js';
 import { registerExecuteQueryTool } from './tools/sql/execute-query.js';
 import { mcpSessionId } from './session.js';
 import { registerGetMcpSessionIdTool } from './tools/get-mcp-session-id.js';
+import type { PostRpc, UpstreamToolDeps } from './tools/shared.js';
 
 export const SERVER_NAME = 'neosql-mcp';
 export const SERVER_VERSION = '0.0.1';
@@ -38,8 +39,36 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
   const profile = opts.profile ?? 'prod';
   const socketPath = opts.socketPath ?? resolveSocketPath(profile);
   const contextStore = createContextStore();
-  if (opts.initialContext !== undefined) contextStore.set(opts.initialContext);
-  const postRpc = <T = unknown>(
+  applyInitialContext(contextStore, opts.initialContext);
+
+  const upstreamDeps = createUpstreamToolDeps(opts, profile, socketPath, contextStore);
+  registerTools(server, contextStore, upstreamDeps);
+
+  return server;
+};
+
+const applyInitialContext = (
+  contextStore: ContextStore,
+  initialContext: NeosqlContextPatch | undefined,
+): void => {
+  if (initialContext !== undefined) contextStore.set(initialContext);
+};
+
+const createUpstreamToolDeps = (
+  opts: CreateServerOptions,
+  profile: Profile,
+  socketPath: string,
+  contextStore: ContextStore,
+): UpstreamToolDeps => ({
+  postRpc: createPostRpc(socketPath),
+  contextStore,
+  sessionId: mcpSessionId,
+  ensureDesktopReady: createDesktopReadyChecker(opts, profile, socketPath),
+});
+
+const createPostRpc =
+  (socketPath: string): PostRpc =>
+  <T = unknown>(
     method: string,
     params?: unknown,
     rpcOpts?: { timeoutMs?: number },
@@ -50,7 +79,9 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
       params,
       ...(rpcOpts?.timeoutMs === undefined ? {} : { timeoutMs: rpcOpts.timeoutMs }),
     });
-  const ensureDesktopReady = () =>
+
+const createDesktopReadyChecker =
+  (opts: CreateServerOptions, profile: Profile, socketPath: string) => () =>
     defaultEnsureDesktopReady({
       socketPath,
       profile,
@@ -64,8 +95,12 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
         ? {}
         : { checkInstallation: opts.checkDesktopInstallation }),
     });
-  const upstreamDeps = { postRpc, contextStore, sessionId: mcpSessionId, ensureDesktopReady };
 
+const registerTools = (
+  server: McpServer,
+  contextStore: ContextStore,
+  upstreamDeps: UpstreamToolDeps,
+): void => {
   registerPingTool(server);
   registerGetMcpSessionIdTool(server, mcpSessionId);
   registerGenerateCodeTool(server, upstreamDeps);
@@ -77,6 +112,4 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
   registerCreateTablesTool(server, upstreamDeps);
   registerModifyTablesTool(server, upstreamDeps);
   registerExecuteQueryTool(server, upstreamDeps);
-
-  return server;
 };
