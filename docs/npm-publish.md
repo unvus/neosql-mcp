@@ -54,7 +54,7 @@ npm view neosql-mcp version
 
 4. README 사용자 안내 확인
    - 설치된 NeoSQL Desktop이 필요하다는 전제.
-   - `--profile dev` 등 CLI 옵션.
+   - `--profile=dev` 등 CLI 옵션.
    - MCP host 설정 예시는 `docs/mcp-client-config.md`와 일치해야 한다.
 
 5. 배포 권한과 2FA 준비
@@ -218,7 +218,7 @@ dev profile이 필요하면:
   "mcpServers": {
     "neosql-dev": {
       "command": "npx",
-      "args": ["-y", "neosql-mcp@latest", "--profile", "dev"]
+      "args": ["-y", "neosql-mcp@latest", "--profile=dev"]
     }
   }
 }

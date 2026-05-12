@@ -33,11 +33,13 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 - [x] **test list 제안 → 사람 리뷰 → 합의** (`docs/testing.md` 워크플로 1–2단계)
 - [x] `endpointResolver` 모듈 — profile (prod, dev, local, stage) → socket path 산출, HTTP path 상수 (`/mcp/rpc`) 보유
-- [x] profile 인지: `--profile <prod|dev|local|stage>` CLI 인자 파싱 (`src/cli-args.ts`)
+- [x] profile 인지: `--profile=<prod|dev|local|stage>` CLI 인자 파싱 (`src/cli-args.ts`)
 - [x] `healthCheck` 모듈 — `http.request({ socketPath })` 로 connect + HTTP response 시도. 결과: `running` / `not_running` / `stale_socket` / `timeout`
 - [x] 테스트: prod·dev·local·stage path 산출 / cli-args / health-check 5건 (running·not_running·timeout 양 OS, stale_socket 2건은 POSIX-only `it.skipIf`)
 - [x] `docs/endpoint-resolver.md` (경로 산출 규칙, profile suffix, OS 별 차이, sun_path 한계)
-- [ ] (보류) neosql 본체 PR — 본체 작업 시점에 별도 진행 (동일 규칙으로 socket listen + chmod 0600 / Named Pipe ACL, stale unlink, profile suffix 일치)
+- [ ] (보류) neosql 본체 PR — OS별 본체 endpoint listen 규칙 일치
+  - [x] neosql 본체 macOS/POSIX — 동일 socket path 규칙, `chmod 0600`, stale unlink, profile suffix 일치
+  - [ ] neosql 본체 Windows — 동일 Named Pipe 규칙, ACL hardening, profile suffix 일치
 
 ---
 

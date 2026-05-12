@@ -6,40 +6,32 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs([])).toEqual({ profile: 'prod', initialContext: {} });
   });
 
-  it('selects dev profile when --profile dev is given', () => {
-    expect(parseCliArgs(['--profile', 'dev'])).toEqual({ profile: 'dev', initialContext: {} });
-  });
-
-  it('selects prod profile when --profile prod is given', () => {
-    expect(parseCliArgs(['--profile', 'prod'])).toEqual({ profile: 'prod', initialContext: {} });
-  });
-
   it('parses equals-form profile flags', () => {
     expect(parseCliArgs(['--profile=dev'])).toEqual({ profile: 'dev', initialContext: {} });
   });
 
   it('accepts local and stage profiles', () => {
-    expect(parseCliArgs(['--profile', 'local'])).toEqual({ profile: 'local', initialContext: {} });
     expect(parseCliArgs(['--profile=stage'])).toEqual({ profile: 'stage', initialContext: {} });
+    expect(parseCliArgs(['--profile=local'])).toEqual({ profile: 'local', initialContext: {} });
   });
 
   it('uses the last profile value when multiple profile flags are given', () => {
-    expect(parseCliArgs(['--profile', 'dev', '--profile', 'prod'])).toEqual({
+    expect(parseCliArgs(['--profile=dev', '--profile=prod'])).toEqual({
       profile: 'prod',
       initialContext: {},
     });
   });
 
   it('ignores invalid profile values and keeps the previous profile', () => {
-    expect(parseCliArgs(['--profile', 'dev', '--profile', 'staging'])).toEqual({
+    expect(parseCliArgs(['--profile=dev', '--profile=staging'])).toEqual({
       profile: 'dev',
       initialContext: {},
     });
   });
 
-  it('keeps --dev and --prod as legacy profile aliases', () => {
+  it('ignores space-separated profile flags and unsupported aliases', () => {
     expect(parseCliArgs(['--dev', '--prod', '--profile', 'dev'])).toEqual({
-      profile: 'dev',
+      profile: 'prod',
       initialContext: {},
     });
   });
@@ -48,7 +40,7 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs(['--foo'])).toEqual({ profile: 'prod', initialContext: {} });
   });
 
-  it('parses initial context flags from npx arguments', () => {
+  it('ignores space-separated initial context flags', () => {
     expect(
       parseCliArgs([
         '--project',
@@ -60,11 +52,7 @@ describe('parseCliArgs', () => {
       ]),
     ).toEqual({
       profile: 'prod',
-      initialContext: {
-        projectId: '6c9fede500f949079f7c553cfd96ec72',
-        connectionId: '88',
-        schema: 'appdb',
-      },
+      initialContext: {},
     });
   });
 

@@ -20,7 +20,7 @@
 | type | 용도 | 예시 |
 |---|---|---|
 | `feat` | 새 기능 | `feat: ping tool 추가` |
-| `fix` | 버그 수정 | `fix(cli): --dev 플래그 우선순위 보정` |
+| `fix` | 버그 수정 | `fix(cli): --profile 우선순위 보정` |
 | `refactor` | 동작 변경 없는 구조 개선 | `refactor: src/ 4분할 + tests/ 분리` |
 | `test` | 테스트만 추가/수정 | `test(upstream): health-check stale_socket 케이스 추가` |
 | `docs` | 문서만 수정 (코드 변경 없음) | `docs: project-structure.md 추가` |

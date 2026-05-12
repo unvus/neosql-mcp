@@ -29,7 +29,7 @@ describe('check-desktop-installation CLI', () => {
   it('prints the desktop installation result as JSON for the selected profile', async () => {
     let output = '';
 
-    await runDesktopInstallationCheck(['--profile', 'dev'], (text) => {
+    await runDesktopInstallationCheck(['--profile=dev'], (text) => {
       output += text;
     });
 

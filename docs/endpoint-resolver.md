@@ -18,7 +18,7 @@ path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`)
 
 - `suffix`:
   - prod 빌드(npm 배포본 / `npx neosql-mcp`): `''`
-  - non-prod profile(`--profile dev|local|stage`): `'-' + profile`
+  - non-prod profile(`--profile=dev|local|stage`): `'-' + profile`
 - macOS 의 `os.tmpdir()` 은 OS 가 user-isolated 경로(`/var/folders/.../T/`) 를 반환하므로 다른 사용자와 충돌하지 않는다.
 - Linux 의 `os.tmpdir()` 은 보통 공유 `/tmp` — 다중 사용자 시 보정(예: XDG_RUNTIME_DIR 또는 `${HOME}/.cache/neosql/`) 은 **본체(electron-main) 작업 시점에 결정**. 본 모듈은 결정 전까지 `os.tmpdir()` 그대로 사용.
 
@@ -34,10 +34,9 @@ path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`)
 
 ## profile 인지
 
-- mcp 측: CLI 인자에서 `--profile <prod|dev|local|stage>` 값으로 구분 (`parseCliArgs`).
+- mcp 측: CLI 인자에서 `--profile=<prod|dev|local|stage>` 값으로 구분 (`parseCliArgs`).
   - default `prod`.
   - 충돌 시 마지막 유효 profile 값 우선.
-  - 기존 `--dev` / `--prod`는 legacy alias로 유지.
   - 알 수 없는 인자는 무시.
 - electron-main 측: 본체 dev 실행 규칙과 대칭(본체 작업 시 확정).
 

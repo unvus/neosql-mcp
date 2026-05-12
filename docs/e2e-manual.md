@@ -21,10 +21,10 @@ which neosql-mcp    # 경로 확인 (예: ~/.nvm/.../bin/neosql-mcp)
 npx @modelcontextprotocol/inspector neosql-mcp
 
 # dev profile + initial context
-npx @modelcontextprotocol/inspector neosql-mcp --profile dev \
-  --project 6c9fede500f949079f7c553cfd96ec72 \
-  --default-connection 88 \
-  --default-schema appdb
+npx @modelcontextprotocol/inspector neosql-mcp --profile=dev \
+  --project=6c9fede500f949079f7c553cfd96ec72 \
+  --default-connection=88 \
+  --default-schema=appdb
 ```
 
 - 브라우저 UI가 자동으로 열린다.
@@ -210,9 +210,9 @@ POSIX 에서만 확인한다.
 MCP host 를 거치지 않고 설치 감지만 확인한다.
 
 1. 빌드와 진단 스크립트를 실행한다.
-   - prod: `npm run check:desktop-installation -- --profile prod`
-   - dev: `npm run check:desktop-installation -- --profile dev`
-   - local/stage: `npm run check:desktop-installation -- --profile local`, `npm run check:desktop-installation -- --profile stage`
+   - prod: `npm run check:desktop-installation -- --profile=prod`
+   - dev: `npm run check:desktop-installation -- --profile=dev`
+   - local/stage: `npm run check:desktop-installation -- --profile=local`, `npm run check:desktop-installation -- --profile=stage`
 2. 일반 설치 위치에 앱이 없을 때 기대 결과:
    - `status` 는 `not_installed`
    - `installGuideUrl` 은 `https://neosql.unvus.com/ko/docs/install`

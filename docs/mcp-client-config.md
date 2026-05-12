@@ -88,7 +88,6 @@ local build는 `neosql-mcp-local` suffix를 사용한다.
 ```
 
 `--profile=dev`와 `--profile=prod`가 둘 다 있으면 마지막 유효 profile 값이 우선한다.
-기존 `--dev`와 `--prod`는 legacy alias로 유지한다.
 
 `profile`은 다른 CLI option과 같은 `args` 배열에 넣을 수 있다. prod는 기본값이므로
 생략 가능하지만, 명시하려면 `--profile=prod`를 사용한다.
@@ -129,13 +128,9 @@ to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initi
 지원 형식:
 
 ```text
---project <value>
 --project=<value>
---default-connection <value>
 --default-connection=<value>
---default-schema <value>
 --default-schema=<value>
---profile <prod|dev|local|stage>
 --profile=<prod|dev|local|stage>
 ```
 
@@ -158,7 +153,7 @@ Node MCP server의 context 우선순위:
    - 이후 `setContext` tool로 기본 context 갱신 가능
 3. empty context
 
-예를 들어 `.mcp.json`에서 `--default-connection 88 --default-schema appdb`를
+예를 들어 `.mcp.json`에서 `--default-connection=88 --default-schema=appdb`를
 설정했더라도 `listTables` 호출에 `connectionId: "57", schema: "analytics"`가
 명시되면 해당 호출은 connection `57` / schema `analytics`를 우선한다.
 
