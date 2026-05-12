@@ -3,6 +3,7 @@ import net from 'node:net';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../src/mcp/server.js';
+import { activationTargetForProfile } from '../../src/upstream/app-activation.js';
 import { startMockRpcServer, type MockRpcRequest } from '../helpers/mock-uds-server.js';
 import { closeServer, listen, makeTestSocketPath, removeSocketFile } from '../helpers/socket.js';
 
@@ -77,12 +78,7 @@ describe('desktop lifecycle integration', () => {
         activationCalls.push(profile);
         return {
           status: 'requested',
-          target: {
-            profile,
-            productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-            appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
+          target: activationTargetForProfile(profile),
         };
       },
     });
@@ -109,12 +105,7 @@ describe('desktop lifecycle integration', () => {
       checkDesktopInstallation: async ({ profile }) => ({
         status: 'installed',
         platform: 'darwin',
-        target: {
-          profile,
-          productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-          appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
-          activationUrl: 'neosql://mcp/activate',
-        },
+        target: activationTargetForProfile(profile),
         executablePath: '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
         checkedExecutablePaths: ['/Applications/NeoSQL.app/Contents/MacOS/NeoSQL'],
       }),
@@ -122,12 +113,7 @@ describe('desktop lifecycle integration', () => {
         activationCalls.push(profile);
         return {
           status: 'requested',
-          target: {
-            profile,
-            productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-            appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
+          target: activationTargetForProfile(profile),
         };
       },
     });
@@ -169,12 +155,7 @@ describe('desktop lifecycle integration', () => {
         activationCalls.push(profile);
         return {
           status: 'requested',
-          target: {
-            profile,
-            productName: 'NeoSQL',
-            appId: 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
+          target: activationTargetForProfile(profile),
         };
       },
     });

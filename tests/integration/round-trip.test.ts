@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../src/mcp/server.js';
+import { activationTargetForProfile } from '../../src/upstream/app-activation.js';
 import { startMockRpcServer, type MockRpcRequest } from '../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../helpers/socket.js';
 
@@ -148,12 +149,7 @@ describe('round-trip integration', () => {
       checkDesktopInstallation: async ({ profile }) => ({
         status: 'not_installed',
         platform: 'darwin',
-        target: {
-          profile,
-          productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-          appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
-          activationUrl: 'neosql://mcp/activate',
-        },
+        target: activationTargetForProfile(profile),
         checkedExecutablePaths: [
           '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
           '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
@@ -162,12 +158,7 @@ describe('round-trip integration', () => {
       }),
       requestAppActivation: async ({ profile }) => ({
         status: 'requested',
-        target: {
-          profile,
-          productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-          appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
-          activationUrl: 'neosql://mcp/activate',
-        },
+        target: activationTargetForProfile(profile),
       }),
     });
     const [st, ct] = InMemoryTransport.createLinkedPair();

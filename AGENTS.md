@@ -148,7 +148,7 @@ endpoint resolution 규칙:
   override, process discovery를 추가하지 않는다.
 - POSIX socket path: `path.join(os.tmpdir(), 'neosql-mcp' + suffix + '.sock')`.
 - Windows Named Pipe path: `\\\\.\\pipe\\neosql-mcp` + suffix.
-- `suffix`는 prod에서 `''`, `--profile dev`에서 `'-dev'`다. 기본 profile은 prod다.
+- `suffix`는 prod에서 `''`, 그 외 profile에서 `'-' + profile`이다. 기본 profile은 prod다.
 - HTTP path는 `/mcp/rpc` 상수다. config에 저장하지 않는다. `/mcp/` 네임스페이스로 묶어 향후 비-RPC endpoint나 다른 RPC 묶음 추가 여지를 확보한다.
 - missing listener, stale POSIX socket file, timeout, unsupported socket state는
   명확한 사용자-facing error로 다룬다.

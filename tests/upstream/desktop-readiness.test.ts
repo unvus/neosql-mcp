@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ensureDesktopReady } from '../../src/upstream/desktop-readiness.js';
-import type { ActivationResult } from '../../src/upstream/app-activation.js';
+import {
+  activationTargetForProfile,
+  type ActivationResult,
+} from '../../src/upstream/app-activation.js';
 import type { HealthResult } from '../../src/upstream/health-check.js';
 
 const activationResult: ActivationResult = {
@@ -43,12 +46,7 @@ describe('ensureDesktopReady', () => {
         checkInstallation: async ({ profile }) => ({
           status: 'installed',
           platform: 'darwin',
-          target: {
-            profile,
-            productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-            appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
+          target: activationTargetForProfile(profile),
           executablePath: '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
           checkedExecutablePaths: ['/Applications/NeoSQL.app/Contents/MacOS/NeoSQL'],
         }),

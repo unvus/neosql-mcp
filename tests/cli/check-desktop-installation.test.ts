@@ -2,23 +2,28 @@ import { describe, expect, it, vi } from 'vitest';
 import { runDesktopInstallationCheck } from '../../src/cli/check-desktop-installation.js';
 
 vi.mock('../../src/upstream/desktop-installation.js', () => ({
-  detectDesktopInstallation: vi.fn(async ({ profile }: { profile: 'prod' | 'dev' }) => ({
-    status: 'not_installed',
-    platform: 'darwin',
-    target: {
-      profile,
-      productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-      appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
-      activationUrl: 'neosql://mcp/activate',
-    },
-    checkedExecutablePaths: [
-      `/Applications/${profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL'}.app/Contents/MacOS/${
-        profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL'
-      }`,
-    ],
-    installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
-  })),
+  detectDesktopInstallation: vi.fn(async ({ profile }: { profile: Profile }) => {
+    const productName =
+      profile === 'prod'
+        ? 'NeoSQL'
+        : `NeoSQL${profile.charAt(0).toUpperCase()}${profile.slice(1)}`;
+
+    return {
+      status: 'not_installed',
+      platform: 'darwin',
+      target: {
+        profile,
+        productName,
+        appId: profile === 'prod' ? 'com.unvus.neosql' : `com.unvus.neosql.${profile}`,
+        activationUrl: 'neosql://mcp/activate',
+      },
+      checkedExecutablePaths: [`/Applications/${productName}.app/Contents/MacOS/${productName}`],
+      installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+    };
+  }),
 }));
+
+type Profile = 'prod' | 'dev' | 'local' | 'stage';
 
 describe('check-desktop-installation CLI', () => {
   it('prints the desktop installation result as JSON for the selected profile', async () => {

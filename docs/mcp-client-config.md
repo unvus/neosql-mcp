@@ -70,10 +70,11 @@ args = [
 }
 ```
 
-## Dev Profile
+## Profile
 
-기본 profile은 prod다. NeoSQL Desktop dev build가 `neosql-mcp-dev` socket/pipe suffix로
-listen하는 경우 MCP server에도 `--profile=dev`를 전달한다.
+기본 profile은 prod다. NeoSQL Desktop이 profile별 socket/pipe suffix로 listen하는 경우
+MCP server에도 같은 profile을 전달한다. 예를 들어 dev build는 `neosql-mcp-dev`,
+local build는 `neosql-mcp-local` suffix를 사용한다.
 
 ```json
 {
@@ -134,15 +135,15 @@ to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initi
 --default-connection=<value>
 --default-schema <value>
 --default-schema=<value>
---profile <prod|dev>
---profile=<prod|dev>
+--profile <prod|dev|local|stage>
+--profile=<prod|dev|local|stage>
 ```
 
 규칙:
 
 - MCP host 설정 예시는 한 option을 한 문자열로 다루기 쉬운 `--key=value` 형식을 기본으로 쓴다.
 - `project`, `default-connection`, `default-schema`는 string으로 저장한다.
-- `profile`은 `prod` 또는 `dev`만 해석한다. 값이 없거나 유효하지 않으면 기존 profile을 유지한다.
+- `profile`은 `prod`, `dev`, `local`, `stage`만 해석한다. 값이 없거나 유효하지 않으면 기존 profile을 유지한다.
 - string 값이 빈 문자열이면 context store merge 단계에서 기존 값을 유지한다.
 - `connectionId`는 숫자처럼 보여도 string으로 유지한다. Electron app handler가 필요한
   시점에 숫자로 변환한다.

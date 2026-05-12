@@ -6,7 +6,7 @@ export const LOG_FILE_NAME = 'neosql-mcp.log';
 
 export const resolveLogAppName = (profile: Profile): string => {
   if (profile === 'prod') return 'NeoSqlMcp';
-  return `NeoSqlMcp${profile[0].toUpperCase()}${profile.slice(1)}`;
+  return `NeoSqlMcp${profile.charAt(0).toUpperCase()}${profile.slice(1)}`;
 };
 
 export const resolveLogParentDir = (): string => {
