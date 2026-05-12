@@ -157,8 +157,19 @@ Node MCP server의 context 우선순위:
    - 이후 `setContext` tool로 갱신 가능
 3. empty context
 
-예를 들어 `.mcp.json`에서 `--default-schema appdb`를 설정했더라도 `listTables` 호출에
-`schema: "analytics"`가 명시되면 해당 호출은 `analytics`를 우선한다.
+예를 들어 `.mcp.json`에서 `--default-connection 88 --default-schema appdb`를
+설정했더라도 `listTables` 호출에 `connectionId: "57", schema: "analytics"`가
+명시되면 해당 호출은 connection `57` / schema `analytics`를 우선한다.
+
+Per-call `connectionId` / `schema` override를 받는 tool:
+
+- `listTables`
+- `getTableDetails`
+- `executeQuery`
+- `createTables`
+- `modifyTables`
+
+`generateCode`는 현재 `schema` override만 받는다.
 
 ## Upstream Params
 

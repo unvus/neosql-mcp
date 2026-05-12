@@ -47,7 +47,7 @@ describe('getTableDetails tool', () => {
 
     const result = await client.callTool({
       name: 'getTableDetails',
-      arguments: { tableNames: ['users', 'orders'] },
+      arguments: { tableNames: ['users', 'orders'], connectionId: '57', schema: 'analytics' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -56,7 +56,8 @@ describe('getTableDetails tool', () => {
     expect(data.tables).toHaveLength(2);
     expect(received[0]?.method).toBe('schema.getTableDetails');
     expect(received[0]?.params).toMatchObject({
-      input: { tableNames: ['users', 'orders'] },
+      context: { connectionId: '57', schema: 'analytics' },
+      input: { tableNames: ['users', 'orders'], schema: 'analytics' },
     });
   });
 

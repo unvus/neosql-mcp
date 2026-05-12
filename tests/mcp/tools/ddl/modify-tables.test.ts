@@ -44,6 +44,8 @@ describe('modifyTables tool', () => {
     const result = await client.callTool({
       name: 'modifyTables',
       arguments: {
+        connectionId: '57',
+        schema: 'analytics',
         alterations: [
           {
             tableName: 'users',
@@ -82,7 +84,7 @@ describe('modifyTables tool', () => {
     expect(data.modified).toEqual(['users']);
     expect(received[0]?.method).toBe('ddl.modifyTables');
     expect(received[0]?.params).toMatchObject({
-      context: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
+      context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
       input: {
         alterations: [
           {

@@ -42,7 +42,7 @@ describe('listTables tool', () => {
 
     const result = await client.callTool({
       name: 'listTables',
-      arguments: { schema: 'analytics', search: 'user' },
+      arguments: { connectionId: '57', schema: 'analytics', search: 'user' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -52,7 +52,7 @@ describe('listTables tool', () => {
     expect(received).toHaveLength(1);
     expect(received[0]?.method).toBe('schema.listTables');
     expect(received[0]?.params).toMatchObject({
-      context: { schema: 'analytics' },
+      context: { connectionId: '57', schema: 'analytics' },
       input: { schema: 'analytics', search: 'user' },
     });
     expect((received[0]?.params as { sessionId?: string } | undefined)?.sessionId).toEqual(

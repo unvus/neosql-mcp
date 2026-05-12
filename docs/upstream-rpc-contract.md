@@ -136,12 +136,27 @@ Electron responsibility:
 
 `ContextTools`는 Node-local이다. Electron RPC method를 만들지 않는다.
 
+## Per-call Context Override
+
+일부 MCP tool은 `connectionId`와 `schema`를 tool argument로 받을 수 있다. 이 값은
+Electron payload가 아니라 upstream `params.context`에 merge된다.
+
+우선순위:
+
+1. tool argument `connectionId` / `schema`
+2. Node context store (`--default-connection`, `--default-schema`, `setContext`)
+3. empty context
+
+`generateCode`는 현재 `connectionId` per-call override를 받지 않는다. 기존 호환성을 위해
+`schema` override만 유지한다.
+
 ## `schema.listTables`
 
 Input:
 
 ```ts
 interface ListTablesInput {
+  connectionId?: string; // MCP input only; forwarded through params.context
   schema?: string;
   search?: string;
 }
@@ -152,6 +167,12 @@ Context requirements:
 - `projectId`
 - `connectionId`
 - `schema` after input override
+
+Rules:
+
+- `connectionId` is removed from upstream `input` and sent through `params.context`.
+- `schema` remains in upstream `input` for compatibility and is also merged into
+  `params.context`.
 
 Result:
 
@@ -172,9 +193,22 @@ Input:
 ```ts
 interface GetTableDetailsInput {
   tableNames: string[];
+  connectionId?: string; // MCP input only; forwarded through params.context
   schema?: string;
 }
 ```
+
+Context requirements:
+
+- `projectId`
+- `connectionId` after input override
+- `schema` after input override
+
+Rules:
+
+- `connectionId` is removed from upstream `input` and sent through `params.context`.
+- `schema` remains in upstream `input` for compatibility and is also merged into
+  `params.context`.
 
 Result:
 
@@ -228,6 +262,8 @@ Input:
 ```ts
 interface ExecuteQueryInput {
   sql: string;
+  connectionId?: string; // MCP input only; forwarded through params.context
+  schema?: string; // MCP input only; forwarded through params.context
 }
 ```
 
@@ -235,6 +271,14 @@ Rules:
 
 - DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`) is rejected.
 - SELECT/EXPLAIN returns up to 200 rows.
+- `connectionId` and `schema` are removed from upstream `input` and sent through
+  `params.context`.
+
+Context requirements:
+
+- `projectId`
+- `connectionId` after input override
+- `schema` after input override
 
 Result:
 
@@ -272,6 +316,8 @@ Input:
 ```ts
 interface CreateTablesInput {
   tableDefinitions: McpTableDef[];
+  connectionId?: string; // MCP input only; forwarded through params.context
+  schema?: string; // MCP input only; forwarded through params.context
 }
 
 interface McpTableDef {
@@ -322,6 +368,17 @@ interface McpConstraintDef {
 }
 ```
 
+Rules:
+
+- `connectionId` and `schema` are removed from upstream `input` and sent through
+  `params.context`.
+
+Context requirements:
+
+- `projectId`
+- `connectionId` after input override
+- `schema` after input override
+
 Result:
 
 ```ts
@@ -352,6 +409,8 @@ Input:
 ```ts
 interface ModifyTablesInput {
   alterations: McpAlterTableDef[];
+  connectionId?: string; // MCP input only; forwarded through params.context
+  schema?: string; // MCP input only; forwarded through params.context
 }
 
 interface McpAlterTableDef {
@@ -431,6 +490,14 @@ Primary key operation semantics:
 - `DROP`: remove that column from the current primary key.
 - Dropping all primary key columns requires one explicit `DROP` operation per current PK column.
 - Legacy `newRemarks` and `newPrimaryKeys` inputs are rejected by the Node MCP tool schema.
+- `connectionId` and `schema` are removed from upstream `input` and sent through
+  `params.context`.
+
+Context requirements:
+
+- `projectId`
+- `connectionId` after input override
+- `schema` after input override
 
 Result:
 

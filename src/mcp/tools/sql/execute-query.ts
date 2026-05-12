@@ -25,6 +25,18 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         sql: z
           .string()
           .describe('The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).'),
+        connectionId: z
+          .string()
+          .describe(
+            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          )
+          .optional(),
+        schema: z
+          .string()
+          .describe(
+            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          )
+          .optional(),
       },
     },
     async (args) => {
@@ -34,11 +46,12 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         );
       }
 
+      const { connectionId, schema, ...input } = args;
       return callUpstreamTool(
         deps,
         'sql.executeQuery',
-        args,
-        {},
+        input,
+        { connectionId, schema },
         {
           timeoutMs: 60_000,
           stringifyResult: jacksonPrettyJsonStringify,

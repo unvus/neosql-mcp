@@ -58,7 +58,7 @@ describe('executeQuery tool', () => {
 
     const result = await client.callTool({
       name: 'executeQuery',
-      arguments: { sql: 'SELECT id FROM users' },
+      arguments: { sql: 'SELECT id FROM users', connectionId: '57', schema: 'analytics' },
     });
 
     expect(result.isError).not.toBe(true);
@@ -84,8 +84,8 @@ describe('executeQuery tool', () => {
     expect(received[0]?.params).toMatchObject({
       context: {
         projectId: 'proj-1',
-        connectionId: '0',
-        schema: 'public',
+        connectionId: '57',
+        schema: 'analytics',
       },
       input: { sql: 'SELECT id FROM users' },
     });

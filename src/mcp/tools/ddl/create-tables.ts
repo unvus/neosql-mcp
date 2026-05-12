@@ -23,8 +23,29 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
           .describe(
             'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
           ),
+        connectionId: z
+          .string()
+          .describe(
+            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          )
+          .optional(),
+        schema: z
+          .string()
+          .describe(
+            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          )
+          .optional(),
       },
     },
-    async (args) => callUpstreamTool(deps, 'ddl.createTables', args, {}, { timeoutMs: 60_000 }),
+    async (args) => {
+      const { connectionId, schema, ...input } = args;
+      return callUpstreamTool(
+        deps,
+        'ddl.createTables',
+        input,
+        { connectionId, schema },
+        { timeoutMs: 60_000 },
+      );
+    },
   );
 };

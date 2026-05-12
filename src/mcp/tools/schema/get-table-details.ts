@@ -19,19 +19,29 @@ export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDet
           .describe(
             'List of table names to get details for (e.g. ["users", "orders", "products"])',
           ),
+        connectionId: z
+          .string()
+          .describe(
+            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          )
+          .optional(),
         schema: z
           .string()
-          .describe('Database schema name. If omitted, uses current context schema.')
+          .describe(
+            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          )
           .optional(),
       },
     },
-    async (args) =>
-      callUpstreamTool(
+    async (args) => {
+      const { connectionId: _connectionId, ...input } = args;
+      return callUpstreamTool(
         deps,
         'schema.getTableDetails',
-        args,
-        { schema: args.schema },
+        input,
+        { connectionId: args.connectionId, schema: args.schema },
         { timeoutMs: 30_000 },
-      ),
+      );
+    },
   );
 };

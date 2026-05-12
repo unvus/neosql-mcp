@@ -47,6 +47,8 @@ describe('createTables tool', () => {
     const result = await client.callTool({
       name: 'createTables',
       arguments: {
+        connectionId: '57',
+        schema: 'analytics',
         tableDefinitions: [
           {
             name: 'users',
@@ -67,7 +69,7 @@ describe('createTables tool', () => {
     expect(data.created).toEqual(['users']);
     expect(received[0]?.method).toBe('ddl.createTables');
     expect(received[0]?.params).toMatchObject({
-      context: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
+      context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
       input: {
         tableDefinitions: [
           {

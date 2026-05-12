@@ -91,25 +91,42 @@ describe('createServer', () => {
           "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
       },
       listTables: {
+        connectionId:
+          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
         schema:
-          "Database schema name (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
+          "MCP-enabled database schema name from listConnections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
         search:
           'Search keyword to filter tables by name or comment (case-insensitive). If omitted, returns all tables.',
       },
       getTableDetails: {
         tableNames: 'List of table names to get details for (e.g. ["users", "orders", "products"])',
-        schema: 'Database schema name. If omitted, uses current context schema.',
+        connectionId:
+          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+        schema:
+          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
       },
       createTables: {
         tableDefinitions:
           'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
+        connectionId:
+          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+        schema:
+          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
       },
       modifyTables: {
         alterations:
           'List of table alterations. Each specifies a target table and the changes to apply.',
+        connectionId:
+          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+        schema:
+          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
       },
       executeQuery: {
         sql: 'The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).',
+        connectionId:
+          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+        schema:
+          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
       },
       generateCode: {
         tableName: 'Table name to generate code for',

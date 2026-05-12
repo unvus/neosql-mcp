@@ -27,8 +27,29 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
           .describe(
             'List of table alterations. Each specifies a target table and the changes to apply.',
           ),
+        connectionId: z
+          .string()
+          .describe(
+            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          )
+          .optional(),
+        schema: z
+          .string()
+          .describe(
+            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          )
+          .optional(),
       },
     },
-    async (args) => callUpstreamTool(deps, 'ddl.modifyTables', args, {}, { timeoutMs: 60_000 }),
+    async (args) => {
+      const { connectionId, schema, ...input } = args;
+      return callUpstreamTool(
+        deps,
+        'ddl.modifyTables',
+        input,
+        { connectionId, schema },
+        { timeoutMs: 60_000 },
+      );
+    },
   );
 };

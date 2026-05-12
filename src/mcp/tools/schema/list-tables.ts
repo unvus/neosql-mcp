@@ -13,10 +13,16 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
         'List all tables and views in a database schema. Returns table names, types (TABLE/VIEW), and comments. ' +
         'Uses the current context (project/connection/schema) if parameters are not specified.',
       inputSchema: {
+        connectionId: z
+          .string()
+          .describe(
+            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          )
+          .optional(),
         schema: z
           .string()
           .describe(
-            "Database schema name (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
+            "MCP-enabled database schema name from listConnections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
           )
           .optional(),
         search: z
@@ -27,13 +33,15 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
           .optional(),
       },
     },
-    async (args) =>
-      callUpstreamTool(
+    async (args) => {
+      const { connectionId: _connectionId, ...input } = args;
+      return callUpstreamTool(
         deps,
         'schema.listTables',
-        args,
-        { schema: args.schema },
+        input,
+        { connectionId: args.connectionId, schema: args.schema },
         { timeoutMs: 30_000 },
-      ),
+      );
+    },
   );
 };

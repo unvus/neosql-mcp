@@ -190,8 +190,8 @@ Electron app 반환 data:
 ]
 ```
 
-결정: Node는 schema override/context merge와 기본 인자 검증을 수행하고, Electron은
-project/session store에서 table 목록을 조회한다.
+결정: Node는 connection/schema override와 context merge, 기본 인자 검증을 수행하고,
+Electron은 project/session store에서 table 목록을 조회한다.
 
 ### `getTableDetails`
 
@@ -385,7 +385,7 @@ Electron app handler 동작:
 }
 ```
 
-결정: Node에서 `executeImmediately` 기본값 merge와 기본 schema validation을 수행하고,
+결정: Node에서 connection/schema override와 기본 schema validation을 수행하고,
 table model 변환, ERD/UI 반영, DDL 생성/실행은 Electron 처리.
 
 주의: 현재 app handler의 DDL 제한 branch에 `return { ...response, ddlExecution }`가
