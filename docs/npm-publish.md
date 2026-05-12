@@ -1,9 +1,17 @@
 # npm 배포 가이드
 
 `neosql-mcp`를 public npm package로 등록하고, MCP host에서
-`npx -y neosql-mcp@latest`로 실행할 수 있게 만들기 위한 절차다.
+`npx -y neosql-mcp@latest`로 실행할 수 있게 만들기 위한 배포 기준이다.
 
-기준 날짜: 2026-05-11
+기준 날짜: 2026-05-13
+
+## 배포 원칙
+
+- GitHub 공개 저장소를 소스의 단일 진실 원천으로 둔다.
+- `main` push는 검증만 수행한다. 자동 npm publish는 하지 않는다.
+- npm publish는 Git tag 또는 GitHub Release 생성 시에만 수행한다.
+- publish 전에는 `npm ci`, lint, typecheck, test, build, `npm pack --dry-run`을 모두 통과해야 한다.
+- 가능하면 npm Trusted Publishing(OIDC)을 사용한다. 장기 npm token은 기본 배포 경로로 쓰지 않는다.
 
 ## 현재 패키지 상태
 
@@ -11,143 +19,255 @@
 
 | 항목 | 현재값 | 판단 |
 | --- | --- | --- |
-| package name | `neosql-mcp` | 2026-05-11 기준 `npm view neosql-mcp version`은 `E404`로 미등록 상태 |
+| package name | `neosql-mcp` | 배포 직전 `npm view neosql-mcp version`으로 점유 여부 재확인 |
 | version | `0.0.1` | 최초 배포 후보로 사용 가능 |
 | module type | `module` | TypeScript ESM 패키지 방향과 일치 |
 | bin | `neosql-mcp` -> `dist/cli.js` | `npx neosql-mcp` 실행 진입점 |
 | build | `tsup`, `src/cli/cli.ts` -> `dist/cli.js` | `tsup.config.ts`에서 shebang 추가 |
-| files | `dist`, `README.md`, `LICENSE` | `LICENSE` 파일이 아직 없으면 배포 전 추가 필요 |
+| files | `dist`, `README.md`, `LICENSE` | `LICENSE` 파일이 없으면 배포 전 추가 필요 |
 | engine | `node >=20` | Node 20 이상 MCP host 환경 필요 |
-| prepublishOnly | `npm run build` | publish 시 빌드는 보장되지만 테스트는 수동 실행 필요 |
+| prepublishOnly | `npm run build` | CI publish 전 별도 검증 job으로 test/build를 강제한다 |
 
-패키지명 점유 여부는 배포 직전에 다시 확인한다. npm registry 상태는 언제든 바뀔 수
-있고, 한 번 publish된 `name@version` 조합은 같은 버전으로 재발행할 수 없다.
+npm은 한 번 publish된 `name@version` 조합을 같은 버전으로 다시 publish할 수 없다.
 
 ```bash
 npm view neosql-mcp version
+npm view neosql-mcp versions --json
 ```
 
-`E404`면 아직 미등록 상태다. 버전이 출력되면 이미 등록된 패키지이므로 소유권이 있는지
-확인하거나 패키지명을 바꿔야 한다.
+## 배포 전 TODO
 
-## 배포 전 필수 보완
+최초 publish 전에 아래 항목을 닫는다. 이 목록은 기존 "배포 전 필수 보완"을 구체화한
+publish blocker 목록이다.
 
-최초 publish 전에 아래 항목은 정리해두는 편이 안전하다.
+### 1. 공개 저장소 준비
 
-1. `LICENSE` 파일 추가
-   - 현재 `package.json#files`에 `LICENSE`가 포함되어 있다.
-   - 실제 파일이 없으면 npm 패키지에 라이선스가 명확히 표시되지 않는다.
-   - `package.json`에도 `"license": "..."` 필드를 추가한다.
+- [ ] GitHub 공개 저장소 owner/name을 확정한다.
+  - 현재 package name이 unscoped `neosql-mcp`이므로 repository URL도 이에 맞춰 확정한다.
+  - 조직 소유가 필요하면 npm package도 `@<org>/neosql-mcp`로 바꿀지 함께 결정한다.
+- [ ] GitHub repository visibility를 public으로 전환하거나 public repository를 새로 만든다.
+- [ ] 공개 저장소에 올리기 전 불필요한 로컬 파일이 포함되지 않는지 확인한다.
+  - `.mcp.json`, `.env`, local log, generated tarball(`neosql-mcp-*.tgz`), `dist/`,
+    `node_modules/`가 commit 대상이 아닌지 확인한다.
+- [ ] `package.json#repository`, `homepage`, `bugs`에 들어갈 실제 GitHub URL을 확정한다.
+- [ ] Trusted Publishing을 사용할 GitHub repository와 npm package가 같은 소유 경계에 있는지 확인한다.
 
-2. package metadata 보강
-   - `description`은 현재 embedded-server와 Streamable HTTP를 언급한다. 현재 구조는
-     Electron main의 UDS/Named Pipe RPC로 바뀌었으므로 문구를 최신 아키텍처에 맞춘다.
-   - `repository`, `homepage`, `bugs`, `keywords`, `author`를 추가한다.
-   - public repository에서 provenance를 쓸 계획이면 `repository` 값이 실제 공개 저장소와
-     일치해야 한다.
+### 2. README 재작성
 
-3. npm 소유 계정 결정
-   - 개인 계정으로 배포할지, 조직 scope를 쓸지 결정한다.
-   - 현재 이름은 unscoped package인 `neosql-mcp`다.
-   - 조직 소유를 명확히 하고 싶으면 `@<org>/neosql-mcp` 같은 scoped package를 고려한다.
-     이 경우 MCP host 설정의 `npx` args도 같이 바뀐다.
+- [ ] `README.md`를 현재 프로젝트 사용자 문서로 재작성한다.
+  - 지금 README는 설계 배경과 구현 우선순위 중심이라 npm package landing page로는 부족하다.
+  - npm package page에 그대로 노출되므로, 설치와 사용이 먼저 보이도록 구성한다.
+- [ ] README 첫 화면에 `neosql-mcp`가 무엇인지 명확히 적는다.
+  - MCP host에서 `npx neosql-mcp`로 실행하는 local stdio MCP server.
+  - NeoSQL Desktop과 UDS/Named Pipe 기반 upstream RPC로 통신한다.
+  - NeoSQL Desktop 없이 독립 실행되는 DB 서버나 CLI가 아니라는 점을 명시한다.
+- [ ] README에 prerequisites를 추가한다.
+  - Node.js `>=20`.
+  - 설치 및 실행 가능한 NeoSQL Desktop.
+  - MCP host가 stdio server 실행을 지원해야 한다는 조건.
+- [ ] README에 빠른 설정 예시를 추가한다.
+  - Claude Code `.mcp.json` 예시.
+  - Codex `config.toml` 예시.
+  - `npx -y neosql-mcp@latest`와 `--profile=dev` 예시.
+  - 예시는 `docs/mcp-client-config.md`와 동일한 옵션/기본값을 사용한다.
+- [ ] README에 CLI option 표를 추가한다.
+  - `--profile=<prod|dev|local|stage>`.
+  - `--project=<value>`.
+  - `--default-connection=<value>`.
+  - `--default-schema=<value>`.
+- [ ] README에 현재 제공하는 MCP tool 목록을 추가한다.
+  - `ping`.
+  - `generateCode`.
+  - `listTables`.
+  - `getTableDetails`.
+  - `setContext`.
+  - `getContext`.
+  - `getContextHelp`.
+  - `createTables`.
+  - `modifyTables`.
+  - `executeQuery`.
+- [ ] README에 transport/endpoint 동작을 사용자 관점으로 요약한다.
+  - POSIX는 deterministic UDS path를 사용한다.
+  - Windows는 deterministic Named Pipe path를 사용한다.
+  - TCP port, config file discovery, environment override를 사용하지 않는다는 점을 명시한다.
+- [ ] README에 troubleshooting을 추가한다.
+  - NeoSQL Desktop 미설치.
+  - Desktop 미실행 또는 readiness timeout.
+  - profile mismatch.
+  - Node version mismatch.
+  - MCP host 설정에서 `npx` args를 잘못 나눈 경우.
+- [ ] README에 development section을 추가한다.
+  - `npm ci`.
+  - `npm run build`.
+  - `npm test`.
+  - `npm link` 기반 로컬 MCP host 검증.
+- [ ] README의 한국어 내용을 영어로 옮긴다.
+  - 단순 번역이 아니라 위 항목을 반영한 영어 사용자 문서로 재작성한다.
 
-4. README 사용자 안내 확인
-   - 설치된 NeoSQL Desktop이 필요하다는 전제.
-   - `--profile=dev` 등 CLI 옵션.
-   - MCP host 설정 예시는 `docs/mcp-client-config.md`와 일치해야 한다.
+### 3. 공개 문서 영문화 범위 결정
 
-5. 배포 권한과 2FA 준비
-   - npm 계정 생성 및 로그인.
-   - publish 권한이 있는 owner 또는 maintainer 확인.
-   - 2FA가 켜져 있으면 publish 시 OTP가 필요할 수 있다.
+- [ ] npm package에 직접 노출되는 `README.md`는 반드시 영어로 작성한다.
+- [ ] 공개 GitHub repository에서 사용자가 직접 볼 가능성이 높은 문서를 영어로 작성하거나 번역한다.
+  - `docs/mcp-client-config.md`: MCP host 설정의 기준 문서.
+  - `docs/e2e-manual.md`: 실제 MCP host 수동 검증 절차.
+  - `docs/endpoint-resolver.md`: socket/pipe path 규칙 설명.
+  - `docs/testing.md`: contributor test workflow.
+  - `docs/project-structure.md`: contributor file placement guide.
+  - `docs/npm-publish.md`: publish maintainer guide.
+- [ ] 내부 작업 기록 성격의 문서를 공개 저장소에 둘지 결정한다.
+  - `PLAN.md`.
+  - `CHECKLIST.md`.
+  - `CLAUDE.md`.
+  - `AGENTS.md`.
+  - `docs/spawn.md`.
+  - `docs/claude-code/workflow.md`.
+  - `docs/supabase-cli/*.md`.
+- [ ] 공개 저장소에 유지할 내부 문서는 영어로 번역하거나, repository 공개 전에 별도 private/internal
+  문서로 분리한다.
+- [ ] 한국어 파일명 문서를 공개 유지할지 결정한다.
+  - `docs/통신 스택 계층 (RPC vs Transport).md`를 유지한다면 영어 파일명으로 rename하고
+    내부 링크를 갱신한다.
 
-## 1회성 준비
+### 4. package metadata 보강
 
-로컬에서 최초 배포할 때 필요한 기본 준비다.
+- [ ] `LICENSE` 파일을 추가한다.
+  - 현재 `package.json#files`에 `LICENSE`가 포함되어 있다.
+  - license 종류를 먼저 확정한다. 예: `MIT`, `Apache-2.0`, proprietary 등.
+- [ ] `package.json#license`를 추가한다.
+- [ ] `package.json#description`을 현재 아키텍처에 맞게 수정한다.
+  - 현재 description은 embedded-server와 Streamable HTTP를 언급한다.
+  - 실제 구조는 stdio MCP server -> Electron main JSON-RPC over HTTP on UDS/Named Pipe다.
+- [ ] `package.json#repository`를 추가한다.
+- [ ] `package.json#homepage`를 추가한다.
+- [ ] `package.json#bugs`를 추가한다.
+- [ ] `package.json#keywords`를 추가한다.
+  - 후보: `mcp`, `model-context-protocol`, `neosql`, `stdio`, `database`, `electron`.
+- [ ] `package.json#author` 또는 `contributors`를 추가할지 결정한다.
+- [ ] source map 공개 여부를 결정한다.
+  - 현재 `npm pack --dry-run`에 `dist/cli.js.map`이 포함될 수 있다.
+  - 공개하지 않을 계획이면 `tsup.config.ts` 또는 `package.json#files` 정책을 조정한다.
+
+### 5. npm package 소유권과 이름 결정
+
+- [ ] npm registry에서 `neosql-mcp` 점유 여부를 배포 직전에 다시 확인한다.
+  - `npm view neosql-mcp version`.
+  - `npm view neosql-mcp versions --json`.
+- [ ] unscoped `neosql-mcp`를 유지할지 scoped package로 바꿀지 결정한다.
+  - scoped package로 바꾸면 README, `docs/mcp-client-config.md`, GitHub Actions, 모든 MCP host
+    설정 예시의 package spec을 함께 바꾼다.
+- [ ] publish 권한을 가진 npm 계정을 결정한다.
+  - 개인 npm 계정.
+  - 조직 npm 계정.
+  - npm organization scope.
+- [ ] npm 2FA 정책을 확인한다.
+  - Trusted Publishing만 사용할지.
+  - 예외 상황에서 OTP 기반 manual publish를 허용할지.
+
+### 6. GitHub Actions 추가
+
+- [ ] main 검증 workflow를 추가한다.
+  - trigger: pull request, main push.
+  - steps: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
+    `npm pack --dry-run`.
+- [ ] npm publish workflow를 추가한다.
+  - trigger: Git tag `v*` 또는 GitHub Release published.
+  - publish job 내부에서도 main 검증과 같은 명령을 다시 실행한다.
+- [ ] Trusted Publishing을 사용한다면 workflow permission을 설정한다.
+  - `permissions: id-token: write`.
+  - 필요한 경우 `contents: read`.
+- [ ] npm package Settings에 GitHub Actions trusted publisher를 등록한다.
+- [ ] 장기 `NPM_TOKEN` secret을 기본 경로로 쓰지 않는다.
+  - Trusted Publishing을 사용할 수 없는 예외 상황에서만 token 전략을 별도로 문서화한다.
+
+### 7. 배포 전 검증
+
+- [ ] clean working tree에서 시작한다.
+  - `git status --short`.
+- [ ] CI와 같은 검증 명령을 로컬에서 실행한다.
+  - `npm ci`.
+  - `npm run lint`.
+  - `npm run typecheck`.
+  - `npm test`.
+  - `npm run build`.
+  - `npm pack --dry-run`.
+- [ ] `npm pack --dry-run` 결과를 확인한다.
+  - `dist/cli.js` 포함.
+  - `dist/cli.js` 첫 줄의 shebang 포함.
+  - `README.md` 포함.
+  - `LICENSE` 포함.
+  - `src/`, `tests/`, `docs/`, `.env`, `.mcp.json`, local log, `node_modules/` 미포함.
+- [ ] 실제 MCP host에서 published package spec으로 수동 검증한다.
+  - 최초 publish 전에는 local linked binary 또는 packed tarball로 검증한다.
+  - publish 후에는 `npx -y neosql-mcp@latest`로 검증한다.
+
+## GitHub Actions 구성
+
+### main 검증 workflow
+
+`main` push와 pull request에서는 검증만 실행한다.
+
+필수 단계:
 
 ```bash
-npm login
-npm whoami
-npm config get registry
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm pack --dry-run
 ```
 
-registry는 public npm registry여야 한다.
+`npm pack --dry-run` 확인 포인트:
 
-```text
-https://registry.npmjs.org/
+- `dist/cli.js`가 포함되어야 한다.
+- `dist/cli.js` 첫 줄에 `#!/usr/bin/env node`가 있어야 한다.
+- `README.md`와 `LICENSE`가 포함되어야 한다.
+- `src/`, `tests/`, `docs/`, `.env`, `.mcp.json`, local log, `node_modules/`는 포함되지 않아야 한다.
+- source map을 공개하지 않을 계획이면 `dist/*.map` 포함 여부를 보고 `tsup.config.ts` 또는 `files` 정책을 조정한다.
+
+### npm publish workflow
+
+publish workflow는 Git tag 또는 GitHub Release에서만 실행한다.
+
+권장 trigger:
+
+```yaml
+on:
+  push:
+    tags:
+      - 'v*'
 ```
 
-조직 scoped package로 바꾸는 경우에는 최초 publish 때 public 접근 권한을 명시한다.
+또는 GitHub Release published event를 사용한다.
+
+publish job도 검증을 다시 실행한다. main 검증 workflow를 통과했더라도 publish job 안에서
+다시 `npm ci`, lint, typecheck, test, build, `npm pack --dry-run`을 실행한다.
+
+Trusted Publishing을 사용하는 경우:
+
+- npm package Settings에서 GitHub Actions trusted publisher를 설정한다.
+- workflow에는 `permissions: id-token: write`를 부여한다.
+- 장기 `NPM_TOKEN` secret을 쓰지 않는다.
+- 지원 조건을 만족하면 provenance가 자동 생성되므로 `npm publish --provenance`를 별도로 붙이지 않는다.
+
+publish 명령:
 
 ```bash
 npm publish --access public
 ```
 
-현재처럼 unscoped package인 `neosql-mcp`는 public package로만 배포된다. 그래도 최초
-배포 명령에 `--access public`을 붙여도 무방하다.
+scoped package를 public으로 배포하는 경우에도 `--access public`을 명시한다. 현재처럼 unscoped
+package인 `neosql-mcp`는 public package로 배포된다.
 
-## 배포 전 검증 체크리스트
+## 버전과 태그
 
-배포 직전에는 clean working tree에서 시작한다.
-
-```bash
-git status --short
-npm ci
-npm run lint
-npm run typecheck
-npm run test:unit
-npm run test:integration
-npm test
-npm run build
-```
-
-`npm test`가 전체 테스트라면 `test:unit`, `test:integration`을 별도로 반복 실행한 뒤
-마지막에 `npm test`로 한 번 더 확인한다. binary entry 또는 `dist`에 영향이 있는 변경은
-`test:integration`을 반드시 포함한다.
-
-패키지에 실제로 포함될 파일도 확인한다.
-
-```bash
-npm pack --dry-run
-```
-
-확인할 포인트:
-
-- `dist/cli.js`가 포함되어야 한다.
-- `dist/cli.js` 첫 줄에 `#!/usr/bin/env node`가 있어야 한다.
-- `README.md`와 `LICENSE`가 포함되어야 한다.
-- `src/`, `tests/`, `docs/`, `.env`, `.mcp.json`, local log, `node_modules/`는 포함되지
-  않아야 한다.
-- source map을 공개하지 않을 계획이면 `dist/*.map` 포함 여부를 보고 `tsup.config.ts` 또는
-  `files` 정책을 조정한다.
-
-2026-05-11 현재 dry-run 결과는 다음 4개 파일만 포함한다.
-
-- `package.json`
-- `README.md`
-- `dist/cli.js`
-- `dist/cli.js.map`
-
-따라서 최초 배포 전 `LICENSE` 추가 여부와 source map 공개 여부를 결정해야 한다.
-
-실제 tarball까지 만들어 확인하고 싶으면 다음을 사용한다.
-
-```bash
-npm pack
-```
-
-생성된 `neosql-mcp-<version>.tgz`는 배포 검증용 산출물이다. commit에는 포함하지 않는다.
-
-## 버전 결정
-
-npm은 같은 `name@version`을 다시 publish할 수 없다. 배포 전 버전이 확정됐는지 확인한다.
+배포 전 `package.json`의 version이 npm에 아직 없는지 확인한다.
 
 ```bash
 npm view neosql-mcp versions --json
 ```
 
-최초 배포는 현재 `0.0.1`을 사용할 수 있다. 이후 변경은 semver 기준으로 올린다.
+버전 변경은 semver 기준으로 한다.
 
 ```bash
 npm version patch
@@ -156,31 +276,12 @@ npm version major
 ```
 
 `npm version`은 기본적으로 `package.json`, `package-lock.json`을 수정하고 git tag를 만든다.
-자동 tag가 싫으면 `--no-git-tag-version`을 사용한다.
+tag 기반 publish workflow를 쓸 경우 이 동작을 그대로 활용할 수 있다.
 
-## publish 절차
-
-최초 public 배포:
-
-```bash
-npm publish --access public
-```
-
-2FA OTP를 명시해야 하는 환경이면:
-
-```bash
-npm publish --access public --otp <one-time-password>
-```
-
-pre-release나 내부 검증용 태그로 먼저 올리고 싶으면 `latest` 대신 별도 dist-tag를 쓴다.
+pre-release나 내부 검증용으로 먼저 올리고 싶으면 `latest` 대신 별도 dist-tag를 쓴다.
 
 ```bash
 npm publish --access public --tag next
-```
-
-검증 후 latest로 승격:
-
-```bash
 npm dist-tag add neosql-mcp@<version> latest
 ```
 
@@ -224,26 +325,34 @@ dev profile이 필요하면:
 }
 ```
 
-## CI 배포 선택지
+## 수동 publish
 
-처음에는 로컬 수동 publish가 단순하다. 다만 공개 패키지로 계속 운영할 생각이면 GitHub
-Actions 또는 GitLab CI에서 publish하는 편이 낫다.
+수동 publish는 기본 경로가 아니다. GitHub Actions 또는 npm Trusted Publishing 장애, 최초
+패키지 소유권 검증처럼 자동 경로를 사용할 수 없는 경우에만 예외적으로 사용한다.
 
-권장 방향:
-
-- Git tag 또는 GitHub Release 생성 시 publish.
-- `npm ci`, lint, typecheck, test, build를 모두 통과한 뒤 publish.
-- 가능하면 npm trusted publishing 또는 provenance를 사용.
-- 장기 npm token을 쓰는 경우 권한을 publish 전용으로 제한하고 주기적으로 교체.
-
-provenance를 쓰려면 public repository, 지원되는 cloud CI runner, 올바른 `repository`
-metadata가 필요하다.
+수동 publish를 해야 한다면 clean working tree에서 CI와 같은 검증을 먼저 실행한다.
 
 ```bash
-npm publish --provenance --access public
+git status --short
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm pack --dry-run
 ```
 
-trusted publishing을 설정하면 지원 환경에서 provenance가 자동 생성될 수 있다.
+그 다음 publish한다.
+
+```bash
+npm publish --access public
+```
+
+2FA OTP를 명시해야 하는 환경이면:
+
+```bash
+npm publish --access public --otp <one-time-password>
+```
 
 ## 문제 발생 시 대응
 
