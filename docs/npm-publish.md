@@ -54,65 +54,69 @@ publish blocker 목록이다.
 
 ### 2. README 재작성
 
-- [ ] `README.md`를 현재 프로젝트 사용자 문서로 재작성한다.
+- [x] `README.md`를 현재 프로젝트 사용자 문서로 재작성한다.
   - 지금 README는 설계 배경과 구현 우선순위 중심이라 npm package landing page로는 부족하다.
   - npm package page에 그대로 노출되므로, 설치와 사용이 먼저 보이도록 구성한다.
-- [ ] README 첫 화면에 `neosql-mcp`가 무엇인지 명확히 적는다.
+- [x] README 첫 화면에 `neosql-mcp`가 무엇인지 명확히 적는다.
   - MCP host에서 `npx neosql-mcp`로 실행하는 local stdio MCP server.
   - NeoSQL Desktop과 UDS/Named Pipe 기반 upstream RPC로 통신한다.
   - NeoSQL Desktop 없이 독립 실행되는 DB 서버나 CLI가 아니라는 점을 명시한다.
-- [ ] README에 prerequisites를 추가한다.
+- [x] README에 prerequisites를 추가한다.
   - Node.js `>=20`.
   - 설치 및 실행 가능한 NeoSQL Desktop.
   - MCP host가 stdio server 실행을 지원해야 한다는 조건.
-- [ ] README에 빠른 설정 예시를 추가한다.
+- [x] README에 빠른 설정 예시를 추가한다.
   - Claude Code `.mcp.json` 예시.
   - Codex `config.toml` 예시.
   - `npx -y neosql-mcp@latest`와 `--profile=dev` 예시.
   - 공개 설정 예시는 README에 둔다. `docs/mcp-client-config.md`는 내부 개발자용
     CLI option/profile/context mapping 참고 문서로 유지한다.
-- [ ] README에 CLI option 표를 추가한다.
+- [x] README에 CLI option 표를 추가한다.
   - `--profile=<prod|dev|local|stage>`.
   - `--project=<value>`.
   - `--default-connection=<value>`.
   - `--default-schema=<value>`.
-- [ ] README에 현재 제공하는 MCP tool 목록을 추가한다.
+- [x] README에 현재 제공하는 MCP tool 목록을 추가한다.
   - `ping`.
+  - `listConnections`.
   - `generateCode`.
   - `listTables`.
   - `getTableDetails`.
+  - `setContext`.
+  - `getContext`.
   - `getContextHelp`.
   - `createTables`.
   - `modifyTables`.
   - `executeQuery`.
-- [ ] README에 transport/endpoint 동작을 사용자 관점으로 요약한다.
+  - `getMcpSessionId`.
+- [x] README에 transport/endpoint 동작을 사용자 관점으로 요약한다.
   - POSIX는 deterministic UDS path를 사용한다.
   - Windows는 deterministic Named Pipe path를 사용한다.
   - TCP port, config file discovery, environment override를 사용하지 않는다는 점을 명시한다.
-- [ ] README에 troubleshooting을 추가한다.
+- [x] README에 troubleshooting을 추가한다.
   - NeoSQL Desktop 미설치.
   - Desktop 미실행 또는 readiness timeout.
   - profile mismatch.
   - Node version mismatch.
   - MCP host 설정에서 `npx` args를 잘못 나눈 경우.
-- [ ] README에 development section을 추가한다.
+- [x] README에 development section을 추가한다.
   - `npm ci`.
   - `npm run build`.
   - `npm test`.
   - `npm link` 기반 로컬 MCP host 검증.
-- [ ] README의 한국어 내용을 영어로 옮긴다.
+- [x] README의 한국어 내용을 영어로 옮긴다.
   - 단순 번역이 아니라 위 항목을 반영한 영어 사용자 문서로 재작성한다.
 
 ### 3. 공개 문서 영문화 범위 결정
 
-- [ ] npm package에 직접 노출되는 `README.md`는 반드시 영어로 작성한다.
+- [x] npm package에 직접 노출되는 `README.md`는 반드시 영어로 작성한다.
 - [ ] 공개 GitHub repository에서 사용자가 직접 볼 가능성이 높은 문서를 영어로 작성하거나 번역한다.
   - `docs/e2e-manual.md`: 실제 MCP host 수동 검증 절차.
   - `docs/endpoint-resolver.md`: socket/pipe path 규칙 설명.
   - `docs/testing.md`: contributor test workflow.
   - `docs/project-structure.md`: contributor file placement guide.
   - `docs/npm-publish.md`: publish maintainer guide.
-- [ ] `docs/mcp-client-config.md`는 end-user 설정 문서가 아니라 내부 개발자용
+- [x] `docs/mcp-client-config.md`는 end-user 설정 문서가 아니라 내부 개발자용
   CLI option/profile/context mapping 참고 문서로 유지한다.
 - [ ] 내부 작업 기록 성격의 문서를 공개 저장소에 둘지 결정한다.
   - `PLAN.md`.
