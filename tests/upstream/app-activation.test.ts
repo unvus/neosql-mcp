@@ -22,6 +22,21 @@ describe('app activation', () => {
     });
   });
 
+  it('treats local and stage as non-prod (target NeoSQLDev)', () => {
+    expect(activationTargetForProfile('local')).toEqual({
+      profile: 'local',
+      productName: 'NeoSQLDev',
+      appId: 'com.unvus.neosql.dev',
+      activationUrl: 'neosql://mcp/activate',
+    });
+    expect(activationTargetForProfile('stage')).toEqual({
+      profile: 'stage',
+      productName: 'NeoSQLDev',
+      appId: 'com.unvus.neosql.dev',
+      activationUrl: 'neosql://mcp/activate',
+    });
+  });
+
   it('requests macOS activation with open -a and the profile product name', async () => {
     const launched: Array<{ command: string; args: string[]; detached: boolean | undefined }> = [];
     const launcher: ProcessLauncher = (command, args, options) => {

@@ -18,6 +18,11 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs(['--profile=dev'])).toEqual({ profile: 'dev', initialContext: {} });
   });
 
+  it('accepts local and stage profiles', () => {
+    expect(parseCliArgs(['--profile', 'local'])).toEqual({ profile: 'local', initialContext: {} });
+    expect(parseCliArgs(['--profile=stage'])).toEqual({ profile: 'stage', initialContext: {} });
+  });
+
   it('uses the last profile value when multiple profile flags are given', () => {
     expect(parseCliArgs(['--profile', 'dev', '--profile', 'prod'])).toEqual({
       profile: 'prod',

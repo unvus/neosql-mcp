@@ -29,6 +29,6 @@ export const parseCliArgs = (argv: readonly string[]): ParsedCliArgs => {
 const valueAfterEquals = (arg: string): string => arg.slice(arg.indexOf('=') + 1);
 
 const parseProfile = (value: string | undefined): Profile | undefined => {
-  if (value === 'prod' || value === 'dev') return value;
+  if (value === 'prod' || value === 'dev' || value === 'local' || value === 'stage') return value;
   return undefined;
 };

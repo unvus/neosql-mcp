@@ -32,6 +32,11 @@ describe('resolveLogAppName', () => {
   it('returns the development app name for the dev profile', () => {
     expect(resolveLogAppName('dev')).toBe('NeoSqlMcpDev');
   });
+
+  it('treats local and stage as non-prod (share the dev log dir)', () => {
+    expect(resolveLogAppName('local')).toBe('NeoSqlMcpDev');
+    expect(resolveLogAppName('stage')).toBe('NeoSqlMcpDev');
+  });
 });
 
 describe('resolveLogParentDir', () => {

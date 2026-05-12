@@ -19,6 +19,22 @@ describe('resolveSocketPath', () => {
         : path.join(os.tmpdir(), 'neosql-mcp-dev.sock');
     expect(resolveSocketPath('dev')).toBe(expected);
   });
+
+  it('returns the current OS socket path for the local profile', () => {
+    const expected =
+      process.platform === 'win32'
+        ? '\\\\.\\pipe\\neosql-mcp-local'
+        : path.join(os.tmpdir(), 'neosql-mcp-local.sock');
+    expect(resolveSocketPath('local')).toBe(expected);
+  });
+
+  it('returns the current OS socket path for the stage profile', () => {
+    const expected =
+      process.platform === 'win32'
+        ? '\\\\.\\pipe\\neosql-mcp-stage'
+        : path.join(os.tmpdir(), 'neosql-mcp-stage.sock');
+    expect(resolveSocketPath('stage')).toBe(expected);
+  });
 });
 
 describe('HTTP_PATH', () => {

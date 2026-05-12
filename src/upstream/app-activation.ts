@@ -35,10 +35,12 @@ interface ActivationCommand {
   args: string[];
 }
 
+// Desktop installer 는 NeoSQL(prod) 과 NeoSQLDev(non-prod) 두 종류만 생성하므로
+// activation target 도 prod / non-prod 바이너리로 분리한다. local/dev/stage 모두 NeoSQLDev 를 깨움.
 export const activationTargetForProfile = (profile: Profile): ActivationTarget => ({
   profile,
-  productName: profile === 'dev' ? 'NeoSQLDev' : 'NeoSQL',
-  appId: profile === 'dev' ? 'com.unvus.neosql.dev' : 'com.unvus.neosql',
+  productName: profile === 'prod' ? 'NeoSQL' : 'NeoSQLDev',
+  appId: profile === 'prod' ? 'com.unvus.neosql' : 'com.unvus.neosql.dev',
   activationUrl: 'neosql://mcp/activate',
 });
 
