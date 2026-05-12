@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "MCP relay server for neosql — bridges stdio MCP clients to the neosql embedded-server over Streamable HTTP.",
   "type": "module",
+  "license": "MIT",
   "bin": {
     "neosql-mcp": "dist/cli.js"
   },

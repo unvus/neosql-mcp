@@ -134,10 +134,10 @@ publish blocker 목록이다.
 
 ### 4. package metadata 보강
 
-- [ ] `LICENSE` 파일을 추가한다.
+- [x] `LICENSE` 파일을 추가한다.
   - 현재 `package.json#files`에 `LICENSE`가 포함되어 있다.
   - license 종류를 먼저 확정한다. 예: `MIT`, `Apache-2.0`, proprietary 등.
-- [ ] `package.json#license`를 추가한다.
+- [x] `package.json#license`를 추가한다.
 - [ ] `package.json#description`을 현재 아키텍처에 맞게 수정한다.
   - 현재 description은 embedded-server와 Streamable HTTP를 언급한다.
   - 실제 구조는 stdio MCP server -> Electron main JSON-RPC over HTTP on UDS/Named Pipe다.
