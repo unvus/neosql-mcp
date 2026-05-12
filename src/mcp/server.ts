@@ -11,6 +11,7 @@ import { requestAppActivation as defaultRequestAppActivation } from '../upstream
 import { createContextStore } from './tools/context/store.js';
 import type { ContextStore, NeosqlContextPatch } from './tools/context/store.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
+import { registerListConnectionsTool } from './tools/connection/list-connections.js';
 import { registerListTablesTool } from './tools/schema/list-tables.js';
 import { registerGetTableDetailsTool } from './tools/schema/get-table-details.js';
 import { registerSetContextTool } from './tools/context/set-context.js';
@@ -111,6 +112,7 @@ const registerTools = (
   registerPingTool(server);
   registerGetMcpSessionIdTool(server, mcpSessionId);
   registerGenerateCodeTool(server, upstreamDeps);
+  registerListConnectionsTool(server, upstreamDeps);
   registerListTablesTool(server, upstreamDeps);
   registerGetTableDetailsTool(server, upstreamDeps);
   registerSetContextTool(server, contextStore);

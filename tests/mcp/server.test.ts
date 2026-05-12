@@ -65,6 +65,7 @@ describe('createServer', () => {
         'ping',
         'getMcpSessionId',
         'generateCode',
+        'listConnections',
         'listTables',
         'getTableDetails',
         'setContext',
