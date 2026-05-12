@@ -9,7 +9,8 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
       description:
         'Get information about how to find project and connection IDs. ' +
         'NeoSQL project and connection information is managed by the NeoSQL application (UI). ' +
-        'This tool explains where to find the IDs needed for set_context.',
+        'Use listConnections to discover MCP-enabled connectionId/schema pairs. ' +
+        'Use setContext only when you want to store defaults for later calls.',
       inputSchema: {},
     },
     async () =>
@@ -23,30 +24,31 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
         },
         connectionId: {
           example: '0',
-          location: '{project-root}/.neosql/connections/ directory',
+          location: 'listConnections tool result',
           description:
-            "Connection ID is the index of the connection in the project's connection list (starting from 0)",
+            'Connection ID is returned as connectionId by listConnections for MCP-enabled connections',
         },
         schema: {
           example: 'public',
           description:
-            "Database schema name. Use 'default' for single-schema databases, or the actual schema name (e.g., 'public', 'dbo')",
+            "Use a schemaName returned by listConnections. Only MCP-enabled schemas can be used by tools.",
         },
-        headerConfig: {
+        cliConfig: {
           example: {
             mcpServers: {
               neosql: {
-                url: 'http://localhost:8098/mcp',
-                headers: {
-                  'x-neosql-schema': 'default',
-                  'x-neosql-project': 'YOUR_PROJECT_ID',
-                  'x-neosql-connection': '0',
-                },
-                type: 'http',
+                command: 'npx',
+                args: [
+                  'neosql-mcp',
+                  '--project=YOUR_PROJECT_ID',
+                  '--default-connection=0',
+                  '--default-schema=public',
+                ],
               },
             },
           },
-          description: 'You can also set default context via MCP client headers in .mcp.json',
+          description:
+            'You can set default context via CLI args in MCP client configuration, then override connectionId/schema per tool call when needed.',
         },
       }),
   );

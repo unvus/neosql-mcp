@@ -86,9 +86,10 @@ describe('createServer', () => {
       setContext: {
         projectId:
           "Project ID (e.g., '71ef287779c14fc6b3bb86f88acdb216'). Leave empty to keep current value.",
-        connectionId: "Connection ID (e.g., '0', '1'). Leave empty to keep current value.",
+        connectionId:
+          "Default NeoSQL connection ID from listConnections (e.g., '0', '1'). Leave empty to keep current value.",
         schema:
-          "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
+          "Default MCP-enabled schema name from listConnections (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
       },
       listTables: {
         connectionId:

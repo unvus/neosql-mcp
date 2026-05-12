@@ -15,7 +15,7 @@ export const registerGetContextTool = (server: McpServer, store: ContextStore): 
     async () =>
       jsonTextResult({
         context: store.get(),
-        source: 'Session context (set via set_context tool)',
+        source: 'Node-local default context (CLI defaults or setContext tool)',
       }),
   );
 };

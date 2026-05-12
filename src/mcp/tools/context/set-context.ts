@@ -9,9 +9,10 @@ export const registerSetContextTool = (server: McpServer, store: ContextStore): 
     {
       title: 'setContext',
       description:
-        'Set the current working context (project, connection, schema) for subsequent tool calls. ' +
-        'Once set, all other tools will use this context automatically until changed. ' +
-        'You only need to provide the fields you want to change — unspecified fields keep their current values.',
+        'Set default working context (project, connection, schema) for later tool calls. ' +
+        'Use this for stable defaults or project switching. For tools that accept connectionId/schema, ' +
+        'prefer passing those values directly in the tool call when you need to target a specific MCP-enabled connection/schema. ' +
+        'You only need to provide the fields you want to change; unspecified fields keep their current values.',
       inputSchema: {
         projectId: z
           .string()
@@ -21,12 +22,14 @@ export const registerSetContextTool = (server: McpServer, store: ContextStore): 
           .optional(),
         connectionId: z
           .string()
-          .describe("Connection ID (e.g., '0', '1'). Leave empty to keep current value.")
+          .describe(
+            "Default NeoSQL connection ID from listConnections (e.g., '0', '1'). Leave empty to keep current value.",
+          )
           .optional(),
         schema: z
           .string()
           .describe(
-            "Schema name (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
+            "Default MCP-enabled schema name from listConnections (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
           )
           .optional(),
       },

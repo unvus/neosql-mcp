@@ -154,7 +154,7 @@ Node MCP server의 context 우선순위:
 1. tool argument explicit override
 2. Node context store
    - CLI initial context로 최초 설정
-   - 이후 `setContext` tool로 갱신 가능
+   - 이후 `setContext` tool로 기본 context 갱신 가능
 3. empty context
 
 예를 들어 `.mcp.json`에서 `--default-connection 88 --default-schema appdb`를
@@ -170,6 +170,10 @@ Per-call `connectionId` / `schema` override를 받는 tool:
 - `modifyTables`
 
 `generateCode`는 현재 `schema` override만 받는다.
+
+`setContext`는 계속 지원하지만, 주 용도는 반복 호출을 위한 기본 project/connection/schema
+저장이다. 여러 MCP-enabled connection/schema를 오가며 호출할 때는 `setContext`로 전역
+상태를 바꾸기보다 각 tool의 `connectionId` / `schema` 인자를 명시하는 방식을 우선한다.
 
 ## Upstream Params
 
