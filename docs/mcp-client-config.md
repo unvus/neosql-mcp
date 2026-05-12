@@ -28,7 +28,7 @@ unless there is a concrete reason to be explicit.
 Non-production profiles are valid only when NeoSQL Desktop is listening with the same
 profile.
 
-| Profile | POSIX socket suffix | Windows pipe suffix |
+| Profile | macOS socket suffix | Windows pipe suffix |
 | --- | --- | --- |
 | `prod` | none | none |
 | `dev` | `-dev` | `-dev` |

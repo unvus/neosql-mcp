@@ -6,7 +6,7 @@ tools through `npx`.
 It is not a standalone database server, database CLI, or replacement for NeoSQL
 Desktop. The package runs inside the MCP host process tree, exposes NeoSQL tools over
 standard MCP stdio, and delegates database/UI work to a running NeoSQL Desktop app
-through JSON-RPC over HTTP on a Unix Domain Socket or Windows Named Pipe.
+through JSON-RPC over HTTP on a macOS Unix Domain Socket or Windows Named Pipe.
 
 ```text
 [MCP host] -- stdio MCP --> [neosql-mcp]
@@ -139,7 +139,7 @@ Tools that accept per-call `connectionId` and `schema` overrides:
 
 `neosql-mcp` talks to NeoSQL Desktop through a deterministic local endpoint:
 
-- POSIX: `path.join(os.tmpdir(), 'neosql-mcp' + suffix + '.sock')`
+- macOS: `path.join(os.tmpdir(), 'neosql-mcp' + suffix + '.sock')`
 - Windows: `\\.\pipe\neosql-mcp` + suffix
 
 The suffix is empty for `prod` and `-dev`, `-local`, or `-stage` for non-production
@@ -190,10 +190,3 @@ npm run build
 npm link
 neosql-mcp --profile=dev
 ```
-
-More detailed development docs:
-
-- Manual MCP host verification: `docs/e2e-manual.md`
-- Test workflow: `docs/testing.md`
-- Endpoint rules: `docs/endpoint-resolver.md`
-- npm publishing checklist: `docs/npm-publish.md`

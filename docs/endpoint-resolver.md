@@ -10,7 +10,7 @@
 
 ## 경로 산출 규칙
 
-### POSIX (macOS / Linux)
+### macOS
 
 ```
 path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`)
@@ -20,7 +20,7 @@ path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`)
   - prod 빌드(npm 배포본 / `npx neosql-mcp`): `''`
   - non-prod profile(`--profile=dev|local|stage`): `'-' + profile`
 - macOS 의 `os.tmpdir()` 은 OS 가 user-isolated 경로(`/var/folders/.../T/`) 를 반환하므로 다른 사용자와 충돌하지 않는다.
-- Linux 의 `os.tmpdir()` 은 보통 공유 `/tmp` — 다중 사용자 시 보정(예: XDG_RUNTIME_DIR 또는 `${HOME}/.cache/neosql/`) 은 **본체(electron-main) 작업 시점에 결정**. 본 모듈은 결정 전까지 `os.tmpdir()` 그대로 사용.
+- Linux 는 NeoSQL Desktop 지원 대상이 아니므로 public support 범위에서 제외한다.
 
 ### Windows
 
@@ -28,7 +28,7 @@ path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`)
 \\.\pipe\neosql-mcp{suffix}
 ```
 
-- `suffix` 규칙은 POSIX 와 동일.
+- `suffix` 규칙은 macOS 와 동일.
 - Named Pipe path 는 파일시스템 경로가 아니라 win32 IPC 식별자.
 - `chmod 0600` 동등 권한 격리는 Node 표준 API 미제공 — Named Pipe ACL 은 **본체 작업 시 win32 native 처리로 보강**. 본 모듈은 path 산출까지만 책임.
 
@@ -65,8 +65,8 @@ const req = http.request({ socketPath, method: 'POST', path: HTTP_PATH });
 
 | 항목                                    | 내용                                                         | 완화                                                   |
 | --------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
-| POSIX `sun_path` 길이 ~104 byte (macOS) | macOS `os.tmpdir()` 만으로도 ~50 char 차지                   | path 단편이 짧아야 함 (테스트는 `nm-test-{8hex}.sock`) |
-| POSIX socket file 잔존                  | 비정상 종료 시 unlink 안 됨 → 다음 listen `EADDRINUSE`       | electron-main 기동 시 unlink 후 listen (본체 작업)     |
+| macOS `sun_path` 길이 ~104 byte          | macOS `os.tmpdir()` 만으로도 ~50 char 차지                   | path 단편이 짧아야 함 (테스트는 `nm-test-{8hex}.sock`) |
+| macOS socket file 잔존                   | 비정상 종료 시 unlink 안 됨 → 다음 listen `EADDRINUSE`       | electron-main 기동 시 unlink 후 listen (본체 작업)     |
 | Windows Named Pipe 권한                 | `\\.\pipe\name` 의 ACL 기본값은 다른 사용자 접근 가능성 있음 | win32 native 호출로 SDDL 적용 (본체 작업 시 보강)      |
 
 ## 관련 모듈

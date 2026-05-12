@@ -90,7 +90,7 @@ publish blocker 목록이다.
   - `executeQuery`.
   - `getMcpSessionId`.
 - [x] README에 transport/endpoint 동작을 사용자 관점으로 요약한다.
-  - POSIX는 deterministic UDS path를 사용한다.
+  - macOS는 deterministic UDS path를 사용한다.
   - Windows는 deterministic Named Pipe path를 사용한다.
   - TCP port, config file discovery, environment override를 사용하지 않는다는 점을 명시한다.
 - [x] README에 troubleshooting을 추가한다.
@@ -111,11 +111,14 @@ publish blocker 목록이다.
 
 - [x] npm package에 직접 노출되는 `README.md`는 반드시 영어로 작성한다.
 - [ ] 공개 GitHub repository에서 사용자가 직접 볼 가능성이 높은 문서를 영어로 작성하거나 번역한다.
-  - `docs/e2e-manual.md`: 실제 MCP host 수동 검증 절차.
-  - `docs/endpoint-resolver.md`: socket/pipe path 규칙 설명.
   - `docs/testing.md`: contributor test workflow.
   - `docs/project-structure.md`: contributor file placement guide.
   - `docs/npm-publish.md`: publish maintainer guide.
+- [ ] `docs/e2e-manual.md`와 `docs/endpoint-resolver.md`는 내부 개발/검증 문서로
+  유지한다. README에서 직접 링크하지 않는다.
+- [ ] public support OS는 NeoSQL Desktop과 동일하게 macOS/Windows만 표기한다.
+  - Linux를 포괄하는 표현(`macOS/Linux`, generic POSIX support 등)은 public-facing
+    문서와 npm metadata에서 사용하지 않는다.
 - [x] `docs/mcp-client-config.md`는 end-user 설정 문서가 아니라 내부 개발자용
   CLI option/profile/context mapping 참고 문서로 유지한다.
 - [ ] 내부 작업 기록 성격의 문서를 공개 저장소에 둘지 결정한다.
@@ -140,7 +143,8 @@ publish blocker 목록이다.
 - [x] `package.json#license`를 추가한다.
 - [x] `package.json#description`을 현재 아키텍처에 맞게 수정한다.
   - 현재 description은 embedded-server와 Streamable HTTP를 언급한다.
-  - 실제 구조는 stdio MCP server -> Electron main JSON-RPC over HTTP on UDS/Named Pipe다.
+  - 실제 구조는 stdio MCP server -> Electron main JSON-RPC over HTTP on macOS UDS /
+    Windows Named Pipe다.
 - [ ] `package.json#repository`를 추가한다.
   - GitHub public repository owner/name이 확정된 뒤 추가한다.
   - npm 권장 형태:
