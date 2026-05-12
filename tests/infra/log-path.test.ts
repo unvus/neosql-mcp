@@ -33,9 +33,9 @@ describe('resolveLogAppName', () => {
     expect(resolveLogAppName('dev')).toBe('NeoSqlMcpDev');
   });
 
-  it('treats local and stage as non-prod (share the dev log dir)', () => {
-    expect(resolveLogAppName('local')).toBe('NeoSqlMcpDev');
-    expect(resolveLogAppName('stage')).toBe('NeoSqlMcpDev');
+  it('returns profile-specific app names for non-prod profiles', () => {
+    expect(resolveLogAppName('local')).toBe('NeoSqlMcpLocal');
+    expect(resolveLogAppName('stage')).toBe('NeoSqlMcpStage');
   });
 });
 
@@ -68,6 +68,11 @@ describe('resolveLogDir', () => {
 
   it('returns the dev log directory under the current OS log parent', () => {
     expect(resolveLogDir('dev')).toBe(path.join(resolveLogParentDir(), 'NeoSqlMcpDev'));
+  });
+
+  it('returns profile-specific non-prod log directories under the current OS log parent', () => {
+    expect(resolveLogDir('local')).toBe(path.join(resolveLogParentDir(), 'NeoSqlMcpLocal'));
+    expect(resolveLogDir('stage')).toBe(path.join(resolveLogParentDir(), 'NeoSqlMcpStage'));
   });
 });
 
