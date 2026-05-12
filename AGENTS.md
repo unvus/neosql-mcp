@@ -184,6 +184,9 @@ process 동작만 다룬다. 반복 작업 중에는 `npm run test:unit`을, han
 `npm test`를 실행한다. binary entry나 `dist`에 영향이 있는 변경은
 `npm run test:integration`도 실행한다.
 
+변경사항이 있는 작업을 완료하기 전에는 반드시 `npm run build`를 실행한다. 실행하지
+못한 경우에는 그 이유를 최종 응답에 명확히 남긴다.
+
 실제 MCP host와의 manual e2e는 `docs/e2e-manual.md`에 문서화한다. Phase 0 e2e는
 `ping` tool만 확인하며, 이후 phase에서는 scenario별 검증 절차를 추가한다.
 
