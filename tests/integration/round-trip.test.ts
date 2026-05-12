@@ -60,8 +60,6 @@ const RPC_TOOL_CASES: ToolCase[] = [
 ];
 
 const CONTEXT_TOOL_CASES: ToolCase[] = [
-  { name: 'setContext', args: { projectId: 'p' } },
-  { name: 'getContext', args: {} },
   { name: 'getContextHelp', args: {} },
 ];
 

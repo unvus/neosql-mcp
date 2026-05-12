@@ -25,7 +25,7 @@ Phase 2-2 보조 문서. 기존 embedded-server의 context/session 모델을 분
 | ------------------ | --------------------------------------- | ------------------------- | ----------------------------------------------------- |
 | request context    | `ThreadLocal<McpContext>`               | HTTP request 1회          | `McpContextFilter`가 HTTP headers에서 추출            |
 | current session id | `ThreadLocal<String>`                   | HTTP request 1회          | `McpContextFilter`가 `Mcp-Session-Id` header에서 추출 |
-| session context    | `ConcurrentHashMap<String, McpContext>` | MCP session 또는 JVM 수명 | `ContextTools.setContext`                             |
+| session context    | `ConcurrentHashMap<String, McpContext>` | MCP session 또는 JVM 수명 | 기존 ContextTools 런타임 context 변경 tool            |
 
 `McpContext` 필드:
 
@@ -59,9 +59,9 @@ Boolean header는 문자열이 `"true"`일 때만 true고, header가 없으면 n
 - neosql의 `McpContextFilter`, `McpContextHolder`, tool code는 `Mcp-Session-Id`를
   생성하지 않는다.
 - embedded-server는 header 값을 읽어 `ThreadLocal currentSessionId`에 저장한다.
-- `ContextTools.setContext`는 이 session id를 key로
+- 기존 ContextTools 런타임 context 변경 tool은 이 session id를 key로
   `ConcurrentHashMap<String, McpContext>`에 context를 저장한다.
-- `ContextTools.getContext`는 이 session id로 session context 존재 여부를 판단한다.
+- 기존 ContextTools context 조회 tool은 이 session id로 session context 존재 여부를 판단한다.
 - `SchemaTools`, `DdlTools`, `SqlTools`, `CodeGenerationTools`는
   `McpContextHolder.getSessionId()` 값을 `McpRequest.sessionId`에 담아 Electron app으로
   전달한다.
@@ -82,14 +82,14 @@ transport layer가 준 opaque string이며, 생성 주기는 직접 통제하지
 소스 코드 주석의 의도:
 
 1. tool parameter explicit value
-2. session context set by `setContext`
+2. session context set by the runtime context mutation tool
 3. request header context
 4. empty context
 
-구현상 `McpContextHolder.getContext()`는 2와 3만 처리한다. 1번인 tool parameter
+구현상 `McpContextHolder`의 context resolution은 2와 3만 처리한다. 1번인 tool parameter
 override는 각 tool에서 직접 처리한다.
 
-`getContext()` 동작:
+Context resolution 동작:
 
 1. current session id가 있고 session context가 있으면 session context를 primary로 둔다.
 2. request context도 있으면 field 단위로 merge한다.
@@ -133,8 +133,8 @@ MCP client -- stdio --> neosql-mcp Node -- JSON-RPC over HTTP on UDS/Named Pipe 
 Phase 2-3 구현 정책:
 
 1. `createServer()` 호출마다 context store 하나를 만든다.
-2. `setContext`, `getContext`, `getContextHelp`는 Node-local tool로 유지한다.
-3. context resolution은 `tool parameter override > Node context store > empty context` 순서다.
+2. `getContextHelp`는 Node-local tool로 유지한다.
+3. context resolution은 `tool parameter override > CLI-initialized Node context store > empty context` 순서다.
 4. string field(`projectId`, `connectionId`, `schema`)는 blank string이면 기존 값 유지로 처리한다.
 5. `ddlExecute`/`autoCommit` context field는 Node MCP server surface에서 제거한다.
 6. Electron upstream RPC에는 resolved context를 명시 params로 전달한다.
@@ -182,13 +182,13 @@ Phase 2-3 정책:
 - 기존 app의 `MCP: <sessionId>` SQL tab/ERD grouping 모델을 유지할 수 있다.
 - DML manual commit에서 같은 MCP process 안의 후속 호출이 같은 SQL tab/session grouping을
   사용할 수 있다.
-- Node process가 종료되면 context도 사라지므로 Java `ConcurrentHashMap`의 JVM 수명 누적
-  문제는 Phase 2-3 기본 구조에서는 발생하지 않는다.
+- Node process가 종료되면 CLI 초기 context도 사라지므로 Java `ConcurrentHashMap`의 JVM
+  수명 누적 문제는 Phase 2-3 기본 구조에서는 발생하지 않는다.
 
 명시적 한계:
 
-- MCP host가 매 tool call마다 Node process를 새로 띄우는 구현이라면 context는 호출마다
-  사라진다. 이 경우 사용자는 매번 `setContext`를 다시 호출해야 한다.
+- MCP host가 매 tool call마다 Node process를 새로 띄우는 구현이라면 CLI 초기 context는
+  호출마다 새 process에 다시 주입되어야 한다.
 - 일반적인 MCP stdio host는 process를 유지하지만, 이것을 영구 저장으로 간주하면 안 된다.
 - 여러 MCP client connection을 하나의 Node process가 동시에 공유하는 구조가 생기면
   connection별 context store와 session id 분리가 필요하다.
@@ -218,8 +218,7 @@ fields로 변환하거나, 새 handler에서 직접 사용하면 된다.
 - `ContextStore`에 blank string 무시 정책 추가.
 - `createServer()`에서 `upstreamSessionId` 생성.
 - 모든 upstream RPC params에 `{ sessionId, context, input }` envelope 적용.
-- `getContext` response에 `source`를 추가한다.
-- `getContextHelp`에서 as-is HTTP header 예시를 제거하고 `setContext` 중심 안내로 바꾼다.
+- `getContextHelp`에서 as-is HTTP header 예시를 제거하고 CLI 기본값 중심 안내로 바꾼다.
 - `executeQuery` manual commit 시 `sessionId`가 Electron app에서 SQL tab grouping에
   사용된다는 점을 테스트 fixture에 반영한다.
 

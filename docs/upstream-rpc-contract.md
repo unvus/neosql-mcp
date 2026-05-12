@@ -131,11 +131,9 @@ Electron responsibility:
 | `createTables`    | `ddl.createTables`            | yes           |     60s |
 | `modifyTables`    | `ddl.modifyTables`            | yes           |     60s |
 | `generateCode`    | `codeGeneration.generateCode` | yes           |     60s |
-| `setContext`      | N/A                           | no            |     N/A |
-| `getContext`      | N/A                           | no            |     N/A |
 | `getContextHelp`  | N/A                           | no            |     N/A |
 
-`ContextTools`는 Node-local이다. Electron RPC method를 만들지 않는다.
+`getContextHelp`는 Node-local이다. Electron RPC method를 만들지 않는다.
 
 ## Per-call Context Override
 
@@ -145,7 +143,7 @@ Electron payload가 아니라 upstream `params.context`에 merge된다.
 우선순위:
 
 1. tool argument `connectionId` / `schema`
-2. Node context store (`--default-connection`, `--default-schema`, `setContext`)
+2. Node context store (`--default-connection`, `--default-schema`)
 3. empty context
 
 `generateCode`는 현재 `connectionId` per-call override를 받지 않는다. 기존 호환성을 위해
@@ -168,9 +166,9 @@ Rules:
 - `connectionId` and `schema` context values are ignored.
 - Only connections that are not disabled and have at least one MCP-enabled schema are returned.
 - Only schemas with `mcpConfigMap[schemaName].enabled === true` are returned under each connection.
-- Returned `connectionId` values are stringified `Connection.id` values and can be passed to
-  `setContext` or per-tool `connectionId` arguments.
-- Returned `schemaName` values can be passed to `setContext` or per-tool `schema` arguments.
+- Returned `connectionId` values are stringified `Connection.id` values and can be passed as
+  per-tool `connectionId` arguments.
+- Returned `schemaName` values can be passed as per-tool `schema` arguments.
 
 Result:
 

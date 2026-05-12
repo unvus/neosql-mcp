@@ -19,7 +19,7 @@ Context/session 분석 및 설계는 별도 문서
 
 기존 Java tool 중 `ContextTools`를 제외한 6개 tool은 같은 wrapper 패턴이다.
 
-1. `McpContextHolder.getContext()`로 `projectId`, `connectionId`, `schema`,
+1. `McpContextHolder`의 context resolution으로 `projectId`, `connectionId`, `schema`,
    `ddlExecute`, `autoCommit`을 읽는다.
 2. tool 파라미터가 있으면 context보다 우선한다.
 3. `McpRequest`를 만든다.
@@ -70,20 +70,19 @@ Electron app 응답 envelope:
 기존 우선순위:
 
 1. tool 파라미터 명시값
-2. 세션 context (`setContext`)
+2. 세션 context
 3. 요청 header context
 4. 빈 context
 
-새 Node MCP 구조에서는 MCP stdio transport가 세션의 실제 소유자이므로 `setContext`,
-`getContext`, `getContextHelp`는 Node-local tool로 유지하는 것이 자연스럽다.
+새 Node MCP 구조에서는 MCP stdio transport가 세션의 실제 소유자이므로
+`getContextHelp`는 Node-local tool로 유지하고, context 기본값은 CLI 옵션으로
+주입한다.
 Electron app에는 나머지 tool 호출 시 resolved context만 전달한다.
 
 ## Tool Summary
 
 | Tool              | 기존 Java action  | Timeout | Electron 의존 | DB/UI 영향                         | Node/Electron 분할         |
 | ----------------- | ----------------- | ------: | ------------- | ---------------------------------- | -------------------------- |
-| `setContext`      | 없음              |     N/A | 없음          | Node 세션 상태만 변경              | Node 전담                  |
-| `getContext`      | 없음              |     N/A | 없음          | Node 세션 상태 조회                | Node 전담                  |
 | `getContextHelp`  | 없음              |     N/A | 없음          | 정적 도움말                        | Node 전담                  |
 | `listTables`      | `listTables`      |     30s | 있음          | project/session store 조회         | Node 검증 + Electron 처리  |
 | `getTableDetails` | `getTableDetails` |     30s | 있음          | table metadata lazy load 가능      | Node 검증 + Electron 처리  |
@@ -94,62 +93,10 @@ Electron app에는 나머지 tool 호출 시 resolved context만 전달한다.
 
 ## Tool Details
 
-### `setContext`
-
-입력:
-
-| 필드           | 필수 | 설명                       |
-| -------------- | ---- | -------------------------- |
-| `projectId`    | no   | 빈 문자열이면 기존 값 유지 |
-| `connectionId` | no   | 빈 문자열이면 기존 값 유지 |
-| `schema`       | no   | 빈 문자열이면 기존 값 유지 |
-| `ddlExecute`   | no   | null이면 기존 값 유지      |
-| `autoCommit`   | no   | null이면 기존 값 유지      |
-
-반환:
-
-```json
-{
-  "success": true,
-  "message": "Context updated successfully",
-  "context": {
-    "projectId": "...",
-    "connectionId": "0",
-    "schema": "public",
-    "ddlExecute": false,
-    "autoCommit": false
-  }
-}
-```
-
-결정: Node-local. Electron main RPC method를 만들지 않는다.
-
-### `getContext`
-
-입력 없음.
-
-반환:
-
-```json
-{
-  "context": {
-    "projectId": "...",
-    "connectionId": "0",
-    "schema": "public",
-    "ddlExecute": false,
-    "autoCommit": false
-  },
-  "source": "Session context (set via set_context tool)"
-}
-```
-
-결정: Node-local.
-
 ### `getContextHelp`
 
 입력 없음. 기존 Java 도움말에는 HTTP MCP header 예시가 포함되어 있지만 새 구조는 stdio
-MCP이므로 `.mcp.json` HTTP header 예시는 제거하거나 Node context tool 중심으로
-바꿔야 한다.
+MCP이므로 `.mcp.json` HTTP header 예시는 제거하고 CLI 기본값 중심으로 바꿔야 한다.
 
 결정: Node-local.
 

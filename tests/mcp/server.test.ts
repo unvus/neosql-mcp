@@ -68,8 +68,6 @@ describe('createServer', () => {
         'listConnections',
         'listTables',
         'getTableDetails',
-        'setContext',
-        'getContext',
         'getContextHelp',
         'createTables',
         'modifyTables',
@@ -83,14 +81,6 @@ describe('createServer', () => {
     const result = await client!.listTools();
 
     const expectedDescriptions: Record<string, Record<string, string>> = {
-      setContext: {
-        projectId:
-          "Project ID (e.g., '71ef287779c14fc6b3bb86f88acdb216'). Leave empty to keep current value.",
-        connectionId:
-          "Default NeoSQL connection ID from listConnections (e.g., '0', '1'). Leave empty to keep current value.",
-        schema:
-          "Default MCP-enabled schema name from listConnections (e.g., 'public', 'dbo', 'default'). Leave empty to keep current value.",
-      },
       listTables: {
         connectionId:
           'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
@@ -152,11 +142,6 @@ describe('createServer', () => {
   it('exposes embedded-server-compatible required and nested parameter schemas', async () => {
     await connectClientToServer();
     const result = await client!.listTools();
-
-    const setContextSchema = inputSchemaFor(result.tools, 'setContext');
-    expect(requiredFields(setContextSchema)).toEqual([]);
-    expect(setContextSchema.properties).not.toHaveProperty('ddlExecute');
-    expect(setContextSchema.properties).not.toHaveProperty('autoCommit');
 
     const generateCodeSchema = inputSchemaFor(result.tools, 'generateCode');
     expect(requiredFields(generateCodeSchema)).toEqual(['tableName', 'templatePackId']);

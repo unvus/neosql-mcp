@@ -33,16 +33,15 @@ describe('createTables tool', () => {
       removeSocketFile(socketPath);
     });
 
-    const server = createServer({ socketPath });
+    const server = createServer({
+      socketPath,
+      initialContext: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
+    });
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
     const client = new Client({ name: 'test', version: '0.0.0' });
     await client.connect(ct);
     cleanups.push(() => client.close());
-    await client.callTool({
-      name: 'setContext',
-      arguments: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
-    });
 
     const result = await client.callTool({
       name: 'createTables',

@@ -11,7 +11,7 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
       description:
         'List database connections that have MCP access enabled in the current NeoSQL project. ' +
         'Only connections (and schemas) that the user opted-in via the connection MCP tab are returned. ' +
-        'Use this to discover which connectionId / schema values you can pass to setContext or to other tools. ' +
+        'Use this to discover which connectionId / schema values you can pass to other tools. ' +
         'Each connection entry includes id, name, description, dataSource (DBMS family), ' +
         'dbVersion (database product version, useful for dialect-version features), ' +
         'the per-user profile (envPreset such as local/dev/staging/prod, label, protection), ' +

@@ -10,7 +10,7 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
         'Get information about how to find project and connection IDs. ' +
         'NeoSQL project and connection information is managed by the NeoSQL application (UI). ' +
         'Use listConnections to discover MCP-enabled connectionId/schema pairs. ' +
-        'Use setContext only when you want to store defaults for later calls.',
+        'Set stable defaults with CLI options and pass connectionId/schema per tool call when needed.',
       inputSchema: {},
     },
     async () =>

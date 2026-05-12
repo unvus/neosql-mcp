@@ -163,9 +163,8 @@ Phase 2 tool migration 규칙:
 - Node 패키지가 MCP tool definition과 handler를 소유한다.
 - handler는 얇게 유지한다. MCP input validation, upstream JSON-RPC method 호출,
   upstream error → MCP tool response mapping, result formatting에 집중한다.
-- 이관 대상은 5개 category, 9개 tool이다: `generateCode`, `listTables`,
-  `getTableDetails`, `setContext`, `getContext`, `getContextHelp`, `createTables`,
-  `modifyTables`, `executeQuery`.
+- 이관 대상은 현재 7개 core tool이다: `generateCode`, `listTables`,
+  `getTableDetails`, `getContextHelp`, `createTables`, `modifyTables`, `executeQuery`.
 - Phase 2-1부터 2-3까지는 mock UDS/HTTP integration test로 검증한다. real
   electron-main / renderer 변경은 계획이 바뀌지 않는 한 Phase 2-4부터 시작한다.
 

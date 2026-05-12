@@ -14,8 +14,6 @@ import { registerGenerateCodeTool } from './tools/code-generation/generate-code.
 import { registerListConnectionsTool } from './tools/connection/list-connections.js';
 import { registerListTablesTool } from './tools/schema/list-tables.js';
 import { registerGetTableDetailsTool } from './tools/schema/get-table-details.js';
-import { registerSetContextTool } from './tools/context/set-context.js';
-import { registerGetContextTool } from './tools/context/get-context.js';
 import { registerGetContextHelpTool } from './tools/context/get-context-help.js';
 import { registerCreateTablesTool } from './tools/ddl/create-tables.js';
 import { registerModifyTablesTool } from './tools/ddl/modify-tables.js';
@@ -115,8 +113,6 @@ const registerTools = (
   registerListConnectionsTool(server, upstreamDeps);
   registerListTablesTool(server, upstreamDeps);
   registerGetTableDetailsTool(server, upstreamDeps);
-  registerSetContextTool(server, contextStore);
-  registerGetContextTool(server, contextStore);
   registerGetContextHelpTool(server);
   registerCreateTablesTool(server, upstreamDeps);
   registerModifyTablesTool(server, upstreamDeps);

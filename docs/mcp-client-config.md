@@ -78,7 +78,7 @@ The Node MCP server resolves context in this order:
 3. Empty context.
 
 The context store is initialized from CLI options and can be updated later with the
-`setContext` tool.
+process only by restarting the MCP server with different CLI options.
 
 For example, if the MCP host config sets `--default-connection=88
 --default-schema=appdb` but a `listTables` call passes `connectionId: "57"` and
@@ -95,8 +95,8 @@ Tools that accept per-call `connectionId` / `schema` overrides:
 `generateCode` currently accepts a per-call `schema` override.
 
 Prefer explicit per-call `connectionId` / `schema` values when switching frequently
-between MCP-enabled connections or schemas. Use `setContext` for stable defaults or
-project switching.
+between MCP-enabled connections or schemas. Use CLI options for stable defaults or
+project selection.
 
 ## Upstream Params
 

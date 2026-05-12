@@ -47,24 +47,22 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 `PLAN.md` Phase 2 참조. embedded-server 의 9개 도구(5 카테고리)를 Node 로 전면 이관한다. Node 핸들러 일괄 구현 후 Phase 2 안에서 본체 HTTP tool 구현과 as-is/to-be 비교 검증까지 진행한다.
 
-### Phase 2-1 · 채널 인프라 + 9개 시그니처 + mock 라운드트립 — 완료 (2026-04-29)
+### Phase 2-1 · 채널 인프라 + 도구 시그니처 + mock 라운드트립 — 완료 (2026-04-29)
 
 - [x] **test list 제안 → 사람 리뷰 → 합의**
 - [x] `httpClient` 모듈 (`endpointResolver` 결과 사용, `http.request({ socketPath })` 기반, JSON-RPC over HTTP POST, 요청 단위 timeout)
 - [x] SSE 파서 (자체 구현, `\n\n` 블록 단위, 멀티라인 `data:` 누적, `:` comment 무시)
 - [x] error-map (HTTP 4xx/5xx / 타임아웃 / `ENOENT`/`ECONNREFUSED`/`ENOTSOCK` / JSON-RPC `error` → MCP tool error result)
-- [x] 도구 시그니처 9개 이관:
+- [x] 도구 시그니처 이관:
   - [x] `code-generation/generate-code`
   - [x] `schema/list-tables`
   - [x] `schema/get-table-details`
-  - [x] `context/set-context`
-  - [x] `context/get-context`
   - [x] `context/get-context-help`
   - [x] `ddl/create-tables`
   - [x] `ddl/modify-tables`
   - [x] `sql/execute-query`
 - [x] `tests/helpers/mock-uds-server.ts` (재사용 fixture)
-- [x] `tests/integration/round-trip.test.ts` — 9개 도구 mock UDS 라운드트립 green
+- [x] `tests/integration/round-trip.test.ts` — 도구 mock UDS 라운드트립 green
 - [x] `CHECKLIST.md` / `docs/project-structure.md` 갱신
 
 ### Phase 2-2 · Java tool 분석 + contract + 도구별 체크리스트 — 완료 (2026-04-29)
@@ -84,11 +82,9 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 ### Phase 2-3 · Node 핸들러 일괄 구현 (mock UDS) — 완료 (2026-04-30)
 
 - [x] **test list 제안 → 사람 리뷰 → 합의** (각 도구별 시나리오)
-- [x] Phase 2-1 placeholder 핸들러를 contract 기반 실 핸들러로 교체 (9개)
+- [x] Phase 2-1 placeholder 핸들러를 contract 기반 실 핸들러로 교체
 - [x] mock UDS 서버를 contract 기반으로 강화 (메서드별 fixture dispatcher)
 - [x] 도구별 단위 테스트에 contract 시나리오(정상/에러/스키마) 추가
-- [x] `context/set-context` — Node-local schema/default merge 구현
-- [x] `context/get-context` — Node-local response를 분석 문서 기준으로 보정
 - [x] `context/get-context-help` — stdio MCP 구조에 맞게 도움말 보정
 - [x] 기존 HTTP header 기반 초기 context를 stdio/npx CLI 옵션으로 대응
 - [x] `schema/list-tables` — `schema.listTables` contract 기반 forward 구현
@@ -113,10 +109,6 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 #### ContextTools
 
-- [x] (본 리포) `setContext` Node context store 구현 확인
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `setContext`
-- [x] (본 리포) `getContext` Node context store 구현 확인
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContext`
 - [x] (본 리포) `getContextHelp` Node context help 구현 확인
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContextHelp`
 

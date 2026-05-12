@@ -81,8 +81,6 @@ publish blocker 목록이다.
   - `generateCode`.
   - `listTables`.
   - `getTableDetails`.
-  - `setContext`.
-  - `getContext`.
   - `getContextHelp`.
   - `createTables`.
   - `modifyTables`.

@@ -108,7 +108,7 @@ NeoSQL tools resolve project, connection, and schema in this order:
 3. Empty context.
 
 The context store is initialized from CLI options and can later be changed with the
-`setContext` tool.
+process only by restarting the MCP server with different CLI options.
 
 Tools that accept per-call `connectionId` and `schema` overrides:
 
@@ -126,8 +126,6 @@ Tools that accept per-call `connectionId` and `schema` overrides:
 | --- | --- |
 | `ping` | Returns `pong` for a lightweight MCP health check. |
 | `listConnections` | Lists MCP-enabled NeoSQL connections and schemas for the current project. |
-| `setContext` | Sets default project, connection, and schema values for later tool calls. |
-| `getContext` | Shows the current Node-local default context. |
 | `getContextHelp` | Explains how to find and configure NeoSQL context values. |
 | `listTables` | Lists tables for the selected connection/schema. |
 | `getTableDetails` | Returns columns, keys, indexes, and related table metadata. |
