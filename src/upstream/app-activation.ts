@@ -3,8 +3,8 @@ import type { Profile } from './endpoint-resolver.js';
 
 export interface ActivationTarget {
   profile: Profile;
-  productName: 'NeoSQL' | 'NeoSQLDev';
-  appId: 'com.unvus.neosql' | 'com.unvus.neosql.dev';
+  productName: string;
+  appId: string;
   activationUrl: 'neosql://mcp/activate';
 }
 
@@ -35,14 +35,26 @@ interface ActivationCommand {
   args: string[];
 }
 
-// Desktop installer 는 NeoSQL(prod) 과 NeoSQLDev(non-prod) 두 종류만 생성하므로
-// activation target 도 prod / non-prod 바이너리로 분리한다. local/dev/stage 모두 NeoSQLDev 를 깨움.
-export const activationTargetForProfile = (profile: Profile): ActivationTarget => ({
-  profile,
-  productName: profile === 'prod' ? 'NeoSQL' : 'NeoSQLDev',
-  appId: profile === 'prod' ? 'com.unvus.neosql' : 'com.unvus.neosql.dev',
-  activationUrl: 'neosql://mcp/activate',
-});
+export const activationTargetForProfile = (profile: Profile): ActivationTarget => {
+  if (profile === 'prod') {
+    return {
+      profile,
+      productName: 'NeoSQL',
+      appId: 'com.unvus.neosql',
+      activationUrl: 'neosql://mcp/activate',
+    };
+  }
+
+  return {
+    profile,
+    productName: `NeoSQL${capitalizeProfile(profile)}`,
+    appId: `com.unvus.neosql.${profile}`,
+    activationUrl: 'neosql://mcp/activate',
+  };
+};
+
+const capitalizeProfile = (profile: Exclude<Profile, 'prod'>): string =>
+  `${profile.charAt(0).toUpperCase()}${profile.slice(1)}`;
 
 export const requestAppActivation = async (
   opts: RequestAppActivationOptions,

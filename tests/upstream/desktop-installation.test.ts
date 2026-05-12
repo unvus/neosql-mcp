@@ -62,6 +62,33 @@ describe('desktop installation detection', () => {
     });
   });
 
+  it('checks profile-specific macOS executable paths for local profile', async () => {
+    const homeDir = path.join(os.tmpdir(), 'neosql-home');
+
+    const result = await detectDesktopInstallation({
+      profile: 'local',
+      platform: 'darwin',
+      homeDir,
+      pathExists: async () => false,
+    });
+
+    expect(result).toEqual({
+      status: 'not_installed',
+      platform: 'darwin',
+      target: {
+        profile: 'local',
+        productName: 'NeoSQLLocal',
+        appId: 'com.unvus.neosql.local',
+        activationUrl: 'neosql://mcp/activate',
+      },
+      checkedExecutablePaths: [
+        '/Applications/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal',
+        path.join(homeDir, 'Applications/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal'),
+      ],
+      installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+    });
+  });
+
   it('does not classify Windows until the installation locations are confirmed', async () => {
     const result = await detectDesktopInstallation({
       profile: 'prod',

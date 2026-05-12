@@ -22,17 +22,17 @@ describe('app activation', () => {
     });
   });
 
-  it('treats local and stage as non-prod (target NeoSQLDev)', () => {
+  it('resolves local and stage to profile-specific app targets', () => {
     expect(activationTargetForProfile('local')).toEqual({
       profile: 'local',
-      productName: 'NeoSQLDev',
-      appId: 'com.unvus.neosql.dev',
+      productName: 'NeoSQLLocal',
+      appId: 'com.unvus.neosql.local',
       activationUrl: 'neosql://mcp/activate',
     });
     expect(activationTargetForProfile('stage')).toEqual({
       profile: 'stage',
-      productName: 'NeoSQLDev',
-      appId: 'com.unvus.neosql.dev',
+      productName: 'NeoSQLStage',
+      appId: 'com.unvus.neosql.stage',
       activationUrl: 'neosql://mcp/activate',
     });
   });
@@ -48,16 +48,16 @@ describe('app activation', () => {
     };
 
     const result = await requestAppActivation({
-      profile: 'dev',
+      profile: 'local',
       platform: 'darwin',
       launcher,
     });
 
-    expect(result).toMatchObject({ status: 'requested', target: { productName: 'NeoSQLDev' } });
+    expect(result).toMatchObject({ status: 'requested', target: { productName: 'NeoSQLLocal' } });
     expect(launched).toEqual([
       {
         command: 'open',
-        args: ['-a', 'NeoSQLDev', 'neosql://mcp/activate'],
+        args: ['-a', 'NeoSQLLocal', 'neosql://mcp/activate'],
         detached: true,
       },
     ]);

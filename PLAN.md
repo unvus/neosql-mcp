@@ -298,12 +298,15 @@ tool 호출
 - OS 별 설치 위치 탐색 정책.
   - macOS prod: `/Applications/NeoSQL.app/Contents/MacOS/NeoSQL`,
     `~/Applications/NeoSQL.app/Contents/MacOS/NeoSQL`
-  - macOS dev: `/Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev`,
-    `~/Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev`
+  - macOS non-prod: `/Applications/NeoSQL<Profile>.app/Contents/MacOS/NeoSQL<Profile>`,
+    `~/Applications/NeoSQL<Profile>.app/Contents/MacOS/NeoSQL<Profile>`
   - Windows: 설치 위치와 portable 기준 확인 후 추가.
-- prod/dev product name 과 app id 기준 정리.
+- profile 기반 product name 과 app id 기준 정리.
   - prod: `NeoSQL`, `com.unvus.neosql`
-  - dev: `NeoSQLDev`, `com.unvus.neosql.dev`
+  - non-prod: `NeoSQL<CapitalizedProfile>`, `com.unvus.neosql.<profile>`
+  - 현재 neosql main app 이 prod/dev 산출물만 빌드하더라도 MCP activation target 은
+    profile 을 그대로 반영한다. local/stage 실행 시 dev app 으로 fallback 하지 않고,
+    해당 profile 앱을 찾지 못하면 명확히 실패해야 한다.
 - 미설치 시 다운로드/설치 안내 메시지와 설치 안내 링크.
   - 설치 안내: `https://neosql.unvus.com/ko/docs/install`
 - 자동 다운로드/설치 여부는 별도 결정 전까지 범위 밖으로 둔다. 현재는 MCP 응답에
