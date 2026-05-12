@@ -124,6 +124,7 @@ Electron responsibility:
 
 | MCP tool          | RPC method                    | Electron 호출 | Timeout |
 | ----------------- | ----------------------------- | ------------- | ------: |
+| `listConnections` | `connection.list`             | yes           |     30s |
 | `listTables`      | `schema.listTables`           | yes           |     30s |
 | `getTableDetails` | `schema.getTableDetails`      | yes           |     30s |
 | `executeQuery`    | `sql.executeQuery`            | yes           |     60s |
@@ -149,6 +150,57 @@ Electron payload가 아니라 upstream `params.context`에 merge된다.
 
 `generateCode`는 현재 `connectionId` per-call override를 받지 않는다. 기존 호환성을 위해
 `schema` override만 유지한다.
+
+## `connection.list`
+
+Input:
+
+```ts
+type ListConnectionsInput = Record<string, never>;
+```
+
+Context requirements:
+
+- `projectId`
+
+Rules:
+
+- `connectionId` and `schema` context values are ignored.
+- Only connections that are not disabled and have at least one MCP-enabled schema are returned.
+- Only schemas with `mcpConfigMap[schemaName].enabled === true` are returned under each connection.
+- Returned `connectionId` values are stringified `Connection.id` values and can be passed to
+  `setContext` or per-tool `connectionId` arguments.
+- Returned `schemaName` values can be passed to `setContext` or per-tool `schema` arguments.
+
+Result:
+
+```ts
+interface ListConnectionsResult {
+  connections: ConnectionInfo[];
+}
+
+interface ConnectionInfo {
+  connectionId: string;
+  name: string;
+  description: string;
+  dataSource: string;
+  dbVersion: string;
+  profile: ConnectionProfileInfo | null;
+  schemas: SchemaInfo[];
+}
+
+interface ConnectionProfileInfo {
+  envPreset: string;
+  label: string | null;
+  protection: string;
+}
+
+interface SchemaInfo {
+  schemaName: string;
+  ddlExecute: boolean;
+  autoCommit: boolean;
+}
+```
 
 ## `schema.listTables`
 

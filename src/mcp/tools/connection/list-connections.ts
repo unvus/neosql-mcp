@@ -14,7 +14,6 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
         'Use this to discover which connectionId / schema values you can pass to setContext or to other tools. ' +
         'Each connection entry includes id, name, description, dataSource (DBMS family), ' +
         'dbVersion (database product version, useful for dialect-version features), ' +
-        'useSchemaPrefix (whether SQL should qualify tables as schema.table), defaultSchema, ' +
         'the per-user profile (envPreset such as local/dev/staging/prod, label, protection), ' +
         'and the list of MCP-enabled schemas with their per-schema policies (ddlExecute / autoCommit).',
       inputSchema: {},

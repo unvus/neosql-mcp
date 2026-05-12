@@ -12,6 +12,7 @@ interface ToolCase {
 }
 
 const RPC_TOOL_CASES: ToolCase[] = [
+  { name: 'listConnections', method: 'connection.list', args: {} },
   {
     name: 'generateCode',
     method: 'codeGeneration.generateCode',
@@ -83,7 +84,7 @@ describe('round-trip integration', () => {
     return client;
   };
 
-  it('roundtrips all 9 tools with contract method names and params envelopes', async () => {
+  it('roundtrips upstream-backed tools with contract method names and params envelopes', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({

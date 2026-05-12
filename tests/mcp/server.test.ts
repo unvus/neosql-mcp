@@ -56,7 +56,7 @@ describe('createServer', () => {
     expect(firstContent[0]?.text).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it('exposes the 9 ported embedded-server tools plus local test tools in tools/list', async () => {
+  it('exposes upstream-backed tools plus local tools in tools/list', async () => {
     await connectClientToServer();
     const result = await client!.listTools();
     const toolNames = new Set(result.tools.map((t) => t.name));
