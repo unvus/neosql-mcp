@@ -40,13 +40,14 @@
 문서 기준:
 
 - `CLAUDE.md`: Claude로 진행해온 neosql 고수준 맥락.
-- `README.md`: 저장소 개요.
+- `README.md`: npm/GitHub에 노출되는 end-user 문서. 공개 설정 예시와 사용자-facing
+  설명은 README에 둔다.
 - `PLAN.md`: 아키텍처 결정과 phase 전략의 단일 진실의 원천.
 - `CHECKLIST.md`: 현재 진행 상태의 단일 진실의 원천.
 - `docs/project-structure.md`: 파일 배치 규칙의 단일 진실의 원천.
 - `docs/testing.md`: 필수 테스트 워크플로.
-- `docs/mcp-client-config.md`: MCP host 설정(`.mcp.json`, Codex `config.toml`,
-  legacy HTTP header → stdio/npx CLI arg 매핑)의 단일 진실의 원천.
+- `docs/mcp-client-config.md`: 내부 개발자용 CLI option, profile, legacy HTTP header
+  → stdio/npx CLI arg 매핑 참고 문서. end-user용 설정 예시는 README를 우선 갱신한다.
 
 `AGENTS.md`는 Codex-facing repository guide다. `CLAUDE.md`와 일관성을 유지하되,
 세부 내용이 다르면 더 구체적인 계획 문서(`PLAN.md`, `CHECKLIST.md`,
@@ -215,8 +216,10 @@ Pull request에는 다음을 포함한다.
 local secret, 문서화되지 않은 machine-specific path, `dist/` generated artifact를
 commit하지 않는다. `.mcp.json`, socket path behavior, Named Pipe assumption,
 installation assumption처럼 local environment에 따라 달라지는 동작은 문서화한다.
-MCP host 설정 예시나 CLI 초기 context 옵션을 바꿀 때는
-`docs/mcp-client-config.md`를 먼저 갱신하고, 다른 문서는 해당 문서를 참조한다.
+MCP host 공개 설정 예시를 바꿀 때는 npm landing page인 `README.md`를 먼저 갱신한다.
+CLI option parsing, profile 규칙, legacy header mapping 같은 내부 개발자 참고 사항을
+바꿀 때는 `docs/mcp-client-config.md`도 함께 갱신한다. `AGENTS.md`는 작업 지침이므로
+README 내용을 정보 소스로 복제하지 않는다.
 
 POSIX UDS는 비정상 종료 뒤 stale socket file이 남을 수 있으므로 main app이 listen
 전에 unlink해야 한다. Windows Named Pipe ACL hardening은 plan에 남아 있는 future

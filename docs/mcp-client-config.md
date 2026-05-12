@@ -1,131 +1,57 @@
-# MCP Client Config
+# MCP Client Configuration Internals
 
-이 문서는 NeoSQL MCP host 설정의 단일 진실의 원천이다. `.mcp.json`,
-Codex `config.toml`, 기존 HTTP MCP 설정과 to-be stdio/npx 설정의 매핑은 이 문서를
-기준으로 유지한다.
+This document is an internal developer reference for `neosql-mcp` CLI option parsing,
+profile routing, legacy context mapping, and upstream context shape.
 
-## To-Be: stdio / npx
+End-user MCP host setup examples belong in `README.md`, because npm displays the README
+as the package landing page.
 
-NeoSQL MCP host는 `neosql-mcp`를 stdio server process로 실행한다. Desktop app과의
-통신은 이 Node process가 UDS/Named Pipe upstream RPC로 위임한다.
+## Stdio / npx Model
 
-실제 CLI 호출 형태는 다음과 같다.
+MCP hosts run `neosql-mcp` as a stdio server process. The Node process delegates NeoSQL
+work to NeoSQL Desktop over the local UDS/Named Pipe upstream channel.
+
+The public command shape is:
 
 ```bash
-npx neosql-mcp --project=6c9fede500f949079f7c553cfd96ec72 --default-connection=88 --default-schema=appdb
+npx -y neosql-mcp@latest [options]
 ```
 
-### Claude Code `.mcp.json`
+This file intentionally does not duplicate host-specific JSON/TOML snippets. Keep those
+in `README.md`.
 
-```json
-{
-  "mcpServers": {
-    "neosql": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "neosql-mcp",
-        "--profile=prod",
-        "--project=6c9fede500f949079f7c553cfd96ec72",
-        "--default-connection=88",
-        "--default-schema=appdb"
-      ]
-    }
-  }
-}
-```
+## Profiles
 
-### Codex `config.toml`
+The default profile is `prod`. Do not add `--profile=prod` to public setup examples
+unless there is a concrete reason to be explicit.
 
-```toml
-[mcp_servers.neosql]
-command = "npx"
-args = [
-  "-y",
-  "neosql-mcp",
-  "--profile=prod",
-  "--project=6c9fede500f949079f7c553cfd96ec72",
-  "--default-connection=88",
-  "--default-schema=appdb",
-]
-```
+Non-production profiles are valid only when NeoSQL Desktop is listening with the same
+profile.
 
-### Local Linked Binary
+| Profile | POSIX socket suffix | Windows pipe suffix |
+| --- | --- | --- |
+| `prod` | none | none |
+| `dev` | `-dev` | `-dev` |
+| `local` | `-local` | `-local` |
+| `stage` | `-stage` | `-stage` |
 
-개발 중 `npm link`를 사용하면 `npx` 대신 linked binary를 직접 실행할 수 있다.
+If multiple valid `--profile=...` values are present, the last valid value wins. Invalid
+profile values are ignored and the previous valid profile is kept.
 
-```json
-{
-  "mcpServers": {
-    "neosql": {
-      "command": "neosql-mcp",
-      "args": [
-        "--profile=prod",
-        "--project=6c9fede500f949079f7c553cfd96ec72",
-        "--default-connection=88",
-        "--default-schema=appdb"
-      ]
-    }
-  }
-}
-```
+## Legacy HTTP Config Mapping
 
-## Profile
+The previous embedded-server MCP setup used an HTTP endpoint and headers to inject
+context. The stdio transport has no HTTP headers, so those values move to CLI options.
 
-기본 profile은 prod다. NeoSQL Desktop이 profile별 socket/pipe suffix로 listen하는 경우
-MCP server에도 같은 profile을 전달한다. 예를 들어 dev build는 `neosql-mcp-dev`,
-local build는 `neosql-mcp-local` suffix를 사용한다.
-
-```json
-{
-  "mcpServers": {
-    "neosql": {
-      "command": "npx",
-      "args": ["-y", "neosql-mcp", "--profile=dev"]
-    }
-  }
-}
-```
-
-`--profile=dev`와 `--profile=prod`가 둘 다 있으면 마지막 유효 profile 값이 우선한다.
-
-`profile`은 다른 CLI option과 같은 `args` 배열에 넣을 수 있다. prod는 기본값이므로
-생략 가능하지만, 명시하려면 `--profile=prod`를 사용한다.
-
-## Legacy HTTP Config
-
-기존 embedded-server MCP는 HTTP endpoint와 headers로 context를 주입했다.
-
-```json
-{
-  "mcpServers": {
-    "neosql": {
-      "type": "http",
-      "url": "http://localhost:8098/mcp",
-      "headers": {
-        "x-neosql-project": "6c9fede500f949079f7c553cfd96ec72",
-        "x-neosql-connection": "88",
-        "x-neosql-schema": "appdb"
-      }
-    }
-  }
-}
-```
-
-to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initial context option으로
-전달한다.
-
-## Mapping
-
-| Legacy HTTP header     | To-be CLI arg          | Context field  | Type    |
-| ---------------------- | ---------------------- | -------------- | ------- |
-| `x-neosql-project`     | `--project`            | `projectId`    | string  |
-| `x-neosql-connection`  | `--default-connection` | `connectionId` | string  |
-| `x-neosql-schema`      | `--default-schema`     | `schema`       | string  |
+| Legacy HTTP header | CLI option | Context field | Type |
+| --- | --- | --- | --- |
+| `x-neosql-project` | `--project` | `projectId` | string |
+| `x-neosql-connection` | `--default-connection` | `connectionId` | string |
+| `x-neosql-schema` | `--default-schema` | `schema` | string |
 
 ## CLI Option Rules
 
-지원 형식:
+Supported forms:
 
 ```text
 --project=<value>
@@ -134,30 +60,31 @@ to-be stdio transport에는 HTTP headers가 없으므로 같은 값을 CLI initi
 --profile=<prod|dev|local|stage>
 ```
 
-규칙:
+Rules:
 
-- MCP host 설정 예시는 한 option을 한 문자열로 다루기 쉬운 `--key=value` 형식을 기본으로 쓴다.
-- `project`, `default-connection`, `default-schema`는 string으로 저장한다.
-- `profile`은 `prod`, `dev`, `local`, `stage`만 해석한다. 값이 없거나 유효하지 않으면 기존 profile을 유지한다.
-- string 값이 빈 문자열이면 context store merge 단계에서 기존 값을 유지한다.
-- `connectionId`는 숫자처럼 보여도 string으로 유지한다. Electron app handler가 필요한
-  시점에 숫자로 변환한다.
+- Use one complete `--key=value` string per item in MCP host `args`.
+- `--project`, `--default-connection`, and `--default-schema` are stored as strings.
+- `connectionId` stays a string even when it looks numeric. NeoSQL Desktop can convert
+  it later if a handler needs a number.
+- Empty string context values are ignored during context merge.
+- Space-separated forms such as `--project value` are not supported.
 
 ## Context Resolution
 
-Node MCP server의 context 우선순위:
+The Node MCP server resolves context in this order:
 
-1. tool argument explicit override
-2. Node context store
-   - CLI initial context로 최초 설정
-   - 이후 `setContext` tool로 기본 context 갱신 가능
-3. empty context
+1. Explicit tool-call arguments.
+2. Node-local context store.
+3. Empty context.
 
-예를 들어 `.mcp.json`에서 `--default-connection=88 --default-schema=appdb`를
-설정했더라도 `listTables` 호출에 `connectionId: "57", schema: "analytics"`가
-명시되면 해당 호출은 connection `57` / schema `analytics`를 우선한다.
+The context store is initialized from CLI options and can be updated later with the
+`setContext` tool.
 
-Per-call `connectionId` / `schema` override를 받는 tool:
+For example, if the MCP host config sets `--default-connection=88
+--default-schema=appdb` but a `listTables` call passes `connectionId: "57"` and
+`schema: "analytics"`, that call uses connection `57` and schema `analytics`.
+
+Tools that accept per-call `connectionId` / `schema` overrides:
 
 - `listTables`
 - `getTableDetails`
@@ -165,15 +92,15 @@ Per-call `connectionId` / `schema` override를 받는 tool:
 - `createTables`
 - `modifyTables`
 
-`generateCode`는 현재 `schema` override만 받는다.
+`generateCode` currently accepts a per-call `schema` override.
 
-`setContext`는 계속 지원하지만, 주 용도는 반복 호출을 위한 기본 project/connection/schema
-저장이다. 여러 MCP-enabled connection/schema를 오가며 호출할 때는 `setContext`로 전역
-상태를 바꾸기보다 각 tool의 `connectionId` / `schema` 인자를 명시하는 방식을 우선한다.
+Prefer explicit per-call `connectionId` / `schema` values when switching frequently
+between MCP-enabled connections or schemas. Use `setContext` for stable defaults or
+project switching.
 
 ## Upstream Params
 
-Electron main으로 전달되는 upstream JSON-RPC params는 아래 구조를 따른다.
+Electron main receives upstream JSON-RPC params in this shape:
 
 ```ts
 interface UpstreamToolParams<TInput> {
@@ -187,5 +114,5 @@ interface UpstreamToolParams<TInput> {
 }
 ```
 
-`sessionId`는 Node process가 생성하는 upstream grouping key다. MCP Streamable HTTP의
-`Mcp-Session-Id` header가 아니다.
+`sessionId` is an upstream grouping key generated by the Node process. It is not the MCP
+Streamable HTTP `Mcp-Session-Id` header.

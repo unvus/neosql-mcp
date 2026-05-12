@@ -69,7 +69,8 @@ publish blocker 목록이다.
   - Claude Code `.mcp.json` 예시.
   - Codex `config.toml` 예시.
   - `npx -y neosql-mcp@latest`와 `--profile=dev` 예시.
-  - 예시는 `docs/mcp-client-config.md`와 동일한 옵션/기본값을 사용한다.
+  - 공개 설정 예시는 README에 둔다. `docs/mcp-client-config.md`는 내부 개발자용
+    CLI option/profile/context mapping 참고 문서로 유지한다.
 - [ ] README에 CLI option 표를 추가한다.
   - `--profile=<prod|dev|local|stage>`.
   - `--project=<value>`.
@@ -108,12 +109,13 @@ publish blocker 목록이다.
 
 - [ ] npm package에 직접 노출되는 `README.md`는 반드시 영어로 작성한다.
 - [ ] 공개 GitHub repository에서 사용자가 직접 볼 가능성이 높은 문서를 영어로 작성하거나 번역한다.
-  - `docs/mcp-client-config.md`: MCP host 설정의 기준 문서.
   - `docs/e2e-manual.md`: 실제 MCP host 수동 검증 절차.
   - `docs/endpoint-resolver.md`: socket/pipe path 규칙 설명.
   - `docs/testing.md`: contributor test workflow.
   - `docs/project-structure.md`: contributor file placement guide.
   - `docs/npm-publish.md`: publish maintainer guide.
+- [ ] `docs/mcp-client-config.md`는 end-user 설정 문서가 아니라 내부 개발자용
+  CLI option/profile/context mapping 참고 문서로 유지한다.
 - [ ] 내부 작업 기록 성격의 문서를 공개 저장소에 둘지 결정한다.
   - `PLAN.md`.
   - `CHECKLIST.md`.
@@ -153,8 +155,10 @@ publish blocker 목록이다.
   - `npm view neosql-mcp version`.
   - `npm view neosql-mcp versions --json`.
 - [ ] unscoped `neosql-mcp`를 유지할지 scoped package로 바꿀지 결정한다.
-  - scoped package로 바꾸면 README, `docs/mcp-client-config.md`, GitHub Actions, 모든 MCP host
-    설정 예시의 package spec을 함께 바꾼다.
+  - scoped package로 바꾸면 README, GitHub Actions, 모든 MCP host 설정 예시의
+    package spec을 함께 바꾼다.
+  - 내부 CLI option/profile/context mapping이 바뀌면 `docs/mcp-client-config.md`도
+    함께 갱신한다.
 - [ ] publish 권한을 가진 npm 계정을 결정한다.
   - 개인 npm 계정.
   - 조직 npm 계정.
@@ -382,5 +386,6 @@ env npm_config_cache=/private/tmp/neosql-mcp-npm-cache npm pack --dry-run
 - package.json: https://docs.npmjs.com/cli/v11/configuring-npm/package-json
 - npm provenance: https://docs.npmjs.com/generating-provenance-statements
 - trusted publishing: https://docs.npmjs.com/trusted-publishers
-- MCP host 설정: `docs/mcp-client-config.md`
+- 공개 MCP host 설정: `README.md`
+- 내부 CLI option/profile/context mapping: `docs/mcp-client-config.md`
 - 수동 e2e 검증: `docs/e2e-manual.md`

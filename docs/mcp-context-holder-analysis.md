@@ -139,8 +139,8 @@ Phase 2-3 구현 정책:
 5. `ddlExecute`/`autoCommit` context field는 Node MCP server surface에서 제거한다.
 6. Electron upstream RPC에는 resolved context를 명시 params로 전달한다.
 7. 기존 HTTP header default context는 stdio 구조에서 CLI 초기 context 옵션으로
-   대응한다. MCP host 설정의 단일 진실은
-   [`mcp-client-config.md`](mcp-client-config.md)다.
+   대응한다. 공개 MCP host 설정 예시는 README에 두고, CLI context mapping의 내부
+   개발자 참고 사항은 [`mcp-client-config.md`](mcp-client-config.md)를 따른다.
 
 Context store shape:
 
@@ -227,8 +227,8 @@ fields로 변환하거나, 새 handler에서 직접 사용하면 된다.
 
 - MCP SDK request `extra`에서 stdio connection을 안정적으로 구분할 수 있는지 확인한다.
 - multi-client-in-one-process 구조가 필요해지면 `ContextStore`를 connection scoped로 바꾼다.
-- MCP client 설정의 기존 HTTP header 값은 `--project`, `--default-connection`, `--default-schema`
-  CLI option 으로 주입한다. 상세 mapping은
+- MCP client 설정의 기존 HTTP header 값은 `--project`, `--default-connection`,
+  `--default-schema` CLI option 으로 주입한다. 상세 mapping은
   [`mcp-client-config.md`](mcp-client-config.md)를 따른다.
 - Electron app 쪽 SQL/ERD/log grouping이 `<uuid>` 형식의 session id를 문제없이
   표시하는지 Phase 2-4 이후 e2e에서 확인한다.
