@@ -1,7 +1,7 @@
 {
   "name": "neosql-mcp",
   "version": "0.0.1",
-  "description": "MCP relay server for neosql — bridges stdio MCP clients to the neosql embedded-server over Streamable HTTP.",
+  "description": "Local stdio MCP server that connects MCP hosts to NeoSQL Desktop over UDS or Named Pipe.",
   "type": "module",
   "license": "MIT",
   "bin": {
@@ -11,6 +11,14 @@
     "dist",
     "README.md",
     "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "neosql",
+    "stdio",
+    "database",
+    "electron"
   ],
   "scripts": {
     "build": "tsup",

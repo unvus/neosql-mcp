@@ -138,18 +138,51 @@ publish blocker 목록이다.
   - 현재 `package.json#files`에 `LICENSE`가 포함되어 있다.
   - license 종류를 먼저 확정한다. 예: `MIT`, `Apache-2.0`, proprietary 등.
 - [x] `package.json#license`를 추가한다.
-- [ ] `package.json#description`을 현재 아키텍처에 맞게 수정한다.
+- [x] `package.json#description`을 현재 아키텍처에 맞게 수정한다.
   - 현재 description은 embedded-server와 Streamable HTTP를 언급한다.
   - 실제 구조는 stdio MCP server -> Electron main JSON-RPC over HTTP on UDS/Named Pipe다.
 - [ ] `package.json#repository`를 추가한다.
+  - GitHub public repository owner/name이 확정된 뒤 추가한다.
+  - npm 권장 형태:
+    ```json
+    {
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/<owner>/neosql-mcp.git"
+      }
+    }
+    ```
+  - `<owner>`는 실제 GitHub 개인 계정 또는 조직명으로 바꾼다.
+  - 현재 내부 Git remote(`git.unvus.com`)는 public npm metadata에 넣지 않는다.
 - [ ] `package.json#homepage`를 추가한다.
+  - 별도 제품/문서 페이지가 없다면 GitHub README landing URL을 사용한다.
+  - 기본 후보:
+    ```json
+    {
+      "homepage": "https://github.com/<owner>/neosql-mcp#readme"
+    }
+    ```
+  - NeoSQL 공식 MCP 설치 문서 페이지를 별도로 만들면 그 URL을 homepage로 쓸 수 있다.
+    예: `https://neosql.unvus.com/docs/mcp`
+  - 단순 제품 홈페이지(`https://neosql.unvus.com`)보다 패키지 사용법으로 바로 가는
+    URL이 npm 사용자에게 더 적합하다.
 - [ ] `package.json#bugs`를 추가한다.
-- [ ] `package.json#keywords`를 추가한다.
+  - GitHub Issues를 받을 계획이면 다음 형태를 사용한다.
+    ```json
+    {
+      "bugs": {
+        "url": "https://github.com/<owner>/neosql-mcp/issues"
+      }
+    }
+    ```
+  - Issues를 닫아둘 계획이면 support/contact 정책을 먼저 정하고, README에 같은 안내를
+    둔다. public npm package는 사용자가 문제를 신고할 공개 경로가 있는 편이 낫다.
+- [x] `package.json#keywords`를 추가한다.
   - 후보: `mcp`, `model-context-protocol`, `neosql`, `stdio`, `database`, `electron`.
 - [ ] `package.json#author` 또는 `contributors`를 추가할지 결정한다.
-- [ ] source map 공개 여부를 결정한다.
+- [x] source map 공개 여부를 결정한다.
   - 현재 `npm pack --dry-run`에 `dist/cli.js.map`이 포함될 수 있다.
-  - 공개하지 않을 계획이면 `tsup.config.ts` 또는 `package.json#files` 정책을 조정한다.
+  - source map 공개는 허용한다. 현재 기준으로 별도 제외 설정은 추가하지 않는다.
 
 ### 5. npm package 소유권과 이름 결정
 
