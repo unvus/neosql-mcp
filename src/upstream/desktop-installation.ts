@@ -4,8 +4,6 @@ import path from 'node:path';
 import { activationTargetForProfile, type ActivationPlatform } from './app-activation.js';
 import type { Profile } from './endpoint-resolver.js';
 
-export type DesktopInstallationStatus = 'installed' | 'not_installed' | 'not_checked';
-
 export const NEOSQL_INSTALL_GUIDE_URL = 'https://neosql.unvus.com/ko/docs/install';
 
 export type PathExists = (candidate: string) => Promise<boolean>;
