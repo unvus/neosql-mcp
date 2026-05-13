@@ -10,7 +10,8 @@ src/                            (프로덕션 코드만)
 │   ├── cli.ts                  package.json#bin 타깃
 │   └── cli-args.ts             --profile prod, dev, local, stage 인자 파싱
 │   └── check-desktop-installation.ts
-│                               macOS 설치 감지 수동 진단 스크립트
+│                               npm run check:desktop-installation 으로 실행하는
+│                               macOS/Windows 설치 감지 진단 CLI
 ├── mcp/         MCP stdio 서버 + tool 카탈로그
 │   ├── server.ts               createServer 팩토리
 │   └── tools/                  MCP 도구 등록

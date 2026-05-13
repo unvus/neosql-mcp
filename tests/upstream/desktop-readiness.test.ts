@@ -127,6 +127,49 @@ describe('ensureDesktopReady', () => {
     expect(activationCalls).toEqual([]);
   });
 
+  it('returns not_installed without activation when the Windows HKCU registry is missing', async () => {
+    const activationCalls: string[] = [];
+
+    const result = await ensureDesktopReady({
+      socketPath: '\\\\.\\pipe\\neosql-mcp',
+      profile: 'prod',
+      checkHealth: async (): Promise<HealthResult> => ({ status: 'not_running' }),
+      checkInstallation: async ({ profile }) => ({
+        status: 'not_installed',
+        platform: 'win32',
+        target: activationTargetForProfile(profile),
+        checkedRegistryKey:
+          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
+        reason: 'registry_missing',
+        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+      }),
+      requestActivation: async () => {
+        activationCalls.push('called');
+        return activationResult;
+      },
+    });
+
+    expect(result).toEqual({
+      status: 'not_installed',
+      healthStatus: 'not_running',
+      installation: {
+        status: 'not_installed',
+        platform: 'win32',
+        target: {
+          profile: 'prod',
+          productName: 'NeoSQL',
+          appId: 'com.unvus.neosql',
+          activationUrl: 'neosql://mcp/activate',
+        },
+        checkedRegistryKey:
+          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
+        reason: 'registry_missing',
+        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+      },
+    });
+    expect(activationCalls).toEqual([]);
+  });
+
   it('returns unresponsive without activation when the health check times out', async () => {
     const activationCalls: string[] = [];
 

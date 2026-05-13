@@ -109,7 +109,7 @@ const desktopLifecycleResult = (result: Exclude<DesktopReadyResult, { status: 'r
       status: 'not_installed',
       healthStatus: result.healthStatus,
       message:
-        'NeoSQL Desktop was not found in the supported macOS application directories. Install NeoSQL Desktop or move the app to /Applications or ~/Applications, then run the tool again. See the install guide for details.',
+        'NeoSQL Desktop was not found in the supported installation location for this platform. Install NeoSQL Desktop, then run the tool again. See the install guide for details.',
       installGuideUrl: result.installation.installGuideUrl,
       installation: result.installation,
     });

@@ -201,22 +201,58 @@ macOS 에서만 확인한다.
    - `checkedExecutablePaths` 에 검사한 실행 파일 경로가 포함된다.
    - 원래 tool 요청과 activation request 는 실행되지 않는다.
 
-### 3-2-C. macOS 설치 감지 스크립트
+### 3-2-C. Desktop 설치 감지 진단 CLI
 
-MCP host 를 거치지 않고 설치 감지만 확인한다.
+MCP host 를 거치지 않고 현재 OS 기준 설치 감지만 확인한다. 이 CLI 는 macOS/Windows
+공통으로 사용하며, 내부에서 `process.platform` 기준으로 감지 방식을 분기한다.
 
-1. 빌드와 진단 스크립트를 실행한다.
+1. 빌드와 진단 CLI 를 실행한다.
    - prod: `npm run check:desktop-installation -- --profile=prod`
    - dev: `npm run check:desktop-installation -- --profile=dev`
    - local/stage: `npm run check:desktop-installation -- --profile=local`, `npm run check:desktop-installation -- --profile=stage`
-2. 일반 설치 위치에 앱이 없을 때 기대 결과:
+2. macOS 에서 일반 설치 위치에 앱이 없을 때 기대 결과:
    - `status` 는 `not_installed`
    - `installGuideUrl` 은 `https://neosql.unvus.com/ko/docs/install`
    - `checkedExecutablePaths` 에 `/Applications/...` 와 `~/Applications/...` 아래 실행 파일이 포함된다.
-3. 앱을 `/Applications` 또는 `~/Applications` 에 설치하거나 이동한 뒤 다시 실행한다.
-4. 기대 결과:
+3. macOS 에서 앱을 `/Applications` 또는 `~/Applications` 에 설치하거나 이동한 뒤 다시 실행한다.
+4. macOS 설치 상태 기대 결과:
    - `status` 는 `installed`
    - `executablePath` 는 발견된 앱의 `Contents/MacOS/<productName>` 경로다.
+5. Windows 에서 HKCU Uninstall registry 가 없을 때 기대 결과:
+   - `status` 는 `not_installed`
+   - `reason` 은 `registry_missing`
+   - `checkedRegistryKey` 는 HKCU Uninstall registry 경로다.
+6. Windows 에서 NeoSQL installer 를 설치한 뒤 다시 실행한다.
+7. Windows 설치 상태 기대 결과:
+   - `status` 는 `installed`
+   - `executablePath` 는 registry `DisplayIcon` 에서 추출한 `.exe` 경로다.
+
+### 3-2-D. Windows HKCU registry 설치 감지
+
+Windows 는 portable 배포를 지원하지 않고 `.exe` NSIS installer 설치만 지원한다.
+설치 여부는 HKCU Uninstall registry 로 판별한다.
+
+1. NeoSQL Desktop 을 완전히 종료한다.
+2. profile 에 맞는 HKCU Uninstall registry 를 확인한다.
+   - prod:
+     `reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\45315cf5-be09-5107-ad81-bd3145331a04`
+   - dev:
+     `reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\e2fc7451-e33b-52fb-ad6e-90987868f2e4`
+   - stage:
+     `reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\8ca05a6c-d77c-53a8-96f8-a66895be5391`
+   - local:
+     `reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\507e3cc9-4de0-5788-b852-f143471d08d0`
+3. registry 가 없으면 MCP host 에서 `listTables` 같은 upstream 의존 tool 을 호출한다.
+4. 기대 결과:
+   - 응답 JSON 에 `status: "not_installed"` 가 포함된다.
+   - 응답 JSON 에 `reason: "registry_missing"` 이 포함된다.
+   - 원래 tool 요청과 activation request 는 실행되지 않는다.
+5. NeoSQL Windows installer 를 설치한 뒤 NeoSQL Desktop 을 다시 완전히 종료한다.
+6. MCP host 에서 `listTables` 같은 upstream 의존 tool 을 호출한다.
+7. 기대 결과:
+   - 응답 JSON 에 `status: "activation_requested"` 가 포함된다.
+   - 응답 JSON 의 `installation.status` 는 `installed` 이다.
+   - 원래 tool 요청은 실행되지 않고 activation request 만 전송된다.
 
 ## 트러블슈팅
 

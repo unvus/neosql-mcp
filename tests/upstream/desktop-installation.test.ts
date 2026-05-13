@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   detectDesktopInstallation,
   macDesktopExecutableCandidates,
+  windowsNsisUninstallGuid,
+  windowsNsisUninstallRegistryKey,
 } from '../../src/upstream/desktop-installation.js';
 
 describe('desktop installation detection', () => {
@@ -89,16 +91,109 @@ describe('desktop installation detection', () => {
     });
   });
 
-  it('does not classify Windows until the installation locations are confirmed', async () => {
+  it('computes the electron-builder NSIS uninstall GUID for each profile app id', () => {
+    expect(windowsNsisUninstallGuid('prod')).toBe('45315cf5-be09-5107-ad81-bd3145331a04');
+    expect(windowsNsisUninstallGuid('dev')).toBe('e2fc7451-e33b-52fb-ad6e-90987868f2e4');
+    expect(windowsNsisUninstallGuid('stage')).toBe('8ca05a6c-d77c-53a8-96f8-a66895be5391');
+    expect(windowsNsisUninstallGuid('local')).toBe('507e3cc9-4de0-5788-b852-f143471d08d0');
+  });
+
+  it('builds the HKCU NSIS uninstall registry key for Windows profiles', () => {
+    expect(windowsNsisUninstallRegistryKey('prod')).toBe(
+      'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
+    );
+  });
+
+  it('returns installed when the Windows HKCU uninstall registry points to an existing executable', async () => {
+    const executablePath = 'C:\\Users\\shock\\AppData\\Local\\Programs\\NeoSQL\\NeoSQL.exe';
+
     const result = await detectDesktopInstallation({
       profile: 'prod',
       platform: 'win32',
+      registryQuery: async () => `
+HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04
+    DisplayName    REG_SZ    NeoSQL 0.0.2
+    DisplayVersion    REG_SZ    0.0.2
+    DisplayIcon    REG_SZ    ${executablePath},0
+    Publisher    REG_SZ    Unvus Co., Ltd.
+`,
+      pathExists: async (candidate) => candidate === executablePath,
     });
 
-    expect(result).toMatchObject({
-      status: 'not_checked',
+    expect(result).toEqual({
+      status: 'installed',
       platform: 'win32',
-      reason: 'unsupported_platform',
+      target: {
+        profile: 'prod',
+        productName: 'NeoSQL',
+        appId: 'com.unvus.neosql',
+        activationUrl: 'neosql://mcp/activate',
+      },
+      executablePath,
+      checkedRegistryKey:
+        'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
+      displayName: 'NeoSQL 0.0.2',
+      displayVersion: '0.0.2',
+      displayIcon: `${executablePath},0`,
+      publisher: 'Unvus Co., Ltd.',
+    });
+  });
+
+  it('returns not_installed when the Windows HKCU uninstall registry is missing', async () => {
+    const result = await detectDesktopInstallation({
+      profile: 'prod',
+      platform: 'win32',
+      registryQuery: async () => {
+        throw new Error('registry key not found');
+      },
+    });
+
+    expect(result).toEqual({
+      status: 'not_installed',
+      platform: 'win32',
+      target: {
+        profile: 'prod',
+        productName: 'NeoSQL',
+        appId: 'com.unvus.neosql',
+        activationUrl: 'neosql://mcp/activate',
+      },
+      checkedRegistryKey:
+        'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
+      reason: 'registry_missing',
+      installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+    });
+  });
+
+  it('returns not_installed when the Windows uninstall registry executable is missing', async () => {
+    const executablePath = 'C:\\Users\\shock\\AppData\\Local\\Programs\\NeoSQL\\NeoSQL.exe';
+
+    const result = await detectDesktopInstallation({
+      profile: 'prod',
+      platform: 'win32',
+      registryQuery: async () => `
+HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04
+    DisplayName    REG_SZ    NeoSQL 0.0.2
+    DisplayIcon    REG_SZ    "${executablePath}",0
+`,
+      pathExists: async () => false,
+    });
+
+    expect(result).toEqual({
+      status: 'not_installed',
+      platform: 'win32',
+      target: {
+        profile: 'prod',
+        productName: 'NeoSQL',
+        appId: 'com.unvus.neosql',
+        activationUrl: 'neosql://mcp/activate',
+      },
+      checkedRegistryKey:
+        'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
+      reason: 'executable_missing',
+      executablePath,
+      displayName: 'NeoSQL 0.0.2',
+      displayIcon: `"${executablePath}",0`,
+      installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
     });
   });
 

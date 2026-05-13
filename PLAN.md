@@ -290,8 +290,9 @@ tool 호출
 **목표**: NeoSQL Desktop 이 설치되지 않은 상태를 미실행 상태와 구분하고, 사용자가 설치를
 완료할 수 있는 안내를 제공한다.
 
-이번 단계의 설치 판별은 macOS 부터 적용한다. Windows 는 설치형/portable 배포 위치를
-확인한 뒤 별도 확장한다. Linux 는 현재 범위에서 제외한다.
+이번 단계의 설치 판별은 macOS 와 Windows 에 적용한다. Windows 는 portable 배포를
+지원하지 않고 `.exe` NSIS installer 설치만 지원하므로, 설치 위치 스캔 대신 HKCU
+Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 제외한다.
 
 산출물:
 
@@ -300,7 +301,11 @@ tool 호출
     `~/Applications/NeoSQL.app/Contents/MacOS/NeoSQL`
   - macOS non-prod: `/Applications/NeoSQL<Profile>.app/Contents/MacOS/NeoSQL<Profile>`,
     `~/Applications/NeoSQL<Profile>.app/Contents/MacOS/NeoSQL<Profile>`
-  - Windows: 설치 위치와 portable 기준 확인 후 추가.
+  - Windows: `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\<guid>`
+    registry. `<guid>` 는 electron-builder NSIS 규칙인
+    `UUIDv5(appId, 50e065bc-3134-11e6-9bab-38c9862bdaf3)` 로 산출한다.
+    HKLM/WOW6432Node fallback 은 두지 않는다. 향후 본체 installer 가 perMachine 으로
+    바뀌면 그 변경과 같은 작업 단위에서 MCP 도 HKLM 기준으로 확장한다.
 - profile 기반 product name 과 app id 기준 정리.
   - prod: `NeoSQL`, `com.unvus.neosql`
   - non-prod: `NeoSQL<CapitalizedProfile>`, `com.unvus.neosql.<profile>`
@@ -317,8 +322,9 @@ tool 호출
 - 미설치와 미실행을 사용자-facing 응답에서 구분한다.
 - macOS 에서 지원 설치 위치에 실행 파일이 없으면 원 tool 요청과 activation request 를
   실행하지 않고 `not_installed` 응답을 반환한다.
-- Windows 처럼 설치 위치를 확정하지 않은 OS/배포 형태에서는 이번 단계에서 미설치로
-  단정하지 않고 기존 activation 흐름을 유지한다.
+- Windows 에서 HKCU Uninstall registry 가 없거나 registry 의 `DisplayIcon` 실행 파일을
+  확인할 수 없으면 원 tool 요청과 activation request 를 실행하지 않고 `not_installed`
+  응답을 반환한다.
 
 ## Phase 4 이상 (Phase 3 이후 재정렬)
 
