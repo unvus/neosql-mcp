@@ -127,8 +127,12 @@ publish blocker 목록이다.
   - `CHECKLIST.md`.
   - `CLAUDE.md`.
   - `AGENTS.md`.
-  - `docs/claude-code/workflow.md`.
-  - `docs/supabase-cli/*.md`.
+  - `docs/research/supabase-cli/*.md`.
+- [x] `docs/claude-code/*.md`는 프로젝트와 무관한 개인 참고 자료이므로
+  `~/workspace/docs/claude-code/`로 이동한다.
+- [x] `docs/supabase-cli/*.md`는 `docs/research/supabase-cli/` 아래로 이동한다.
+- [x] `docs/embedded-server-tool-analysis.md`와 `docs/mcp-context-holder-analysis.md`는
+  삭제한다.
 - [ ] `AGENTS.md` / `CLAUDE.md`를 public repository에 남길 수 있도록 수정할지 검토한다.
   - `AGENTS.md`는 AI coding agent용 작업 규칙으로 남길 수 있지만, public-safe 버전으로
     내부 경로와 private workflow를 축약해야 한다.
@@ -142,9 +146,15 @@ publish blocker 목록이다.
 - [ ] 공개 저장소에 유지할 내부 문서는 영어로 번역하거나, repository 공개 전에 별도 private/internal
   문서로 분리한다.
 - [x] `docs/spawn.md`는 삭제하고 핵심 설명만 `docs/testing.md`로 흡수한다.
-- [ ] 한국어 파일명 문서를 공개 유지할지 결정한다.
-  - `docs/통신 스택 계층 (RPC vs Transport).md`를 유지한다면 영어 파일명으로 rename하고
-    내부 링크를 갱신한다.
+- [x] 통신 계층 참고 문서는 `docs/research/rpc-vs-transport.md`로 이동하고 메타 정보를
+  정리한다.
+- [ ] `docs/upstream-rpc-contract.md`는 공개 전 실제 구현과 다시 대조해 보정한다.
+  - 확인 대상: error code table, lifecycle error handling, `executeQuery` error result
+    shape, `generateCode.templatePackId` required 여부, DDL input optionality,
+    `schema.listTables` result shape.
+  - `src/mcp/tools/*`, `src/mcp/error-map.ts`, `src/upstream/http-client.ts`,
+    `tests/mcp/**`, `tests/upstream/**`, `tests/helpers/mock-uds-server.ts`를 기준으로
+    문서가 implementation contract인지 design note인지 구분해 정리한다.
 
 ### 4. package metadata 보강
 
