@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Local stdio MCP server that connects MCP hosts to NeoSQL Desktop on macOS and Windows.",
   "type": "module",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bin": {
     "neosql-mcp": "dist/cli.js"
   },

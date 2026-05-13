@@ -24,7 +24,8 @@
 | module type | `module` | TypeScript ESM 패키지 방향과 일치 |
 | bin | `neosql-mcp` -> `dist/cli.js` | `npx neosql-mcp` 실행 진입점 |
 | build | `tsup`, `src/cli/cli.ts` -> `dist/cli.js` | `tsup.config.ts`에서 shebang 추가 |
-| files | `dist`, `README.md`, `LICENSE` | `LICENSE` 파일이 없으면 배포 전 추가 필요 |
+| files | `dist`, `README.md`, `LICENSE` | Apache License 2.0 전문 포함 |
+| license | `Apache-2.0` | 배포 결정값 반영 완료 |
 | engine | `node >=20` | Node 20 이상 MCP host 환경 필요 |
 | prepublishOnly | `npm run build` | CI publish 전 별도 검증 job으로 test/build를 강제한다 |
 
@@ -42,14 +43,18 @@ publish blocker 목록이다.
 
 ### 1. 공개 저장소 준비
 
-- [ ] GitHub 공개 저장소 owner/name을 확정한다.
-  - 현재 package name이 unscoped `neosql-mcp`이므로 repository URL도 이에 맞춰 확정한다.
+- [x] GitHub 공개 저장소 owner/name을 확정한다.
+  - 확정 주소: `https://github.com/unvus/neosql-mcp`.
+  - 현재 package name이 unscoped `neosql-mcp`이므로 repository URL도 이에 맞춘다.
   - 조직 소유가 필요하면 npm package도 `@<org>/neosql-mcp`로 바꿀지 함께 결정한다.
 - [ ] GitHub repository visibility를 public으로 전환하거나 public repository를 새로 만든다.
 - [ ] 공개 저장소에 올리기 전 불필요한 로컬 파일이 포함되지 않는지 확인한다.
   - `.mcp.json`, `.env`, local log, generated tarball(`neosql-mcp-*.tgz`), `dist/`,
     `node_modules/`가 commit 대상이 아닌지 확인한다.
-- [ ] `package.json#repository`, `homepage`, `bugs`에 들어갈 실제 GitHub URL을 확정한다.
+- [x] `package.json#repository`, `homepage`, `bugs`에 들어갈 실제 GitHub URL을 확정한다.
+  - repository: `git+https://github.com/unvus/neosql-mcp.git`.
+  - homepage: `https://github.com/unvus/neosql-mcp#readme`.
+  - bugs: `https://github.com/unvus/neosql-mcp/issues`.
 - [ ] Trusted Publishing을 사용할 GitHub repository와 npm package가 같은 소유 경계에 있는지 확인한다.
 
 ### 2. README 재작성
@@ -161,33 +166,33 @@ publish blocker 목록이다.
 
 ### 4. package metadata 보강
 
-- [x] `LICENSE` 파일을 추가한다.
+- [x] `LICENSE` 파일을 Apache License 2.0 전문으로 교체한다.
   - 현재 `package.json#files`에 `LICENSE`가 포함되어 있다.
-  - license 종류를 먼저 확정한다. 예: `MIT`, `Apache-2.0`, proprietary 등.
-- [x] `package.json#license`를 추가한다.
+  - license 결정값은 `Apache-2.0`이다.
+  - 현재 `LICENSE` 파일은 Apache License 2.0 전문이다.
+- [x] `package.json#license`를 `Apache-2.0`으로 변경한다.
+  - 현재 값은 `Apache-2.0`이다.
 - [x] `package.json#description`을 현재 아키텍처에 맞게 수정한다.
   - 현재 description은 embedded-server와 Streamable HTTP를 언급한다.
   - 실제 구조는 stdio MCP server -> Electron main JSON-RPC over HTTP on macOS UDS /
     Windows Named Pipe다.
 - [ ] `package.json#repository`를 추가한다.
-  - GitHub public repository owner/name이 확정된 뒤 추가한다.
   - npm 권장 형태:
     ```json
     {
       "repository": {
         "type": "git",
-        "url": "git+https://github.com/<owner>/neosql-mcp.git"
+        "url": "git+https://github.com/unvus/neosql-mcp.git"
       }
     }
     ```
-  - `<owner>`는 실제 GitHub 개인 계정 또는 조직명으로 바꾼다.
   - 현재 내부 Git remote(`git.unvus.com`)는 public npm metadata에 넣지 않는다.
 - [ ] `package.json#homepage`를 추가한다.
   - 별도 제품/문서 페이지가 없다면 GitHub README landing URL을 사용한다.
   - 기본 후보:
     ```json
     {
-      "homepage": "https://github.com/<owner>/neosql-mcp#readme"
+      "homepage": "https://github.com/unvus/neosql-mcp#readme"
     }
     ```
   - NeoSQL 공식 MCP 설치 문서 페이지를 별도로 만들면 그 URL을 homepage로 쓸 수 있다.
@@ -199,7 +204,7 @@ publish blocker 목록이다.
     ```json
     {
       "bugs": {
-        "url": "https://github.com/<owner>/neosql-mcp/issues"
+        "url": "https://github.com/unvus/neosql-mcp/issues"
       }
     }
     ```
