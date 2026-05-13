@@ -177,7 +177,7 @@ publish blocker 목록이다.
   - 현재 description은 embedded-server와 Streamable HTTP를 언급한다.
   - 실제 구조는 stdio MCP server -> Electron main JSON-RPC over HTTP on macOS UDS /
     Windows Named Pipe다.
-- [ ] `package.json#repository`를 추가한다.
+- [x] `package.json#repository`를 추가한다.
   - npm 권장 형태:
     ```json
     {
@@ -188,7 +188,7 @@ publish blocker 목록이다.
     }
     ```
   - 현재 내부 Git remote는 public npm metadata에 넣지 않는다.
-- [ ] `package.json#homepage`를 추가한다.
+- [x] `package.json#homepage`를 추가한다.
   - 별도 제품/문서 페이지가 없다면 GitHub README landing URL을 사용한다.
   - 기본 후보:
     ```json
@@ -200,7 +200,7 @@ publish blocker 목록이다.
     예: `https://neosql.unvus.com/docs/mcp`
   - 단순 제품 홈페이지(`https://neosql.unvus.com`)보다 패키지 사용법으로 바로 가는
     URL이 npm 사용자에게 더 적합하다.
-- [ ] `package.json#bugs`를 추가한다.
+- [x] `package.json#bugs`를 추가한다.
   - GitHub Issues를 받을 계획이면 다음 형태를 사용한다.
     ```json
     {

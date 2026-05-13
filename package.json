@@ -4,6 +4,14 @@
   "description": "Local stdio MCP server that connects MCP hosts to NeoSQL Desktop on macOS and Windows.",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unvus/neosql-mcp.git"
+  },
+  "homepage": "https://github.com/unvus/neosql-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/unvus/neosql-mcp/issues"
+  },
   "bin": {
     "neosql-mcp": "dist/cli.js"
   },
