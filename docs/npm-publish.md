@@ -47,7 +47,8 @@ publish blocker 목록이다.
   - 확정 주소: `https://github.com/unvus/neosql-mcp`.
   - 현재 package name이 unscoped `neosql-mcp`이므로 repository URL도 이에 맞춘다.
   - 조직 소유가 필요하면 npm package도 `@<org>/neosql-mcp`로 바꿀지 함께 결정한다.
-- [ ] GitHub repository visibility를 public으로 전환하거나 public repository를 새로 만든다.
+- [x] GitHub repository visibility를 public으로 전환하거나 public repository를 새로 만든다.
+  - `https://github.com/unvus/neosql-mcp`는 public repository다.
 - [ ] 공개 저장소에 올리기 전 불필요한 로컬 파일이 포함되지 않는지 확인한다.
   - `.mcp.json`, `.env`, local log, generated tarball(`neosql-mcp-*.tgz`), `dist/`,
     `node_modules/`가 commit 대상이 아닌지 확인한다.
@@ -115,7 +116,7 @@ publish blocker 목록이다.
 ### 3. 공개 문서 영문화 범위 결정
 
 - [x] npm package에 직접 노출되는 `README.md`는 반드시 영어로 작성한다.
-- [ ] README에서 직접 참조하지 않는 내부/maintainer 문서는 당장 영문화하지 않는다.
+- [x] README에서 직접 참조하지 않는 내부/maintainer 문서는 당장 영문화하지 않는다.
   - `docs/testing.md`: internal/contributor test workflow.
   - `docs/project-structure.md`: internal file placement guide.
   - `docs/npm-publish.md`: internal publish checklist.
@@ -130,26 +131,26 @@ publish blocker 목록이다.
 - [ ] 내부 작업 기록 성격의 문서를 공개 저장소에 둘지 결정한다.
   - `PLAN.md`.
   - `CHECKLIST.md`.
-  - `CLAUDE.md`.
+  - `CLAUDE.md`는 삭제한다.
   - `AGENTS.md`.
   - `docs/research/supabase-cli/*.md`.
 - [x] `docs/claude-code/*.md`는 프로젝트와 무관한 개인 참고 자료이므로
-  `~/workspace/docs/claude-code/`로 이동한다.
+  repository 밖 개인 문서 위치로 이동한다.
 - [x] `docs/supabase-cli/*.md`는 `docs/research/supabase-cli/` 아래로 이동한다.
 - [x] `docs/embedded-server-tool-analysis.md`와 `docs/mcp-context-holder-analysis.md`는
   삭제한다.
-- [ ] `AGENTS.md` / `CLAUDE.md`를 public repository에 남길 수 있도록 수정할지 검토한다.
-  - `AGENTS.md`는 AI coding agent용 작업 규칙으로 남길 수 있지만, public-safe 버전으로
-    내부 경로와 private workflow를 축약해야 한다.
-  - `CLAUDE.md`는 로컬 workspace 참조와 내부 context loading 용도가 강하므로 삭제하거나
-    public-safe 안내 문서로 대체할지 결정한다.
+- [x] `AGENTS.md` / `CLAUDE.md`를 public repository에 남길 수 있도록 수정할지 검토한다.
+  - `AGENTS.md`는 AI coding agent용 작업 규칙으로 유지한다.
+  - `AGENTS.md`에서 `CLAUDE.md` 의존성과 개인 workspace 경로 참조를 제거한다.
+  - `CLAUDE.md`는 로컬 workspace 참조와 내부 context loading 용도가 강하므로 삭제한다.
 - [ ] 개발 완료 후 `PLAN.md` / `CHECKLIST.md` 삭제를 검토한다.
   - 삭제 전 다른 문서로 이관해야 할 아키텍처 결정, 완료 이력, 배포 전 잔여 작업이
     남아 있는지 확인한다.
   - 외부 공개용 roadmap/changelog가 필요하면 두 문서를 그대로 공개하기보다
     `ROADMAP.md`, `CHANGELOG.md`, 또는 README의 짧은 status 섹션으로 재구성한다.
-- [ ] 공개 저장소에 유지할 내부 문서는 영어로 번역하거나, repository 공개 전에 별도 private/internal
-  문서로 분리한다.
+- [x] 공개 저장소에 유지할 내부/maintainer 문서는 한국어로 유지한다.
+  - npm package에 직접 노출되는 `README.md`와 package metadata는 영어로 유지한다.
+  - 내부 개발 문서는 외부 contributor 문서로 전환할 때 별도 영문화한다.
 - [x] `docs/spawn.md`는 삭제하고 핵심 설명만 `docs/testing.md`로 흡수한다.
 - [x] 통신 계층 참고 문서는 `docs/research/rpc-vs-transport.md`로 이동하고 메타 정보를
   정리한다.
@@ -186,7 +187,7 @@ publish blocker 목록이다.
       }
     }
     ```
-  - 현재 내부 Git remote(`git.unvus.com`)는 public npm metadata에 넣지 않는다.
+  - 현재 내부 Git remote는 public npm metadata에 넣지 않는다.
 - [ ] `package.json#homepage`를 추가한다.
   - 별도 제품/문서 페이지가 없다면 GitHub README landing URL을 사용한다.
   - 기본 후보:

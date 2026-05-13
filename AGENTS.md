@@ -39,7 +39,6 @@
 
 문서 기준:
 
-- `CLAUDE.md`: Claude로 진행해온 neosql 고수준 맥락.
 - `README.md`: npm/GitHub에 노출되는 end-user 문서. 공개 설정 예시와 사용자-facing
   설명은 README에 둔다.
 - `PLAN.md`: 아키텍처 결정과 phase 전략의 단일 진실의 원천.
@@ -49,10 +48,8 @@
 - `docs/mcp-client-config.md`: 내부 개발자용 CLI option, profile, legacy HTTP header
   → stdio/npx CLI arg 매핑 참고 문서. end-user용 설정 예시는 README를 우선 갱신한다.
 
-`AGENTS.md`는 Codex-facing repository guide다. `CLAUDE.md`와 일관성을 유지하되,
-세부 내용이 다르면 더 구체적인 계획 문서(`PLAN.md`, `CHECKLIST.md`,
-`docs/project-structure.md`)를 우선한다. `CLAUDE.md`가 참조하는
-`~/workspace/neosql/docs/` 하위 외부 문서는 main-app 맥락이 필요한 작업에서만 읽는다.
+`AGENTS.md`는 AI coding agent용 repository guide다. 세부 내용이 다르면 더 구체적인
+계획 문서(`PLAN.md`, `CHECKLIST.md`, `docs/project-structure.md`)를 우선한다.
 
 ## neosql main app 참조 규칙
 
@@ -61,8 +58,7 @@ neosql Electron app 설치 감지, 앱 실행, readiness 확인, Node ↔ electr
 작업은 문서만 보고 추측하지 않는다. 반드시 sibling clone의 실제 소스코드를 먼저
 확인한다.
 
-- 기본 참조 경로는 이 저장소 기준 `../neosql`이며, 동일 위치를 가리키는
-  `~/workspace/neosql`도 사용할 수 있다.
+- 기본 참조 경로는 이 저장소 기준 sibling clone인 `../neosql`이다.
 - 우선 확인할 본체 소스:
   - `../neosql/app/src-electron/`: Electron main, MCP RPC server, app lifecycle,
     preload/IPC 경계.
