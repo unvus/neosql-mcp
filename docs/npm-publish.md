@@ -110,13 +110,14 @@ publish blocker 목록이다.
 ### 3. 공개 문서 영문화 범위 결정
 
 - [x] npm package에 직접 노출되는 `README.md`는 반드시 영어로 작성한다.
-- [ ] 공개 GitHub repository에서 사용자가 직접 볼 가능성이 높은 문서를 영어로 작성하거나 번역한다.
-  - `docs/testing.md`: contributor test workflow.
-  - `docs/project-structure.md`: contributor file placement guide.
-  - `docs/npm-publish.md`: publish maintainer guide.
-- [ ] `docs/e2e-manual.md`와 `docs/endpoint-resolver.md`는 내부 개발/검증 문서로
+- [ ] README에서 직접 참조하지 않는 내부/maintainer 문서는 당장 영문화하지 않는다.
+  - `docs/testing.md`: internal/contributor test workflow.
+  - `docs/project-structure.md`: internal file placement guide.
+  - `docs/npm-publish.md`: internal publish checklist.
+  - 향후 외부 contributor 문서로 노출할 때만 public-facing 영어 문서로 재작성한다.
+- [x] `docs/e2e-manual.md`와 `docs/endpoint-resolver.md`는 내부 개발/검증 문서로
   유지한다. README에서 직접 링크하지 않는다.
-- [ ] public support OS는 NeoSQL Desktop과 동일하게 macOS/Windows만 표기한다.
+- [x] public support OS는 NeoSQL Desktop과 동일하게 macOS/Windows만 표기한다.
   - Linux를 포괄하는 표현(`macOS/Linux`, generic POSIX support 등)은 public-facing
     문서와 npm metadata에서 사용하지 않는다.
 - [x] `docs/mcp-client-config.md`는 end-user 설정 문서가 아니라 내부 개발자용
@@ -126,11 +127,21 @@ publish blocker 목록이다.
   - `CHECKLIST.md`.
   - `CLAUDE.md`.
   - `AGENTS.md`.
-  - `docs/spawn.md`.
   - `docs/claude-code/workflow.md`.
   - `docs/supabase-cli/*.md`.
+- [ ] `AGENTS.md` / `CLAUDE.md`를 public repository에 남길 수 있도록 수정할지 검토한다.
+  - `AGENTS.md`는 AI coding agent용 작업 규칙으로 남길 수 있지만, public-safe 버전으로
+    내부 경로와 private workflow를 축약해야 한다.
+  - `CLAUDE.md`는 로컬 workspace 참조와 내부 context loading 용도가 강하므로 삭제하거나
+    public-safe 안내 문서로 대체할지 결정한다.
+- [ ] 개발 완료 후 `PLAN.md` / `CHECKLIST.md` 삭제를 검토한다.
+  - 삭제 전 다른 문서로 이관해야 할 아키텍처 결정, 완료 이력, 배포 전 잔여 작업이
+    남아 있는지 확인한다.
+  - 외부 공개용 roadmap/changelog가 필요하면 두 문서를 그대로 공개하기보다
+    `ROADMAP.md`, `CHANGELOG.md`, 또는 README의 짧은 status 섹션으로 재구성한다.
 - [ ] 공개 저장소에 유지할 내부 문서는 영어로 번역하거나, repository 공개 전에 별도 private/internal
   문서로 분리한다.
+- [x] `docs/spawn.md`는 삭제하고 핵심 설명만 `docs/testing.md`로 흡수한다.
 - [ ] 한국어 파일명 문서를 공개 유지할지 결정한다.
   - `docs/통신 스택 계층 (RPC vs Transport).md`를 유지한다면 영어 파일명으로 rename하고
     내부 링크를 갱신한다.

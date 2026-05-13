@@ -29,7 +29,7 @@
 
 - 상위 `~/workspace/mcp/CLAUDE.md` — neosql-mcp 전체 방향성·개발 지침
 - `~/workspace/mcp/PLAN.md` — 단계별 구현 계획
-- `~/workspace/mcp/docs/spawn.md` — spawn 개념 입문 (교육용, 본 디렉토리와 상호 보완)
+- `~/workspace/mcp/docs/testing.md` — spawn 기반 통합 테스트의 핵심 설명
 - `~/workspace/mcp/docs/testing.md` — TDD 워크플로
 
 작성일: 2026-04-27

@@ -7,7 +7,8 @@
 > 2. **핵심 아이디어** — 왜 이렇게 하는가
 > 3. **neosql-mcp 적용 포인트** — TypeScript로 어떻게 옮기는가, 무엇을 주의할까
 
-배경은 [01-cli-overview.md](01-cli-overview.md), spawn 개념은 [`docs/spawn.md`](../spawn.md) 참고.
+배경은 [01-cli-overview.md](01-cli-overview.md), spawn 기반 통합 테스트의 핵심은
+[`docs/testing.md`](../testing.md) 참고.
 
 ## 아키텍처 전제 (load-bearing)
 

@@ -105,7 +105,7 @@ neosql Electron app 설치 감지, 앱 실행, readiness 확인, Node ↔ electr
   `tests/integration/`, `tests/fixtures/`, `tests/helpers/`를 둔다.
 - 테스트는 `import ... from '../../src/<dir>/foo.js'` 형태로 `src`를 참조한다.
   `src`는 `tests`를 절대 import하지 않는다.
-- 보조 문서: `docs/testing.md`, `docs/e2e-manual.md`, `docs/spawn.md`.
+- 보조 문서: `docs/testing.md`, `docs/e2e-manual.md`.
 - Supabase CLI 참조 분석 문서는 `docs/supabase-cli/`에 둔다. 분석 대상 원본
   소스는 이 저장소 기준 sibling clone인 `../cli`다.
 - `poc/`는 transport 실험 코드이며 프로덕션 코드가 아니다.
