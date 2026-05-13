@@ -91,7 +91,7 @@ Supported profiles are `prod`, `dev`, `local`, and `stage`.
 
 | Option | Description |
 | --- | --- |
-| `--profile=<prod|dev|local|stage>` | Selects the NeoSQL Desktop socket/pipe profile. Defaults to `prod`. |
+| `--profile=<prod|dev|local|stage>` | Selects the NeoSQL Desktop socket/pipe, install detection, and activation profile. Defaults to `prod`. |
 | `--project=<value>` | Sets the default NeoSQL project id for tool calls. |
 | `--default-connection=<value>` | Sets the default connection id. Values are kept as strings. |
 | `--default-schema=<value>` | Sets the default schema name. |
@@ -153,7 +153,8 @@ variables to override the upstream endpoint.
 ### `NeoSQL Desktop was not found`
 
 Install NeoSQL Desktop first. On macOS, `neosql-mcp` currently checks the standard
-`/Applications` and `~/Applications` locations.
+`/Applications` and `~/Applications` locations. On Windows, it checks the per-user
+NSIS uninstall registry entry under HKCU.
 
 ### `NeoSQL Desktop is not running`
 

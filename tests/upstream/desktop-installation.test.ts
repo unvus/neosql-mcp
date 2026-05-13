@@ -54,7 +54,7 @@ describe('desktop installation detection', () => {
         profile: 'dev',
         productName: 'NeoSQLDev',
         appId: 'com.unvus.neosql.dev',
-        activationUrl: 'neosql://mcp/activate',
+        activationUrl: 'neosql-dev://mcp/activate',
       },
       executablePath: expectedPath,
       checkedExecutablePaths: [
@@ -81,7 +81,7 @@ describe('desktop installation detection', () => {
         profile: 'local',
         productName: 'NeoSQLLocal',
         appId: 'com.unvus.neosql.local',
-        activationUrl: 'neosql://mcp/activate',
+        activationUrl: 'neosql-local://mcp/activate',
       },
       checkedExecutablePaths: [
         '/Applications/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal',

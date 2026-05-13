@@ -18,7 +18,7 @@ describe('app activation', () => {
       profile: 'dev',
       productName: 'NeoSQLDev',
       appId: 'com.unvus.neosql.dev',
-      activationUrl: 'neosql://mcp/activate',
+      activationUrl: 'neosql-dev://mcp/activate',
     });
   });
 
@@ -27,17 +27,17 @@ describe('app activation', () => {
       profile: 'local',
       productName: 'NeoSQLLocal',
       appId: 'com.unvus.neosql.local',
-      activationUrl: 'neosql://mcp/activate',
+      activationUrl: 'neosql-local://mcp/activate',
     });
     expect(activationTargetForProfile('stage')).toEqual({
       profile: 'stage',
       productName: 'NeoSQLStage',
       appId: 'com.unvus.neosql.stage',
-      activationUrl: 'neosql://mcp/activate',
+      activationUrl: 'neosql-stage://mcp/activate',
     });
   });
 
-  it('requests macOS activation with open -a and the profile product name', async () => {
+  it('requests macOS activation with open -a and the profile product name and URL scheme', async () => {
     const launched: Array<{ command: string; args: string[]; detached: boolean | undefined }> = [];
     const launcher: ProcessLauncher = (command, args, options) => {
       launched.push({ command, args, detached: options.detached });
@@ -57,13 +57,13 @@ describe('app activation', () => {
     expect(launched).toEqual([
       {
         command: 'open',
-        args: ['-a', 'NeoSQLLocal', 'neosql://mcp/activate'],
+        args: ['-a', 'NeoSQLLocal', 'neosql-local://mcp/activate'],
         detached: true,
       },
     ]);
   });
 
-  it('requests Windows activation through the registered neosql URL scheme', async () => {
+  it('requests Windows activation through the registered profile URL scheme', async () => {
     const launched: Array<{ command: string; args: string[] }> = [];
     const launcher: ProcessLauncher = (command, args) => {
       launched.push({ command, args });
@@ -74,7 +74,7 @@ describe('app activation', () => {
     };
 
     const result = await requestAppActivation({
-      profile: 'prod',
+      profile: 'dev',
       platform: 'win32',
       launcher,
     });
@@ -83,7 +83,7 @@ describe('app activation', () => {
     expect(launched).toEqual([
       {
         command: 'cmd',
-        args: ['/d', '/s', '/c', 'start "" "neosql://mcp/activate"'],
+        args: ['/d', '/s', '/c', 'start "" "neosql-dev://mcp/activate"'],
       },
     ]);
   });

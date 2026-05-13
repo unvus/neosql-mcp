@@ -306,9 +306,10 @@ Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 
     `UUIDv5(appId, 50e065bc-3134-11e6-9bab-38c9862bdaf3)` 로 산출한다.
     HKLM/WOW6432Node fallback 은 두지 않는다. 향후 본체 installer 가 perMachine 으로
     바뀌면 그 변경과 같은 작업 단위에서 MCP 도 HKLM 기준으로 확장한다.
-- profile 기반 product name 과 app id 기준 정리.
-  - prod: `NeoSQL`, `com.unvus.neosql`
-  - non-prod: `NeoSQL<CapitalizedProfile>`, `com.unvus.neosql.<profile>`
+- profile 기반 product name, app id, custom URL scheme 기준 정리.
+  - prod: `NeoSQL`, `com.unvus.neosql`, `neosql://`
+  - non-prod: `NeoSQL<CapitalizedProfile>`, `com.unvus.neosql.<profile>`,
+    `neosql-<profile>://`
   - 현재 neosql main app 이 prod/dev 산출물만 빌드하더라도 MCP activation target 은
     profile 을 그대로 반영한다. local/stage 실행 시 dev app 으로 fallback 하지 않고,
     해당 profile 앱을 찾지 못하면 명확히 실패해야 한다.

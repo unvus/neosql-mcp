@@ -7,6 +7,7 @@ vi.mock('../../src/upstream/desktop-installation.js', () => ({
       profile === 'prod'
         ? 'NeoSQL'
         : `NeoSQL${profile.charAt(0).toUpperCase()}${profile.slice(1)}`;
+    const protocolScheme = profile === 'prod' ? 'neosql' : `neosql-${profile}`;
 
     return {
       status: 'not_installed',
@@ -15,7 +16,7 @@ vi.mock('../../src/upstream/desktop-installation.js', () => ({
         profile,
         productName,
         appId: profile === 'prod' ? 'com.unvus.neosql' : `com.unvus.neosql.${profile}`,
-        activationUrl: 'neosql://mcp/activate',
+        activationUrl: `${protocolScheme}://mcp/activate`,
       },
       checkedExecutablePaths: [`/Applications/${productName}.app/Contents/MacOS/${productName}`],
       installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
@@ -40,7 +41,7 @@ describe('check-desktop-installation CLI', () => {
         profile: 'dev',
         productName: 'NeoSQLDev',
         appId: 'com.unvus.neosql.dev',
-        activationUrl: 'neosql://mcp/activate',
+        activationUrl: 'neosql-dev://mcp/activate',
       },
       checkedExecutablePaths: ['/Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev'],
       installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',

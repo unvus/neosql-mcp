@@ -5,9 +5,10 @@ export interface ActivationTarget {
   profile: Profile;
   productName: string;
   appId: string;
-  activationUrl: 'neosql://mcp/activate';
+  activationUrl: ActivationUrl;
 }
 
+export type ActivationUrl = `${string}://mcp/activate`;
 export type ActivationStatus = 'requested' | 'request_failed';
 
 export interface ActivationResult {
@@ -36,12 +37,14 @@ interface ActivationCommand {
 }
 
 export const activationTargetForProfile = (profile: Profile): ActivationTarget => {
+  const activationUrl = activationUrlForProfile(profile);
+
   if (profile === 'prod') {
     return {
       profile,
       productName: 'NeoSQL',
       appId: 'com.unvus.neosql',
-      activationUrl: 'neosql://mcp/activate',
+      activationUrl,
     };
   }
 
@@ -49,12 +52,18 @@ export const activationTargetForProfile = (profile: Profile): ActivationTarget =
     profile,
     productName: `NeoSQL${capitalizeProfile(profile)}`,
     appId: `com.unvus.neosql.${profile}`,
-    activationUrl: 'neosql://mcp/activate',
+    activationUrl,
   };
 };
 
 const capitalizeProfile = (profile: Exclude<Profile, 'prod'>): string =>
   `${profile.charAt(0).toUpperCase()}${profile.slice(1)}`;
+
+const activationUrlForProfile = (profile: Profile): ActivationUrl =>
+  `${protocolSchemeForProfile(profile)}://mcp/activate`;
+
+const protocolSchemeForProfile = (profile: Profile): string =>
+  profile === 'prod' ? 'neosql' : `neosql-${profile}`;
 
 export const requestAppActivation = async (
   opts: RequestAppActivationOptions,
