@@ -8,23 +8,29 @@
 
 - HTTP path: `/mcp/rpc`
 - HTTP method: `POST`
-- POSIX transport: Unix Domain Socket
+- macOS transport: Unix Domain Socket
 - Windows transport: Named Pipe
 - TCP port는 사용하지 않는다.
 - Body encoding: UTF-8 JSON
+
+현재 Electron 구현은 `process.platform !== 'win32'`에서 Unix Domain Socket을 사용한다.
+지원 대상은 NeoSQL Desktop 지원 범위에 맞춰 macOS와 Windows로 문서화한다.
 
 HTTP status 원칙:
 
 | Status | 의미                                                        |
 | -----: | ----------------------------------------------------------- |
 |    200 | JSON-RPC success 또는 JSON-RPC error                        |
-|    400 | HTTP body가 JSON이 아니거나 JSON-RPC envelope가 아님        |
+|    400 | HTTP body가 JSON이 아니거나 body를 읽을 수 없음             |
 |    404 | `/mcp/rpc`가 아닌 path                                      |
 |    405 | POST 외 method                                              |
 |    500 | dispatcher crash 등 JSON-RPC error로 만들 수 없는 서버 오류 |
 
-도구 실행 실패, validation 실패, project/connection/schema 미존재는 HTTP 200 +
-JSON-RPC error로 반환한다.
+JSON-RPC envelope validation, 도구 실행 실패, validation 실패,
+project/connection/schema 미존재는 HTTP 200 + JSON-RPC error로 반환한다.
+
+이 표는 Electron dispatcher 계약이다. Node test helper는 일부 negative HTTP case를
+단순화할 수 있으므로 dispatcher 구현 시 이 표를 기준으로 맞춘다.
 
 ## JSON-RPC Envelope
 
@@ -64,10 +70,10 @@ Error response:
   "jsonrpc": "2.0",
   "id": 1,
   "error": {
-    "code": -32013,
+    "code": -32000,
     "message": "Schema not found: 'public' in connection 'local'",
     "data": {
-      "kind": "schema-not-found"
+      "kind": "handler-error"
     }
   }
 }
@@ -92,7 +98,13 @@ Node responsibility:
 - MCP tool input schema validation
 - context store merge
 - JSON-RPC method 호출
-- JSON-RPC error를 MCP `tools/call` error result로 변환
+- JSON-RPC error를 MCP `tools/call` response로 변환
+  - 기본 upstream tool은 `isError: true` tool result로 변환한다.
+  - `executeQuery`는 SQL editor UX 호환을 위해 RPC error와 DDL rejection을 정상
+    tool result의 `{ success: false, message }` JSON으로 반환한다.
+  - desktop lifecycle/access 계열 error(`app-not-ready`, `unavailable`,
+    `unauthenticated`, `timeout`)는
+    공통 사용자-facing JSON error result로 변환한다.
 
 Electron responsibility:
 
@@ -104,21 +116,26 @@ Electron responsibility:
 
 ## Error Codes
 
-|   Code | Kind                   | 의미                                    |
-| -----: | ---------------------- | --------------------------------------- |
-| -32600 | `invalid-request`      | JSON-RPC request 형식 오류              |
-| -32601 | `method-not-found`     | 알 수 없는 RPC method                   |
-| -32602 | `invalid-params`       | params schema 오류                      |
-| -32603 | `internal-error`       | 처리 중 예상 못한 예외                  |
-| -32001 | `app-not-ready`        | Electron app/project session 준비 안 됨 |
-| -32010 | `context-required`     | 필수 context 누락                       |
-| -32011 | `project-not-assigned` | 현재 사용자에게 project 권한 없음       |
-| -32012 | `connection-not-found` | connection 없음                         |
-| -32013 | `schema-not-found`     | schema 없음                             |
-| -32020 | `validation-failed`    | tool/domain validation 실패             |
-| -32030 | `execution-failed`     | SQL/DDL/codegen 등 실행 실패            |
-| -32040 | `permission-denied`    | DDL 제한 등 권한 정책 위반              |
-| -32050 | `upstream-timeout`     | 내부 처리 timeout                       |
+현재 구현 기준:
+
+|   Code | Kind                   | 의미                                             |
+| -----: | ---------------------- | ------------------------------------------------ |
+| -32600 | `invalid-request`      | JSON-RPC request 형식 오류                       |
+| -32601 | `method-not-found`     | 알 수 없는 RPC method                            |
+| -32602 | `invalid-params`       | params schema 오류                               |
+| -32000 | `handler-error`        | handler가 구체 kind 없이 실패를 반환             |
+| -32000 | `dispatch-error`       | main → renderer dispatch 중 예상 못한 예외       |
+| -32000 | `duplicate-request-id` | renderer bridge pending request id 충돌          |
+| -32001 | `unauthenticated`      | NeoSQL Desktop 로그인 필요                       |
+| -32001 | `timeout`              | renderer response timeout                        |
+| -32002 | `app-not-ready`        | renderer target 또는 renderer handler 준비 안 됨 |
+| -32002 | `unavailable`          | project session 초기화 timeout 등 일시 처리 불가 |
+| -32003 | `forbidden`            | 현재 사용자에게 project 권한 없음                |
+
+현재 Electron dispatcher는 `connection-not-found`, `schema-not-found`, `execution-failed`
+같은 domain-specific kind를 별도 code로 세분화하지 않는다. handler가 `errorKind` 없이
+`success: false`를 반환하면 `handler-error` / `-32000`으로 감싼다. Node는 code보다
+`error.data.kind`를 기준으로 lifecycle/access error를 분기한다.
 
 ## Methods
 
@@ -133,7 +150,9 @@ Electron responsibility:
 | `generateCode`    | `codeGeneration.generateCode` | yes           |     60s |
 | `getContextHelp`  | N/A                           | no            |     N/A |
 
-`getContextHelp`는 Node-local이다. Electron RPC method를 만들지 않는다.
+이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
+다룬다. `ping`과 `getMcpSessionId`는 Node-local diagnostic tool이므로 Electron RPC
+method를 만들지 않는다. `getContextHelp`도 Node-local이다.
 
 ## Per-call Context Override
 
@@ -235,6 +254,9 @@ interface TableInfo {
 
 type ListTablesResult = TableInfo[];
 ```
+
+Node handler는 upstream result shape를 변환하지 않고 JSON text로 반환한다. 현재
+Electron handler는 배열을 직접 반환한다.
 
 ## `schema.getTableDetails`
 
@@ -372,23 +394,23 @@ interface CreateTablesInput {
 
 interface McpTableDef {
   name: string;
-  remarks?: string | null;
+  remarks: string;
   columns: McpColumnDef[];
-  primaryKeys?: string[];
-  importedKeys?: McpImportedKeyDef[];
-  indexes?: McpIndexDef[];
-  constraints?: McpConstraintDef[];
+  primaryKeys: string[];
+  importedKeys: McpImportedKeyDef[];
+  indexes: McpIndexDef[];
+  constraints: McpConstraintDef[];
 }
 
 interface McpColumnDef {
   name: string;
   type: string;
-  size?: number | null;
-  decimalDigits?: number | null;
-  nullable?: boolean;
-  autoIncrement?: boolean;
-  defaultValue?: string | null;
-  remarks?: string | null;
+  size: number;
+  decimalDigits: number;
+  nullable: boolean;
+  autoIncrement: boolean;
+  defaultValue: string;
+  remarks: string;
 }
 
 interface McpImportedKeyDef {
@@ -396,25 +418,25 @@ interface McpImportedKeyDef {
   fkColumnName: string;
   pkTableName: string;
   pkColumnName: string;
-  deferrable?: boolean | null;
-  initiallyDeferred?: boolean | null;
+  deferrable: boolean;
+  initiallyDeferred: boolean;
 }
 
 interface McpIndexDef {
   indexName: string;
   columnNames: string[];
-  unique?: boolean;
+  unique: boolean;
 }
 
 interface McpConstraintDef {
   name: string;
   type: 'UNIQUE' | 'CHECK' | 'EXCLUSION' | string;
-  columns?: string[];
-  expression?: string;
-  exclusionClause?: string;
-  deferrable?: boolean | null;
-  initiallyDeferred?: boolean | null;
-  comment?: string;
+  columns: string[];
+  expression: string;
+  exclusionClause: string;
+  deferrable: boolean;
+  initiallyDeferred: boolean;
+  comment: string;
 }
 ```
 
@@ -465,13 +487,13 @@ interface ModifyTablesInput {
 
 interface McpAlterTableDef {
   tableName: string;
-  newTableName?: string | null;
+  newTableName: string;
   remarksOperation?: McpRemarksOperation | null;
   primaryKeyOperations?: McpPrimaryKeyOperation[] | null;
-  columnOperations?: McpColumnOperation[] | null;
-  indexOperations?: McpIndexOperation[] | null;
-  foreignKeyOperations?: McpForeignKeyOperation[] | null;
-  constraintOperations?: McpConstraintOperation[] | null;
+  columnOperations: McpColumnOperation[];
+  indexOperations: McpIndexOperation[];
+  foreignKeyOperations: McpForeignKeyOperation[];
+  constraintOperations: McpConstraintOperation[];
 }
 
 interface McpRemarksOperation {
@@ -487,43 +509,43 @@ interface McpPrimaryKeyOperation {
 interface McpColumnOperation {
   action: 'ADD' | 'DROP' | 'MODIFY' | 'RENAME';
   columnName: string;
-  newColumnName?: string | null;
-  afterColumn?: string | null;
-  type?: string | null;
-  size?: number | null;
-  decimalDigits?: number | null;
-  nullable?: boolean | null;
-  autoIncrement?: boolean | null;
-  defaultValue?: string | null;
-  remarks?: string | null;
+  newColumnName: string;
+  afterColumn: string;
+  type: string;
+  size: number;
+  decimalDigits: number;
+  nullable: boolean;
+  autoIncrement: boolean;
+  defaultValue: string;
+  remarks: string;
 }
 
 interface McpIndexOperation {
   action: 'ADD' | 'DROP';
   indexName: string;
-  columnNames?: string[] | null;
-  unique?: boolean | null;
+  columnNames: string[];
+  unique: boolean;
 }
 
 interface McpForeignKeyOperation {
   action: 'ADD' | 'DROP';
   fkName: string;
-  fkColumnName?: string | null;
-  pkTableName?: string | null;
-  pkColumnName?: string | null;
-  deferrable?: boolean | null;
-  initiallyDeferred?: boolean | null;
+  fkColumnName: string;
+  pkTableName: string;
+  pkColumnName: string;
+  deferrable: boolean;
+  initiallyDeferred: boolean;
 }
 
 interface McpConstraintOperation {
   action: 'ADD' | 'DROP';
   name: string;
-  type?: 'UNIQUE' | 'CHECK' | 'EXCLUSION' | string | null;
-  columns?: string[] | null;
-  expression?: string | null;
-  exclusionClause?: string | null;
-  deferrable?: boolean | null;
-  initiallyDeferred?: boolean | null;
+  type: 'UNIQUE' | 'CHECK' | 'EXCLUSION' | string;
+  columns: string[];
+  expression: string;
+  exclusionClause: string;
+  deferrable: boolean;
+  initiallyDeferred: boolean;
 }
 ```
 
@@ -566,7 +588,7 @@ Input:
 ```ts
 interface GenerateCodeInput {
   tableName: string;
-  templatePackId?: string;
+  templatePackId: string;
   schema?: string;
 }
 ```
@@ -576,16 +598,18 @@ Node transforms input for Electron:
 ```ts
 interface GenerateCodeElectronInput {
   tableNames: string[];
-  templatePackId?: string;
+  templatePackId: string;
 }
 ```
 
 Rules:
 
-- Current app handler uses the project-configured template pack.
-- `templatePackId` is kept in the MCP/contract surface for compatibility. The current
-  server/app behavior is acceptable as-is, so no additional code change is required for
-  `CodeGenerationTools` unless the template-pack selection policy changes.
+- `tableName` is transformed to single-item `tableNames`.
+- `schema` is removed from upstream `input` and sent through `params.context`.
+- `templatePackId` is required by the Node MCP tool schema and is forwarded to upstream
+  `input`.
+- Current Electron handler ignores `payload.templatePackId` and loads
+  `projectConfig.templatePack.id`.
 
 Result:
 
@@ -600,9 +624,17 @@ interface GenerateCodeResult {
 
 ## Open Items
 
-- `templatePackId` is accepted by the old Java tool and forwarded by Node for compatibility, but
-  the current app handler uses the project-configured template pack. No separate code change is
-  required for the current Phase 2 MCP server scope.
+- `templatePackId`는 Node MCP tool schema에서 required이고 Node가 upstream으로
+  전달하지만, 현재 Electron handler는 `projectConfig.templatePack.id`를 사용한다.
+  공개 API로 template pack 선택을 지원할지, 아니면 Node surface에서 제거할지 별도 결정이
+  필요하다.
+- 현재 Electron은 project session 초기화 실패를 `unavailable`로 반환하고 renderer 준비
+  실패를 `app-not-ready`로 반환한다. Node lifecycle mapper는 두 kind를 같은 사용자
+  경험으로 처리한다. 장기적으로 두 kind를 그대로 둘지, 하나의 lifecycle kind로 통일할지
+  결정이 필요하다.
+- 현재 renderer timeout은 `kind: "timeout"`이지만 code가 `-32001`로
+  `unauthenticated`와 겹친다. Node는 kind를 기준으로 처리하므로 동작상 문제는 작지만,
+  장기적으로는 timeout 전용 code를 분리하는 편이 명확하다.
 - Node generates an upstream `sessionId` once per server instance/stdio connection. This
   is not the MCP Streamable HTTP `Mcp-Session-Id` header; it is a NeoSQL upstream grouping
   key.

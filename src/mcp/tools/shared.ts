@@ -139,12 +139,15 @@ const desktopLifecycleErrorResult = (
     });
   }
 
-  if (err.kind === 'rpc-error' && err.rpcKind === 'app-not-ready') {
+  if (
+    err.kind === 'rpc-error' &&
+    (err.rpcKind === 'app-not-ready' || err.rpcKind === 'unavailable')
+  ) {
     return jsonToolErrorResult({
       status: 'app_not_ready',
       reason: err.rpcKind,
       message:
-        'NeoSQL Desktop is running, but the renderer is not ready yet. Run the tool again after the app finishes loading.',
+        'NeoSQL Desktop is running, but the renderer or project session is not ready yet. Run the tool again after the app finishes loading.',
     });
   }
 

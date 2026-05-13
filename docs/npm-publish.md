@@ -148,13 +148,16 @@ publish blocker 목록이다.
 - [x] `docs/spawn.md`는 삭제하고 핵심 설명만 `docs/testing.md`로 흡수한다.
 - [x] 통신 계층 참고 문서는 `docs/research/rpc-vs-transport.md`로 이동하고 메타 정보를
   정리한다.
-- [ ] `docs/upstream-rpc-contract.md`는 공개 전 실제 구현과 다시 대조해 보정한다.
+- [x] `docs/upstream-rpc-contract.md`는 공개 전 실제 구현과 다시 대조해 보정한다.
   - 확인 대상: error code table, lifecycle error handling, `executeQuery` error result
     shape, `generateCode.templatePackId` required 여부, DDL input optionality,
     `schema.listTables` result shape.
   - `src/mcp/tools/*`, `src/mcp/error-map.ts`, `src/upstream/http-client.ts`,
     `tests/mcp/**`, `tests/upstream/**`, `tests/helpers/mock-uds-server.ts`를 기준으로
     문서가 implementation contract인지 design note인지 구분해 정리한다.
+  - `../neosql/app/src-electron/mcp-rpc/*`와
+    `../neosql/app/src/services/mcp-handler/*`도 함께 확인했다.
+  - 확인 중 발견한 `unavailable` lifecycle mapping 누락은 Node handler에서 보정했다.
 
 ### 4. package metadata 보강
 

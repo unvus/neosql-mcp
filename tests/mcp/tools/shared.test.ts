@@ -140,6 +140,31 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
     expect(payload.status).toBe('app_not_ready');
   });
 
+  it('maps unavailable JSON-RPC errors to the shared desktop lifecycle result', async () => {
+    const deps: UpstreamToolDeps = {
+      postRpc: async () => {
+        throw new HttpClientError({
+          kind: 'rpc-error',
+          rpcCode: -32002,
+          rpcKind: 'unavailable',
+          message: 'Timed out waiting for project session initialization.',
+        });
+      },
+      contextStore: createContextStore(),
+      sessionId: 'session-1',
+      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+    };
+
+    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+
+    expect(result.isError).toBe(true);
+    const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
+      status?: string;
+      reason?: string;
+    };
+    expect(payload).toMatchObject({ status: 'app_not_ready', reason: 'unavailable' });
+  });
+
   it('maps unauthenticated JSON-RPC errors to a sign-in required tool result', async () => {
     const requestDesktopFocus = vi.fn(async () => undefined);
     const deps: UpstreamToolDeps = {
