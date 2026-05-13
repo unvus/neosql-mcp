@@ -238,17 +238,22 @@ publish blocker 목록이다.
 
 ### 6. GitHub Actions 추가
 
-- [ ] main 검증 workflow를 추가한다.
+- [x] main 검증 workflow를 추가한다.
   - trigger: pull request, main push.
+  - workflow file: `.github/workflows/ci.yml`.
   - steps: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
     `npm pack --dry-run`.
-- [ ] npm publish workflow를 추가한다.
-  - trigger: Git tag `v*` 또는 GitHub Release published.
+- [x] npm publish workflow를 추가한다.
+  - trigger: Git tag `v*`.
+  - workflow file: `.github/workflows/publish.yml`.
   - publish job 내부에서도 main 검증과 같은 명령을 다시 실행한다.
-- [ ] Trusted Publishing을 사용한다면 workflow permission을 설정한다.
+- [x] Trusted Publishing을 사용한다면 workflow permission을 설정한다.
   - `permissions: id-token: write`.
-  - 필요한 경우 `contents: read`.
+  - `permissions: contents: read`.
 - [ ] npm package Settings에 GitHub Actions trusted publisher를 등록한다.
+  - Organization or user: `unvus`.
+  - Repository: `neosql-mcp`.
+  - Workflow filename: `publish.yml`.
 - [ ] 장기 `NPM_TOKEN` secret을 기본 경로로 쓰지 않는다.
   - Trusted Publishing을 사용할 수 없는 예외 상황에서만 token 전략을 별도로 문서화한다.
 
@@ -300,7 +305,7 @@ npm pack --dry-run
 
 ### npm publish workflow
 
-publish workflow는 Git tag 또는 GitHub Release에서만 실행한다.
+publish workflow는 Git tag에서만 실행한다.
 
 권장 trigger:
 
@@ -310,8 +315,6 @@ on:
     tags:
       - 'v*'
 ```
-
-또는 GitHub Release published event를 사용한다.
 
 publish job도 검증을 다시 실행한다. main 검증 workflow를 통과했더라도 publish job 안에서
 다시 `npm ci`, lint, typecheck, test, build, `npm pack --dry-run`을 실행한다.
