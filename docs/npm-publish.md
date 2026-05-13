@@ -1,7 +1,7 @@
 # npm 배포 가이드
 
 `neosql-mcp`를 public npm package로 등록하고, MCP host에서
-`npx -y neosql-mcp@latest`로 실행할 수 있게 만들기 위한 배포 기준이다.
+`npx -y neosql-mcp`로 실행할 수 있게 만들기 위한 배포 기준이다.
 
 기준 날짜: 2026-05-13
 
@@ -74,7 +74,7 @@ publish blocker 목록이다.
 - [x] README에 빠른 설정 예시를 추가한다.
   - Claude Code `.mcp.json` 예시.
   - Codex `config.toml` 예시.
-  - `npx -y neosql-mcp@latest`와 `--profile=dev` 예시.
+  - `npx -y neosql-mcp`와 `--profile=dev` 예시.
   - 공개 설정 예시는 README에 둔다. `docs/mcp-client-config.md`는 내부 개발자용
     CLI option/profile/context mapping 참고 문서로 유지한다.
 - [x] README에 CLI option 표를 추가한다.
@@ -276,7 +276,7 @@ publish blocker 목록이다.
   - `src/`, `tests/`, `docs/`, `.env`, `.mcp.json`, local log, `node_modules/` 미포함.
 - [ ] 실제 MCP host에서 published package spec으로 수동 검증한다.
   - 최초 publish 전에는 local linked binary 또는 packed tarball로 검증한다.
-  - publish 후에는 `npx -y neosql-mcp@latest`로 검증한다.
+  - publish 후에는 `npx -y neosql-mcp`로 검증한다.
 
 ## GitHub Actions 구성
 
@@ -372,7 +372,10 @@ npm pack neosql-mcp@latest --dry-run
 npx -y neosql-mcp@latest
 ```
 
-`npx -y neosql-mcp@latest`는 stdio MCP server를 실행하므로 일반 터미널에서는 대기 상태처럼
+위 `@latest` 명령은 npm registry의 latest dist-tag를 명시적으로 확인하기 위한 배포
+검증용이다. 일반 MCP host 설정에는 unversioned package spec을 사용한다.
+
+`npx -y neosql-mcp`는 stdio MCP server를 실행하므로 일반 터미널에서는 대기 상태처럼
 보일 수 있다. 실제 동작 검증은 `docs/e2e-manual.md`의 MCP host 절차로 확인한다.
 
 MCP host 설정도 최신 패키지명과 맞춘다.
@@ -382,7 +385,7 @@ MCP host 설정도 최신 패키지명과 맞춘다.
   "mcpServers": {
     "neosql": {
       "command": "npx",
-      "args": ["-y", "neosql-mcp@latest"]
+      "args": ["-y", "neosql-mcp"]
     }
   }
 }
@@ -395,7 +398,7 @@ dev profile이 필요하면:
   "mcpServers": {
     "neosql-dev": {
       "command": "npx",
-      "args": ["-y", "neosql-mcp@latest", "--profile=dev"]
+      "args": ["-y", "neosql-mcp", "--profile=dev"]
     }
   }
 }

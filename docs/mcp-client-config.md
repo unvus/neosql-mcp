@@ -14,7 +14,7 @@ work to NeoSQL Desktop over the local UDS/Named Pipe upstream channel.
 The public command shape is:
 
 ```bash
-npx -y neosql-mcp@latest [options]
+npx -y neosql-mcp [options]
 ```
 
 This file intentionally does not duplicate host-specific JSON/TOML snippets. Keep those

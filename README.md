@@ -25,7 +25,7 @@ through JSON-RPC over HTTP on a macOS Unix Domain Socket or Windows Named Pipe.
 No global install is required. Configure your MCP host to run the package with `npx`.
 
 ```bash
-npx -y neosql-mcp@latest \
+npx -y neosql-mcp \
   --project=YOUR_PROJECT_ID \
   --default-connection=YOUR_CONNECTION_ID \
   --default-schema=YOUR_SCHEMA
@@ -45,7 +45,7 @@ look like it is waiting for input. That is expected.
       "command": "npx",
       "args": [
         "-y",
-        "neosql-mcp@latest",
+        "neosql-mcp",
         "--project=YOUR_PROJECT_ID",
         "--default-connection=YOUR_CONNECTION_ID",
         "--default-schema=YOUR_SCHEMA"
@@ -62,7 +62,7 @@ look like it is waiting for input. That is expected.
 command = "npx"
 args = [
   "-y",
-  "neosql-mcp@latest",
+  "neosql-mcp",
   "--project=YOUR_PROJECT_ID",
   "--default-connection=YOUR_CONNECTION_ID",
   "--default-schema=YOUR_SCHEMA",
@@ -79,7 +79,7 @@ non-production profile only when NeoSQL Desktop is also running with the same pr
   "mcpServers": {
     "neosql-dev": {
       "command": "npx",
-      "args": ["-y", "neosql-mcp@latest", "--profile=dev"]
+      "args": ["-y", "neosql-mcp", "--profile=dev"]
     }
   }
 }
