@@ -206,6 +206,30 @@ Pull request에는 다음을 포함한다.
 - 관련 있으면 수동 검증 절차.
 - 관련 planning doc 또는 issue link.
 
+## Version bump와 release tag
+
+사용자가 `version 1.0.0으로 올려줘`, `1.0.0으로 버전 올려줘`,
+`patch/minor/major 버전 올려줘`처럼 버전 bump를 명시하면 `docs/npm-publish.md`의
+버전과 태그 절차를 따른다.
+
+- `package.json` 또는 `package-lock.json`을 직접 편집해서 버전을 올리지 않는다.
+- 먼저 `git status --short`로 working tree 상태를 확인한다. release commit/tag에
+  섞이면 안 되는 변경이 있으면 중단하고 사용자에게 확인한다.
+- 정확한 버전이 주어지면 `npm version <version>`을 실행한다. 예:
+  `npm version 1.0.0`.
+- bump 종류가 주어지면 `npm version patch`, `npm version minor`,
+  `npm version major` 중 요청과 일치하는 명령을 실행한다.
+- `npm version`이 만든 commit과 tag를 원격에 순서대로 올린다.
+
+```bash
+git push
+git push origin vX.X.X
+```
+
+예를 들어 `npm version 1.0.0` 이후에는 `git push` 다음
+`git push origin v1.0.0`을 실행한다. tag push는 GitHub Actions publish workflow를
+trigger하는 release 동작이므로 생략하지 않는다.
+
 ## 보안과 설정
 
 local secret, 문서화되지 않은 machine-specific path, `dist/` generated artifact를

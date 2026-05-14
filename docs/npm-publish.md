@@ -354,6 +354,43 @@ npm version major
 `npm version`은 기본적으로 `package.json`, `package-lock.json`을 수정하고 git tag를 만든다.
 tag 기반 publish workflow를 쓸 경우 이 동작을 그대로 활용할 수 있다.
 
+에이전트에게 `version 1.0.0으로 올려줘`, `1.0.0으로 버전 올려줘`,
+`patch/minor/major 버전 올려줘`처럼 버전 bump를 요청하면 아래 절차를 release
+기본 경로로 따른다.
+
+1. clean working tree에서 시작한다.
+
+```bash
+git status --short
+```
+
+2. 요청한 버전에 맞는 `npm version` 명령을 실행한다.
+
+```bash
+npm version 1.0.0
+npm version patch
+npm version minor
+npm version major
+```
+
+3. `npm version`이 만든 commit과 tag를 원격에 순서대로 push한다.
+
+```bash
+git push
+git push origin vX.X.X
+```
+
+예를 들어 `npm version 1.0.0`을 실행했다면 tag 이름은 `v1.0.0`이므로
+`git push` 다음 `git push origin v1.0.0`을 실행한다. 이 tag push가
+GitHub Actions publish workflow의 trigger다.
+
+주의:
+
+- `package.json` 또는 `package-lock.json`을 직접 편집해서 버전을 올리지 않는다.
+- release commit/tag에 섞이면 안 되는 변경이 working tree에 있으면 중단하고 정리한다.
+- npm에 이미 존재하는 버전이면 같은 `name@version`으로 다시 publish할 수 없으므로
+  다른 patch version을 사용한다.
+
 pre-release나 내부 검증용으로 먼저 올리고 싶으면 `latest` 대신 별도 dist-tag를 쓴다.
 
 ```bash
