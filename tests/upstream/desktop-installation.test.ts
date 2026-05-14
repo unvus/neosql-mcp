@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   detectDesktopInstallation,
   macDesktopExecutableCandidates,
+  macDesktopExecutablePathFromAppPath,
   windowsNsisUninstallGuid,
   windowsNsisUninstallRegistryKey,
 } from '../../src/upstream/desktop-installation.js';
 
 describe('desktop installation detection', () => {
+  const missingMcpConfigFile = async (): Promise<string> => {
+    throw new Error('mcp-config.json not found');
+  };
+
   it('checks the macOS system and user Applications directories for the profile product', async () => {
     const homeDir = '/Users/shock';
 
@@ -15,6 +20,7 @@ describe('desktop installation detection', () => {
       platform: 'darwin',
       homeDir,
       pathExists: async () => false,
+      readMcpConfigFile: missingMcpConfigFile,
     });
 
     expect(result).toEqual({
@@ -43,6 +49,7 @@ describe('desktop installation detection', () => {
       platform: 'darwin',
       homeDir,
       pathExists: async (candidate) => candidate === expectedPath,
+      readMcpConfigFile: missingMcpConfigFile,
     });
 
     expect(result).toEqual({
@@ -70,6 +77,7 @@ describe('desktop installation detection', () => {
       platform: 'darwin',
       homeDir,
       pathExists: async () => false,
+      readMcpConfigFile: missingMcpConfigFile,
     });
 
     expect(result).toEqual({
@@ -205,5 +213,104 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
       '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
       '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
     ]);
+  });
+
+  it('uses the recorded macOS app path after default candidates are missing', async () => {
+    const homeDir = '/Users/shock';
+    const recordedExecutablePath = '/Volumes/Work/Apps/NeoSQL.app/Contents/MacOS/NeoSQL';
+    const checkedPaths: string[] = [];
+
+    const result = await detectDesktopInstallation({
+      profile: 'prod',
+      platform: 'darwin',
+      homeDir,
+      readMcpConfigFile: async (filePath) => {
+        expect(filePath).toBe('/Users/shock/.neosql/mcp-config.json');
+        return JSON.stringify({ appPath: '/Volumes/Work/Apps/NeoSQL.app' });
+      },
+      pathExists: async (candidate) => {
+        checkedPaths.push(candidate);
+        return candidate === recordedExecutablePath;
+      },
+    });
+
+    expect(result).toEqual({
+      status: 'installed',
+      platform: 'darwin',
+      target: {
+        profile: 'prod',
+        productName: 'NeoSQL',
+        appId: 'com.unvus.neosql',
+        activationUrl: 'neosql://mcp/activate',
+      },
+      executablePath: recordedExecutablePath,
+      checkedExecutablePaths: [
+        '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+        '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+        recordedExecutablePath,
+      ],
+    });
+    expect(checkedPaths).toEqual([
+      '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+      '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+      recordedExecutablePath,
+    ]);
+  });
+
+  it('prefers a default macOS executable over a recorded app path', async () => {
+    const defaultExecutablePath = '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL';
+    const checkedPaths: string[] = [];
+
+    const result = await detectDesktopInstallation({
+      profile: 'prod',
+      platform: 'darwin',
+      homeDir: '/Users/shock',
+      readMcpConfigFile: async () => JSON.stringify({ appPath: '/Volumes/Work/Apps/NeoSQL.app' }),
+      pathExists: async (candidate) => {
+        checkedPaths.push(candidate);
+        return (
+          candidate === defaultExecutablePath ||
+          candidate === '/Volumes/Work/Apps/NeoSQL.app/Contents/MacOS/NeoSQL'
+        );
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'installed',
+      executablePath: defaultExecutablePath,
+      checkedExecutablePaths: [
+        defaultExecutablePath,
+        '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
+        '/Volumes/Work/Apps/NeoSQL.app/Contents/MacOS/NeoSQL',
+      ],
+    });
+    expect(checkedPaths).toEqual([defaultExecutablePath]);
+  });
+
+  it('ignores invalid macOS mcp-config.json records and keeps convention candidates', async () => {
+    const result = await detectDesktopInstallation({
+      profile: 'stage',
+      platform: 'darwin',
+      homeDir: '/Users/shock',
+      readMcpConfigFile: async (filePath) => {
+        expect(filePath).toBe('/Users/shock/.neosql-stage/mcp-config.json');
+        return '{';
+      },
+      pathExists: async () => false,
+    });
+
+    expect(result).toMatchObject({
+      status: 'not_installed',
+      checkedExecutablePaths: [
+        '/Applications/NeoSQLStage.app/Contents/MacOS/NeoSQLStage',
+        '/Users/shock/Applications/NeoSQLStage.app/Contents/MacOS/NeoSQLStage',
+      ],
+    });
+  });
+
+  it('converts a recorded macOS app bundle path to the product executable path', () => {
+    expect(
+      macDesktopExecutablePathFromAppPath('/Users/shock/Desktop/NeoSQLLocal.app', 'NeoSQLLocal'),
+    ).toBe('/Users/shock/Desktop/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal');
   });
 });

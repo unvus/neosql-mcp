@@ -28,6 +28,8 @@ src/                            (프로덕션 코드만)
 │   ├── endpoint-resolver.ts    profile → socket path 산출, /mcp/rpc 상수
 │   ├── health-check.ts         socket path connect 시도
 │   ├── http-client.ts          JSON-RPC over HTTP POST 클라이언트
+│   ├── mcp-config-record.ts    NeoSQL Desktop 이 기록한 appPath hint 읽기
+│   ├── profile-names.ts        profile → protocol/package name 산출
 │   └── sse-parser.ts           GET SSE 채널용 event-stream 파서
 └── infra/       횡단 관심사
     ├── log-path.ts             Electron-style OS별 로그 경로 계산

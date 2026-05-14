@@ -1,5 +1,14 @@
 import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process';
+import { access } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import type { Profile } from './endpoint-resolver.js';
+import {
+  readRecordedAppPath,
+  type McpConfigFileReader,
+  type ReadRecordedAppPathOptions,
+} from './mcp-config-record.js';
+import { protocolSchemeForProfile } from './profile-names.js';
 
 export interface ActivationTarget {
   profile: Profile;
@@ -24,10 +33,14 @@ export type ProcessLauncher = (
   args: string[],
   options: SpawnOptions,
 ) => ChildProcess;
+export type ActivationPathExists = (candidate: string) => Promise<boolean>;
 
 export interface RequestAppActivationOptions {
   profile: Profile;
   platform?: ActivationPlatform;
+  homeDir?: string;
+  readMcpConfigFile?: McpConfigFileReader;
+  pathExists?: ActivationPathExists;
   launcher?: ProcessLauncher;
 }
 
@@ -62,16 +75,13 @@ const capitalizeProfile = (profile: Exclude<Profile, 'prod'>): string =>
 const activationUrlForProfile = (profile: Profile): ActivationUrl =>
   `${protocolSchemeForProfile(profile)}://mcp/activate`;
 
-const protocolSchemeForProfile = (profile: Profile): string =>
-  profile === 'prod' ? 'neosql' : `neosql-${profile}`;
-
 export const requestAppActivation = async (
   opts: RequestAppActivationOptions,
 ): Promise<ActivationResult> => {
   const target = activationTargetForProfile(opts.profile);
   const platform = opts.platform ?? process.platform;
   const launcher = opts.launcher ?? spawn;
-  const activationCommand = commandForPlatform(platform, target);
+  const activationCommand = await commandForPlatform(platform, target, opts);
 
   try {
     const child = launcher(activationCommand.command, activationCommand.args, {
@@ -107,14 +117,20 @@ export const requestAppActivation = async (
   }
 };
 
-const commandForPlatform = (
+const commandForPlatform = async (
   platform: ActivationPlatform,
   target: ActivationTarget,
-): ActivationCommand => {
+  opts: {
+    homeDir?: string;
+    readMcpConfigFile?: McpConfigFileReader;
+    pathExists?: ActivationPathExists;
+  },
+): Promise<ActivationCommand> => {
   if (platform === 'darwin') {
+    const appSpecifier = await macActivationAppSpecifier(target, opts);
     return {
       command: 'open',
-      args: ['-a', target.productName, target.activationUrl],
+      args: ['-a', appSpecifier, target.activationUrl],
     };
   }
 
@@ -129,4 +145,59 @@ const commandForPlatform = (
     command: 'xdg-open',
     args: [target.activationUrl],
   };
+};
+
+const recordedAppPathOptions = (
+  profile: Profile,
+  opts: {
+    homeDir?: string;
+    readMcpConfigFile?: McpConfigFileReader;
+    pathExists?: ActivationPathExists;
+  },
+): ReadRecordedAppPathOptions => {
+  const readOptions: ReadRecordedAppPathOptions = { profile };
+  if (opts.homeDir !== undefined) readOptions.homeDir = opts.homeDir;
+  if (opts.readMcpConfigFile !== undefined) readOptions.readFile = opts.readMcpConfigFile;
+  return readOptions;
+};
+
+const macActivationAppSpecifier = async (
+  target: ActivationTarget,
+  opts: {
+    homeDir?: string;
+    readMcpConfigFile?: McpConfigFileReader;
+    pathExists?: ActivationPathExists;
+  },
+): Promise<string> => {
+  const pathExists = opts.pathExists ?? defaultPathExists;
+  const homeDir = opts.homeDir ?? os.homedir();
+
+  for (const appPath of macDesktopAppBundleCandidates({
+    productName: target.productName,
+    homeDir,
+  })) {
+    if (await pathExists(appPath)) return target.productName;
+  }
+
+  const recordedAppPath = await readRecordedAppPath(recordedAppPathOptions(target.profile, opts));
+  if (recordedAppPath === undefined) return target.productName;
+
+  return (await pathExists(recordedAppPath)) ? recordedAppPath : target.productName;
+};
+
+const macDesktopAppBundleCandidates = (opts: {
+  productName: string;
+  homeDir: string;
+}): string[] => [
+  path.posix.join('/Applications', `${opts.productName}.app`),
+  path.posix.join(opts.homeDir, 'Applications', `${opts.productName}.app`),
+];
+
+const defaultPathExists: ActivationPathExists = async (candidate) => {
+  try {
+    await access(candidate);
+    return true;
+  } catch {
+    return false;
+  }
 };

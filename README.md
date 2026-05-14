@@ -153,8 +153,10 @@ variables to override the upstream endpoint.
 ### `NeoSQL Desktop was not found`
 
 Install NeoSQL Desktop first. On macOS, `neosql-mcp` currently checks the standard
-`/Applications` and `~/Applications` locations. On Windows, it checks the per-user
-NSIS uninstall registry entry under HKCU.
+`/Applications` and `~/Applications` locations first. If the app is not found there,
+it falls back to the app path recorded by NeoSQL Desktop in
+`~/.{packageName}/mcp-config.json` after the app has been launched at least once. On
+Windows, it checks the per-user NSIS uninstall registry entry under HKCU.
 
 ### `NeoSQL Desktop is not running`
 

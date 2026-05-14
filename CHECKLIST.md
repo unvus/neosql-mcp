@@ -167,13 +167,16 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 
 - [x] **test list 제안 → macOS 일반 설치 디렉토리 우선 구현 지시를 합의로 간주**
 - [x] macOS NeoSQL Desktop 설치 위치 탐색 정책 정리 (`/Applications`, `~/Applications`)
-- [ ] macOS zip/portable 설치 감지 정책 정리 및 대응
+- [x] macOS 기본 위치 미탐지 시 `~/.{packageName}/mcp-config.json` appPath fallback 적용
+- [x] macOS activation 은 기본 위치를 우선하고, 없으면 검증된 record appPath 로 실행
+- [ ] macOS zip/portable 추가 감지 정책 정리 및 대응
 - [x] Windows 설치 판별 정책 정리 및 구현 (portable 없음, HKCU NSIS Uninstall registry 기준)
 - [x] profile 기반 product name, app id, custom URL scheme 기준 반영
   (`NeoSQL<CapitalizedProfile>`, `com.unvus.neosql.<profile>`, `neosql-<profile>://`)
 - [x] 미설치 응답에 사용자-facing 설치 안내 메시지와 `installGuideUrl` 제공 (macOS/Windows)
 - [x] 자동 다운로드/설치 여부는 별도 결정 전까지 범위 밖으로 명시
-- [x] macOS 지원 설치 위치에서 실행 파일을 찾지 못하면 activation 없이 `not_installed` 반환하도록 검증
+- [x] macOS 기본 위치와 record 경로에서 실행 파일을 찾지 못하면 activation 없이
+  `not_installed` 반환하도록 검증
 - [x] Windows HKCU registry 또는 registry 실행 파일이 없으면 activation 없이 `not_installed` 반환하도록 검증
 
 ## Phase 4 이상

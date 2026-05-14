@@ -6,6 +6,11 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { activationTargetForProfile, type ActivationPlatform } from './app-activation.js';
 import type { Profile } from './endpoint-resolver.js';
+import {
+  readRecordedAppPath,
+  type McpConfigFileReader,
+  type ReadRecordedAppPathOptions,
+} from './mcp-config-record.js';
 
 export const NEOSQL_INSTALL_GUIDE_URL = 'https://neosql.unvus.com/ko/docs/install';
 
@@ -74,6 +79,7 @@ export interface DetectDesktopInstallationOptions {
   platform?: ActivationPlatform;
   homeDir?: string;
   pathExists?: PathExists;
+  readMcpConfigFile?: McpConfigFileReader;
   registryQuery?: WindowsRegistryQuery;
 }
 
@@ -107,9 +113,12 @@ export const detectDesktopInstallation = async (
   }
 
   const pathExists = opts.pathExists ?? defaultPathExists;
-  const checkedExecutablePaths = macDesktopExecutableCandidates({
+  const homeDir = opts.homeDir ?? os.homedir();
+  const checkedExecutablePaths = await macDesktopExecutableCandidatesWithRecord({
+    profile: opts.profile,
     productName: target.productName,
-    homeDir: opts.homeDir ?? os.homedir(),
+    homeDir,
+    ...(opts.readMcpConfigFile === undefined ? {} : { readMcpConfigFile: opts.readMcpConfigFile }),
   });
 
   for (const executablePath of checkedExecutablePaths) {
@@ -146,6 +155,40 @@ export const macDesktopExecutableCandidates = (
     opts.productName,
   ),
 ];
+
+export const macDesktopExecutablePathFromAppPath = (appPath: string, productName: string): string =>
+  path.posix.join(appPath, 'Contents', 'MacOS', productName);
+
+const macDesktopExecutableCandidatesWithRecord = async (
+  opts: MacDesktopExecutableCandidateOptions & {
+    profile: Profile;
+    readMcpConfigFile?: McpConfigFileReader;
+  },
+): Promise<string[]> => {
+  const candidates = macDesktopExecutableCandidates(opts);
+  const recordedAppPath = await readRecordedAppPath(recordedAppPathOptions(opts.profile, opts));
+  if (recordedAppPath === undefined) return candidates;
+
+  const recordedExecutablePath = macDesktopExecutablePathFromAppPath(
+    recordedAppPath,
+    opts.productName,
+  );
+  return candidates.includes(recordedExecutablePath)
+    ? candidates
+    : [...candidates, recordedExecutablePath];
+};
+
+const recordedAppPathOptions = (
+  profile: Profile,
+  opts: {
+    homeDir: string;
+    readMcpConfigFile?: McpConfigFileReader;
+  },
+): ReadRecordedAppPathOptions => {
+  const readOptions: ReadRecordedAppPathOptions = { profile, homeDir: opts.homeDir };
+  if (opts.readMcpConfigFile !== undefined) readOptions.readFile = opts.readMcpConfigFile;
+  return readOptions;
+};
 
 export const windowsNsisUninstallGuid = (profile: Profile): string =>
   uuidV5(activationTargetForProfile(profile).appId, ELECTRON_BUILDER_NS_UUID);
@@ -240,9 +283,10 @@ const windowsNotInstalledFromRegistry = (opts: {
 const parseWindowsUninstallRegistry = (output: string): WindowsUninstallRegistryValues => {
   const values: WindowsUninstallRegistryValues = {};
   for (const line of output.split(/\r?\n/)) {
-    const match = /^\s+(DisplayName|DisplayVersion|DisplayIcon|Publisher|UninstallString)\s+REG_\w+\s*(.*)$/.exec(
-      line,
-    );
+    const match =
+      /^\s+(DisplayName|DisplayVersion|DisplayIcon|Publisher|UninstallString)\s+REG_\w+\s*(.*)$/.exec(
+        line,
+      );
     if (!match) continue;
 
     const [, name, value = ''] = match;
@@ -272,8 +316,8 @@ const uuidV5 = (name: string, namespace: string): string => {
   const namespaceBytes = Buffer.from(namespace.replaceAll('-', ''), 'hex');
   const hash = createHash('sha1').update(namespaceBytes).update(name, 'utf8').digest();
   const bytes = Buffer.from(hash.subarray(0, 16));
-  bytes[6] = (bytes[6] ?? 0) & 0x0f | 0x50;
-  bytes[8] = (bytes[8] ?? 0) & 0x3f | 0x80;
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
   const hex = bytes.toString('hex');
   return [
     hex.slice(0, 8),

@@ -301,6 +301,11 @@ Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 
     `~/Applications/NeoSQL.app/Contents/MacOS/NeoSQL`
   - macOS non-prod: `/Applications/NeoSQL<Profile>.app/Contents/MacOS/NeoSQL<Profile>`,
     `~/Applications/NeoSQL<Profile>.app/Contents/MacOS/NeoSQL<Profile>`
+  - macOS 에서 기본 위치에 앱이 없으면 NeoSQL Desktop 이 시작 시 기록하는
+    `~/.{packageName}/mcp-config.json` 의 `appPath` 를 fallback hint 로 사용한다.
+    `packageName` 은 custom URL scheme 과 동일하게 prod 는 `neosql`, non-prod 는
+    `neosql-<profile>` 이다. record 는 hint 이므로 실제 `.app` bundle 또는 executable
+    존재를 파일시스템으로 검증한다.
   - Windows: `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\<guid>`
     registry. `<guid>` 는 electron-builder NSIS 규칙인
     `UUIDv5(appId, 50e065bc-3134-11e6-9bab-38c9862bdaf3)` 로 산출한다.
@@ -321,8 +326,9 @@ Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 
 완료 조건:
 
 - 미설치와 미실행을 사용자-facing 응답에서 구분한다.
-- macOS 에서 지원 설치 위치에 실행 파일이 없으면 원 tool 요청과 activation request 를
-  실행하지 않고 `not_installed` 응답을 반환한다.
+- macOS 에서 기본 설치 위치와 `mcp-config.json` record 경로 모두에서 실행 파일을 찾지
+  못하면 원 tool 요청과 activation request 를 실행하지 않고 `not_installed` 응답을
+  반환한다.
 - Windows 에서 HKCU Uninstall registry 가 없거나 registry 의 `DisplayIcon` 실행 파일을
   확인할 수 없으면 원 tool 요청과 activation request 를 실행하지 않고 `not_installed`
   응답을 반환한다.
