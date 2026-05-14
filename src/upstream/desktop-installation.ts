@@ -130,8 +130,14 @@ export const detectDesktopInstallation = async (
 export const macDesktopExecutableCandidates = (
   opts: MacDesktopExecutableCandidateOptions,
 ): string[] => [
-  path.join('/Applications', `${opts.productName}.app`, 'Contents', 'MacOS', opts.productName),
-  path.join(
+  path.posix.join(
+    '/Applications',
+    `${opts.productName}.app`,
+    'Contents',
+    'MacOS',
+    opts.productName,
+  ),
+  path.posix.join(
     opts.homeDir,
     'Applications',
     `${opts.productName}.app`,

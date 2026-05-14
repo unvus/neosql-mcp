@@ -1,5 +1,3 @@
-import os from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   detectDesktopInstallation,
@@ -10,7 +8,7 @@ import {
 
 describe('desktop installation detection', () => {
   it('checks the macOS system and user Applications directories for the profile product', async () => {
-    const homeDir = path.join(os.tmpdir(), 'neosql-home');
+    const homeDir = '/Users/shock';
 
     const result = await detectDesktopInstallation({
       profile: 'prod',
@@ -30,15 +28,15 @@ describe('desktop installation detection', () => {
       },
       checkedExecutablePaths: [
         '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-        path.join(homeDir, 'Applications/NeoSQL.app/Contents/MacOS/NeoSQL'),
+        '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
       ],
       installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
     });
   });
 
   it('returns installed when a macOS profile executable exists', async () => {
-    const homeDir = path.join(os.tmpdir(), 'neosql-home');
-    const expectedPath = path.join(homeDir, 'Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev');
+    const homeDir = '/Users/shock';
+    const expectedPath = '/Users/shock/Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev';
 
     const result = await detectDesktopInstallation({
       profile: 'dev',
@@ -65,7 +63,7 @@ describe('desktop installation detection', () => {
   });
 
   it('checks profile-specific macOS executable paths for local profile', async () => {
-    const homeDir = path.join(os.tmpdir(), 'neosql-home');
+    const homeDir = '/Users/shock';
 
     const result = await detectDesktopInstallation({
       profile: 'local',
@@ -85,7 +83,7 @@ describe('desktop installation detection', () => {
       },
       checkedExecutablePaths: [
         '/Applications/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal',
-        path.join(homeDir, 'Applications/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal'),
+        '/Users/shock/Applications/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal',
       ],
       installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
     });
