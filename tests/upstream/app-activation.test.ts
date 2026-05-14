@@ -83,7 +83,7 @@ describe('app activation', () => {
     expect(launched).toEqual([
       {
         command: 'cmd',
-        args: ['/d', '/s', '/c', 'start "" "neosql-dev://mcp/activate"'],
+        args: ['/d', '/c', 'start', '""', 'neosql-dev://mcp/activate'],
       },
     ]);
   });

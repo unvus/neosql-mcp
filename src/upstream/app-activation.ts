@@ -121,7 +121,7 @@ const commandForPlatform = (
   if (platform === 'win32') {
     return {
       command: 'cmd',
-      args: ['/d', '/s', '/c', `start "" "${target.activationUrl}"`],
+      args: ['/d', '/c', 'start', '""', target.activationUrl],
     };
   }
 
