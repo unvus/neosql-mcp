@@ -1,5 +1,11 @@
 # neosql-mcp
 
+> Bring NeoSQL Desktop's database tools into your MCP host (Claude Code, Codex, …) via `npx`.
+
+[![npm version](https://img.shields.io/npm/v/neosql-mcp.svg)](https://www.npmjs.com/package/neosql-mcp)
+[![license](https://img.shields.io/npm/l/neosql-mcp.svg)](LICENSE)
+[![node](https://img.shields.io/node/v/neosql-mcp.svg)](https://nodejs.org)
+
 `neosql-mcp` is a local stdio MCP server that lets MCP hosts use NeoSQL Desktop
 tools through `npx`.
 
@@ -12,6 +18,23 @@ through JSON-RPC over HTTP on a macOS Unix Domain Socket or Windows Named Pipe.
 [MCP host] -- stdio MCP --> [neosql-mcp]
   -- JSON-RPC over HTTP on UDS/Named Pipe --> [NeoSQL Desktop]
 ```
+
+## Why neosql-mcp?
+
+- AI coding assistants generate better code when they can read your real schema
+  and run real queries instead of guessing. `neosql-mcp` exposes the database
+  your team already configured in NeoSQL Desktop to any MCP host.
+- One running NeoSQL Desktop, one `npx` command — Claude Code, Codex, and any
+  other MCP host share the same connections, schemas, and credentials. No
+  per-host setup.
+
+## Security
+
+All traffic stays on the local machine over a Unix Domain Socket (macOS) or
+Named Pipe (Windows). No TCP ports are opened, and the upstream endpoint cannot
+be overridden by environment variables or config files. Database access scope
+follows the connection settings in NeoSQL Desktop — credentials and per-connection
+permissions are not duplicated here.
 
 ## Prerequisites
 
@@ -69,31 +92,12 @@ args = [
 ]
 ```
 
-### Development Profile
-
-`prod` is the default profile and does not need to be passed explicitly. Use a
-non-production profile only when NeoSQL Desktop is also running with the same profile.
-
-```json
-{
-  "mcpServers": {
-    "neosql-dev": {
-      "command": "npx",
-      "args": ["-y", "neosql-mcp", "--profile=dev"]
-    }
-  }
-}
-```
-
-Supported profiles are `prod`, `dev`, `local`, and `stage`.
-
 ## CLI Options
 
 | Option | Description |
 | --- | --- |
-| `--profile=<prod|dev|local|stage>` | Selects the NeoSQL Desktop socket/pipe, install detection, and activation profile. Defaults to `prod`. |
 | `--project=<value>` | Sets the default NeoSQL project id for tool calls. |
-| `--default-connection=<value>` | Sets the default connection id. Values are kept as strings. |
+| `--default-connection=<value>` | Sets the default connection id. |
 | `--default-schema=<value>` | Sets the default schema name. |
 
 Use the `--key=value` form in MCP host config. Space-separated forms such as
@@ -104,11 +108,8 @@ Use the `--key=value` form in MCP host config. Space-separated forms such as
 NeoSQL tools resolve project, connection, and schema in this order:
 
 1. Explicit arguments on the tool call.
-2. The Node-local context store.
+2. The Node-local context store (set from CLI options at startup; restart to change).
 3. Empty context.
-
-The context store is initialized from CLI options and can later be changed with the
-process only by restarting the MCP server with different CLI options.
 
 Tools that accept per-call `connectionId` and `schema` overrides:
 
@@ -117,8 +118,6 @@ Tools that accept per-call `connectionId` and `schema` overrides:
 - `execute-query`
 - `create-tables`
 - `modify-tables`
-
-`generate-code` is currently under development and returns `개발중입니다`.
 
 ## Available Tools
 
@@ -132,21 +131,14 @@ Tools that accept per-call `connectionId` and `schema` overrides:
 | `execute-query` | Executes non-DDL SQL using the selected context. |
 | `create-tables` | Requests table creation through NeoSQL Desktop. |
 | `modify-tables` | Requests table modification through NeoSQL Desktop. |
-| `generate-code` | Under development. Returns `개발중입니다`. |
 | `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process. |
 
 ## Transport
 
 `neosql-mcp` talks to NeoSQL Desktop through a deterministic local endpoint:
 
-- macOS: `path.join(os.tmpdir(), 'neosql-mcp' + suffix + '.sock')`
-- Windows: `\\.\pipe\neosql-mcp` + suffix
-
-The suffix is empty for `prod` and `-dev`, `-local`, or `-stage` for non-production
-profiles.
-
-The package does not discover TCP ports, read endpoint config files, or use environment
-variables to override the upstream endpoint.
+- macOS: `path.join(os.tmpdir(), 'neosql-mcp.sock')`
+- Windows: `\\.\pipe\neosql-mcp`
 
 ## Troubleshooting
 
@@ -155,7 +147,7 @@ variables to override the upstream endpoint.
 Install NeoSQL Desktop first. On macOS, `neosql-mcp` currently checks the standard
 `/Applications` and `~/Applications` locations first. If the app is not found there,
 it falls back to the app path recorded by NeoSQL Desktop in
-`~/.{packageName}/mcp-config.json` after the app has been launched at least once. On
+`~/.neosql/mcp-config.json` after the app has been launched at least once. On
 Windows, it checks the per-user NSIS uninstall registry entry under HKCU.
 
 ### `NeoSQL Desktop is not running`
@@ -165,8 +157,8 @@ possible, `neosql-mcp` requests OS-level app activation before returning this st
 
 ### `NeoSQL Desktop did not respond`
 
-The app may still be starting, blocked, or running with a different profile. Confirm
-that the MCP config profile matches the Desktop profile.
+The app may still be starting or blocked. Wait a moment and retry, or restart NeoSQL
+Desktop.
 
 ### Context-sensitive tools fail
 
@@ -191,8 +183,7 @@ For local MCP host testing, build and link the binary:
 ```bash
 npm run build
 npm link
-which neosql-mcp
-neosql-mcp --profile=dev
+ls -la $(which neosql-mcp)
 ```
 
 When local testing is done, unlink it so direct `neosql-mcp` commands no longer use the
