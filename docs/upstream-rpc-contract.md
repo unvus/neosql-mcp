@@ -147,12 +147,12 @@ Electron responsibility:
 | `execute-query`     | `sql.execute-query`              | yes           |     60s |
 | `create-tables`     | `ddl.create-tables`              | yes           |     60s |
 | `modify-tables`     | `ddl.modify-tables`              | yes           |     60s |
-| `generate-code`     | `code-generation.generate-code`  | yes           |     60s |
 | `get-context-help`  | N/A                              | no            |     N/A |
 
 이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
-다룬다. `ping`과 `get-mcp-session-id`는 Node-local diagnostic tool이므로 Electron RPC
-method를 만들지 않는다. `get-context-help`도 Node-local이다.
+다룬다. `ping`, `get-mcp-session-id`, `get-context-help`, `generate-code`는 Node-local
+tool이므로 Electron RPC method를 만들지 않는다. `generate-code`는 현재 개발중
+placeholder로 `개발중입니다`를 반환한다.
 
 ## Per-call Context Override
 
@@ -164,9 +164,6 @@ Electron payload가 아니라 upstream `params.context`에 merge된다.
 1. tool argument `connectionId` / `schema`
 2. Node context store (`--default-connection`, `--default-schema`)
 3. empty context
-
-`generate-code`는 현재 `connectionId` per-call override를 받지 않는다. 기존 호환성을 위해
-`schema` override만 유지한다.
 
 ## `connection.list-connections`
 
@@ -581,33 +578,10 @@ interface ModifyTablesResult {
 }
 ```
 
-## `code-generation.generate-code`
+## `generate-code`
 
-Input:
-
-```ts
-interface GenerateCodeInput {
-  tableName: string;
-  templatePackId: string;
-  schema?: string;
-}
-```
-
-Node transforms input for Electron:
-
-```ts
-interface GenerateCodeElectronInput {
-  tableNames: string[];
-  templatePackId: string;
-}
-```
-
-Rules:
-
-- `tableName` is transformed to single-item `tableNames`.
-- `schema` is removed from upstream `input` and sent through `params.context`.
-- `templatePackId` is required by the Node MCP tool schema and is forwarded to upstream
-  `input`.
+`generate-code` is currently a Node-local under-development placeholder. It does not call
+an upstream RPC method and returns the text response `개발중입니다`.
 - Current Electron handler ignores `payload.templatePackId` and loads
   `projectConfig.templatePack.id`.
 

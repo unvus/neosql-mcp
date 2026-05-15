@@ -133,11 +133,6 @@ describe('createServer', () => {
         schema:
           'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
-      'generate-code': {
-        tableName: 'Table name to generate code for',
-        templatePackId: 'Template pack ID to use for code generation',
-        schema: 'Database schema name. If omitted, uses current context schema.',
-      },
     };
 
     for (const [toolName, parameterDescriptions] of Object.entries(expectedDescriptions)) {
@@ -158,9 +153,8 @@ describe('createServer', () => {
     const result = await client!.listTools();
 
     const generateCodeSchema = inputSchemaFor(result.tools, 'generate-code');
-    expect(requiredFields(generateCodeSchema)).toEqual(['tableName', 'templatePackId']);
-    expect(propertySchema(generateCodeSchema, 'tableName').minLength).toBeUndefined();
-    expect(propertySchema(generateCodeSchema, 'templatePackId').minLength).toBeUndefined();
+    expect(requiredFields(generateCodeSchema)).toEqual([]);
+    expect(generateCodeSchema.properties).toEqual({});
 
     const getTableDetailsSchema = inputSchemaFor(result.tools, 'get-table-details');
     expect(propertySchema(getTableDetailsSchema, 'tableNames').minItems).toBeUndefined();

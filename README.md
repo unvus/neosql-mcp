@@ -118,7 +118,7 @@ Tools that accept per-call `connectionId` and `schema` overrides:
 - `create-tables`
 - `modify-tables`
 
-`generate-code` currently accepts a per-call `schema` override.
+`generate-code` is currently under development and returns `개발중입니다`.
 
 ## Available Tools
 
@@ -132,7 +132,7 @@ Tools that accept per-call `connectionId` and `schema` overrides:
 | `execute-query` | Executes non-DDL SQL using the selected context. |
 | `create-tables` | Requests table creation through NeoSQL Desktop. |
 | `modify-tables` | Requests table modification through NeoSQL Desktop. |
-| `generate-code` | Generates code from selected database tables. |
+| `generate-code` | Under development. Returns `개발중입니다`. |
 | `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process. |
 
 ## Transport

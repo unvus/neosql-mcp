@@ -92,7 +92,7 @@ Tools that accept per-call `connectionId` / `schema` overrides:
 - `create-tables`
 - `modify-tables`
 
-`generate-code` currently accepts a per-call `schema` override.
+`generate-code` is currently under development and returns `개발중입니다`.
 
 Prefer explicit per-call `connectionId` / `schema` values when switching frequently
 between MCP-enabled connections or schemas. Use CLI options for stable defaults or

@@ -1,37 +1,21 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
-import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
+import type { UpstreamToolDeps } from '../shared.js';
 
 export type GenerateCodeDeps = UpstreamToolDeps;
 
-export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDeps): void => {
+export const registerGenerateCodeTool = (server: McpServer, _deps: GenerateCodeDeps): void => {
   server.registerTool(
     'generate-code',
     {
       title: 'Generate Code',
-      description:
-        'Generate source code from a database table using a template pack. ' +
-        'Uses the current context (project/connection/schema) for database connection. ' +
-        'Returns generated file contents based on the specified template.',
-      inputSchema: {
-        tableName: z.string().describe('Table name to generate code for'),
-        templatePackId: z.string().describe('Template pack ID to use for code generation'),
-        schema: z
-          .string()
-          .describe('Database schema name. If omitted, uses current context schema.')
-          .optional(),
-      },
+      description: 'Generate Code is under development.',
+      inputSchema: {},
     },
-    async (args) =>
-      callUpstreamTool(
-        deps,
-        'code-generation.generate-code',
-        {
-          tableNames: [args.tableName],
-          templatePackId: args.templatePackId,
-        },
-        { schema: args.schema },
-        { timeoutMs: 60_000 },
-      ),
+    async () => {
+      // generate-code는 아직 개발중이므로 upstream RPC를 호출하지 않는다.
+      return {
+        content: [{ type: 'text', text: '개발중입니다' }],
+      };
+    },
   );
 };

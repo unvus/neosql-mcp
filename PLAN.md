@@ -33,7 +33,7 @@
 - 어떤 도구도 server→client push 를 사용하지 않음 (DDL approval 도 UI 측 모달).
 - execute-query / create-tables / modify-tables 가 60 s timeout 의 long-running 도구 → **요청 단위 격리** 가 안전.
 - 명시적 context payload 와 session id 를 분리해 전달하는 모델이 "연결=세션" 모델보다 정합.
-- 응답 크기 편차가 큼 (μs 작은 JSON ~ generate-code 수십 KB) → 요청별 응답 형태 선택(단일 JSON / SSE) 이 future-proof.
+- 응답 크기 편차가 큼 (μs 작은 JSON ~ 향후 code generation 수십 KB) → 요청별 응답 형태 선택(단일 JSON / SSE) 이 future-proof.
 
 WS 가 우세해질 시점(진행 알림·취소·서버 발신 이벤트 일상화) 이 오면 SSE 채널로 흡수 가능.
 

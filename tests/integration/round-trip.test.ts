@@ -14,11 +14,6 @@ interface ToolCase {
 
 const RPC_TOOL_CASES: ToolCase[] = [
   { name: 'list-connections', method: 'connection.list-connections', args: {} },
-  {
-    name: 'generate-code',
-    method: 'code-generation.generate-code',
-    args: { tableName: 'users', templatePackId: 'java-jpa' },
-  },
   { name: 'list-tables', method: 'schema.list-tables', args: {} },
   { name: 'get-table-details', method: 'schema.get-table-details', args: { tableNames: ['users'] } },
   {
@@ -60,6 +55,7 @@ const RPC_TOOL_CASES: ToolCase[] = [
 ];
 
 const CONTEXT_TOOL_CASES: ToolCase[] = [
+  { name: 'generate-code', args: {} },
   { name: 'get-context-help', args: {} },
 ];
 
