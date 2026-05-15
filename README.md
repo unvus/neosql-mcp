@@ -191,5 +191,13 @@ For local MCP host testing, build and link the binary:
 ```bash
 npm run build
 npm link
+which neosql-mcp
 neosql-mcp --profile=dev
+```
+
+When local testing is done, unlink it so direct `neosql-mcp` commands no longer use the
+workspace build:
+
+```bash
+npm unlink -g neosql-mcp
 ```
