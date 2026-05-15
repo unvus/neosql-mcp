@@ -3,13 +3,13 @@ import { jsonTextResult } from '../shared.js';
 
 export const registerGetContextHelpTool = (server: McpServer): void => {
   server.registerTool(
-    'getContextHelp',
+    'get-context-help',
     {
-      title: 'getContextHelp',
+      title: 'Get Context Help',
       description:
         'Get information about how to find project and connection IDs. ' +
         'NeoSQL project and connection information is managed by the NeoSQL application (UI). ' +
-        'Use listConnections to discover MCP-enabled connectionId/schema pairs. ' +
+        'Use list-connections to discover MCP-enabled connectionId/schema pairs. ' +
         'Set stable defaults with CLI options and pass connectionId/schema per tool call when needed.',
       inputSchema: {},
     },
@@ -24,14 +24,14 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
         },
         connectionId: {
           example: '0',
-          location: 'listConnections tool result',
+          location: 'list-connections tool result',
           description:
-            'Connection ID is returned as connectionId by listConnections for MCP-enabled connections',
+            'Connection ID is returned as connectionId by list-connections for MCP-enabled connections',
         },
         schema: {
           example: 'public',
           description:
-            "Use a schemaName returned by listConnections. Only MCP-enabled schemas can be used by tools.",
+            "Use a schemaName returned by list-connections. Only MCP-enabled schemas can be used by tools.",
         },
         cliConfig: {
           example: {

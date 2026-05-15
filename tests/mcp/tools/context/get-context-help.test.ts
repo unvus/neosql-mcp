@@ -3,7 +3,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../../../src/mcp/server.js';
 
-describe('getContextHelp tool', () => {
+describe('get-context-help tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
 
   afterEach(async () => {
@@ -22,7 +22,7 @@ describe('getContextHelp tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'getContextHelp',
+      name: 'get-context-help',
       arguments: {},
     });
 
@@ -39,14 +39,14 @@ describe('getContextHelp tool', () => {
       },
       connectionId: {
         example: '0',
-        location: 'listConnections tool result',
+        location: 'list-connections tool result',
         description:
-          'Connection ID is returned as connectionId by listConnections for MCP-enabled connections',
+          'Connection ID is returned as connectionId by list-connections for MCP-enabled connections',
       },
       schema: {
         example: 'public',
         description:
-          "Use a schemaName returned by listConnections. Only MCP-enabled schemas can be used by tools.",
+          "Use a schemaName returned by list-connections. Only MCP-enabled schemas can be used by tools.",
       },
       cliConfig: {
         example: {

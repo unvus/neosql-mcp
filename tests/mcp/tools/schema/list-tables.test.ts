@@ -5,7 +5,7 @@ import { createServer } from '../../../../src/mcp/server.js';
 import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
-describe('listTables tool', () => {
+describe('list-tables tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
 
   afterEach(async () => {
@@ -15,7 +15,7 @@ describe('listTables tool', () => {
     }
   });
 
-  it('calls schema.listTables with resolved context and input envelope', async () => {
+  it('calls schema.list-tables with resolved context and input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -41,7 +41,7 @@ describe('listTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'listTables',
+      name: 'list-tables',
       arguments: { connectionId: '57', schema: 'analytics', search: 'user' },
     });
 
@@ -50,7 +50,7 @@ describe('listTables tool', () => {
     const data = JSON.parse(content[0]?.text ?? '{}') as { tables: unknown[] };
     expect(data.tables).toEqual([{ name: 'users', type: 'TABLE' }]);
     expect(received).toHaveLength(1);
-    expect(received[0]?.method).toBe('schema.listTables');
+    expect(received[0]?.method).toBe('schema.list-tables');
     expect(received[0]?.params).toMatchObject({
       context: { connectionId: '57', schema: 'analytics' },
       input: { schema: 'analytics', search: 'user' },
@@ -90,7 +90,7 @@ describe('listTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'listTables',
+      name: 'list-tables',
       arguments: { search: 'user' },
     });
 

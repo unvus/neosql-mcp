@@ -112,28 +112,28 @@ process only by restarting the MCP server with different CLI options.
 
 Tools that accept per-call `connectionId` and `schema` overrides:
 
-- `listTables`
-- `getTableDetails`
-- `executeQuery`
-- `createTables`
-- `modifyTables`
+- `list-tables`
+- `get-table-details`
+- `execute-query`
+- `create-tables`
+- `modify-tables`
 
-`generateCode` currently accepts a per-call `schema` override.
+`generate-code` currently accepts a per-call `schema` override.
 
 ## Available Tools
 
 | Tool | Purpose |
 | --- | --- |
 | `ping` | Returns `pong` for a lightweight MCP health check. |
-| `listConnections` | Lists MCP-enabled NeoSQL connections and schemas for the current project. |
-| `getContextHelp` | Explains how to find and configure NeoSQL context values. |
-| `listTables` | Lists tables for the selected connection/schema. |
-| `getTableDetails` | Returns columns, keys, indexes, and related table metadata. |
-| `executeQuery` | Executes non-DDL SQL using the selected context. |
-| `createTables` | Requests table creation through NeoSQL Desktop. |
-| `modifyTables` | Requests table modification through NeoSQL Desktop. |
-| `generateCode` | Generates code from selected database tables. |
-| `getMcpSessionId` | Diagnostic tool that returns the upstream session id used by this process. |
+| `list-connections` | Lists MCP-enabled NeoSQL connections and schemas for the current project. |
+| `get-context-help` | Explains how to find and configure NeoSQL context values. |
+| `list-tables` | Lists tables for the selected connection/schema. |
+| `get-table-details` | Returns columns, keys, indexes, and related table metadata. |
+| `execute-query` | Executes non-DDL SQL using the selected context. |
+| `create-tables` | Requests table creation through NeoSQL Desktop. |
+| `modify-tables` | Requests table modification through NeoSQL Desktop. |
+| `generate-code` | Generates code from selected database tables. |
+| `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process. |
 
 ## Transport
 
@@ -170,7 +170,7 @@ that the MCP config profile matches the Desktop profile.
 
 ### Context-sensitive tools fail
 
-Run `listConnections` or `getContextHelp`, then check that `--project`,
+Run `list-connections` or `get-context-help`, then check that `--project`,
 `--default-connection`, and `--default-schema` match an MCP-enabled connection/schema.
 
 ### `npx` cannot find or run the package

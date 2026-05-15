@@ -84,17 +84,17 @@ publish blocker 목록이다.
   - `--default-schema=<value>`.
 - [x] README에 현재 제공하는 MCP tool 목록을 추가한다.
   - `ping`.
-  - `listConnections`.
-  - `generateCode`.
-  - `listTables`.
-  - `getTableDetails`.
+  - `list-connections`.
+  - `generate-code`.
+  - `list-tables`.
+  - `get-table-details`.
   - `setContext`.
   - `getContext`.
-  - `getContextHelp`.
-  - `createTables`.
-  - `modifyTables`.
-  - `executeQuery`.
-  - `getMcpSessionId`.
+  - `get-context-help`.
+  - `create-tables`.
+  - `modify-tables`.
+  - `execute-query`.
+  - `get-mcp-session-id`.
 - [x] README에 transport/endpoint 동작을 사용자 관점으로 요약한다.
   - macOS는 deterministic UDS path를 사용한다.
   - Windows는 deterministic Named Pipe path를 사용한다.
@@ -155,9 +155,9 @@ publish blocker 목록이다.
 - [x] 통신 계층 참고 문서는 `docs/research/rpc-vs-transport.md`로 이동하고 메타 정보를
   정리한다.
 - [x] `docs/upstream-rpc-contract.md`는 공개 전 실제 구현과 다시 대조해 보정한다.
-  - 확인 대상: error code table, lifecycle error handling, `executeQuery` error result
-    shape, `generateCode.templatePackId` required 여부, DDL input optionality,
-    `schema.listTables` result shape.
+  - 확인 대상: error code table, lifecycle error handling, `execute-query` error result
+    shape, `generate-code.templatePackId` required 여부, DDL input optionality,
+    `schema.list-tables` result shape.
   - `src/mcp/tools/*`, `src/mcp/error-map.ts`, `src/upstream/http-client.ts`,
     `tests/mcp/**`, `tests/upstream/**`, `tests/helpers/mock-uds-server.ts`를 기준으로
     문서가 implementation contract인지 design note인지 구분해 정리한다.

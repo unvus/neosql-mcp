@@ -55,8 +55,8 @@ describe('built CLI via stdio spawn', () => {
     clients.push(client);
     await client.connect(transport);
 
-    const first = await client.callTool({ name: 'getMcpSessionId', arguments: {} });
-    const second = await client.callTool({ name: 'getMcpSessionId', arguments: {} });
+    const first = await client.callTool({ name: 'get-mcp-session-id', arguments: {} });
+    const second = await client.callTool({ name: 'get-mcp-session-id', arguments: {} });
     const firstContent = first.content as Array<{ type: string; text?: string }>;
     const secondContent = second.content as Array<{ type: string; text?: string }>;
 

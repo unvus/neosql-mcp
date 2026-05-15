@@ -73,7 +73,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `SchemaTools.java` 분석
 - [x] `SqlTools.java` 분석
 - [x] `McpContextHolder` 분석/설계 완료 (context 우선순위·session 저장소·Node 이관 정책)
-- [x] HTTP `Mcp-Session-Id` 대응값 설계 반영 — Node process 최초 로드 시 `mcpSessionId` 생성, `getMcpSessionId` 테스트용 툴로 확인
+- [x] HTTP `Mcp-Session-Id` 대응값 설계 반영 — Node process 최초 로드 시 `mcpSessionId` 생성, `get-mcp-session-id` 테스트용 툴로 확인
 - [x] Java tool / app handler 분석 완료
 - [x] 도구별 Node ↔ Electron 분할 결정
 - [x] `docs/upstream-rpc-contract.md` — 도구별 HTTP 메서드 명세 (이름, request/response schema, 에러 코드)
@@ -87,12 +87,12 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] 도구별 단위 테스트에 contract 시나리오(정상/에러/스키마) 추가
 - [x] `context/get-context-help` — stdio MCP 구조에 맞게 도움말 보정
 - [x] 기존 HTTP header 기반 초기 context를 stdio/npx CLI 옵션으로 대응
-- [x] `schema/list-tables` — `schema.listTables` contract 기반 forward 구현
-- [x] `schema/get-table-details` — `schema.getTableDetails` contract 기반 forward 구현
-- [x] `sql/execute-query` — DDL guard + `sql.executeQuery` contract 기반 forward 구현
-- [x] `ddl/create-tables` — `ddl.createTables` forward 구현
-- [x] `ddl/modify-tables` — `ddl.modifyTables` forward 구현
-- [x] `code-generation/generate-code` — `tableName` → `tableNames[]` 변환 + `codeGeneration.generateCode` forward 구현
+- [x] `schema/list-tables` — `schema.list-tables` contract 기반 forward 구현
+- [x] `schema/get-table-details` — `schema.get-table-details` contract 기반 forward 구현
+- [x] `sql/execute-query` — DDL guard + `sql.execute-query` contract 기반 forward 구현
+- [x] `ddl/create-tables` — `ddl.create-tables` forward 구현
+- [x] `ddl/modify-tables` — `ddl.modify-tables` forward 구현
+- [x] `code-generation/generate-code` — `tableName` → `tableNames[]` 변환 + `code-generation.generate-code` forward 구현
 
 ### Phase 2-4 · Real Electron MCP tool migration
 
@@ -102,34 +102,34 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 #### SchemaTools
 
-- [x] (본체 PR) `schema.listTables` 구현
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `listTables`
-- [x] (본체 PR) `schema.getTableDetails` 구현
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getTableDetails`
+- [x] (본체 PR) `schema.list-tables` 구현
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `list-tables`
+- [x] (본체 PR) `schema.get-table-details` 구현
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `get-table-details`
 
 #### ContextTools
 
-- [x] (본 리포) `getContextHelp` Node context help 구현 확인
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `getContextHelp`
+- [x] (본 리포) `get-context-help` Node context help 구현 확인
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `get-context-help`
 
 #### SqlTools
 
-- [x] (본체 PR) `sql.executeQuery` 구현
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` SELECT
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `executeQuery` INSERT
+- [x] (본체 PR) `sql.execute-query` 구현
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `execute-query` SELECT
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `execute-query` INSERT
 
 #### DdlTools
 
-- [x] (본체 PR) `ddl.createTables` 구현
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `createTables`
-- [x] (본체 PR) `ddl.modifyTables` 구현
-- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modifyTables`
+- [x] (본체 PR) `ddl.create-tables` 구현
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `create-tables`
+- [x] (본체 PR) `ddl.modify-tables` 구현
+- [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modify-tables`
 
 #### CodeGenerationTools
 
-- [x] (본체 source 확인) `codeGeneration.generateCode` dispatcher/renderer handler 연결 확인
+- [x] (본체 source 확인) `code-generation.generate-code` dispatcher/renderer handler 연결 확인
 - [x] 현 상태에서는 `neosql-mcp` / 본체 모두 별도 코드 수정 불필요 확인
-- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `generateCode`
+- [ ] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `generate-code`
 
 - [x] `docs/e2e-manual.md`에 as-is/to-be 비교 검증 절차와 결과 기록 슬롯 추가
 - [x] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정

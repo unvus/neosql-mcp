@@ -42,13 +42,13 @@ describe('postRpc', () => {
 
     const result = await postRpc<{ tables: string[] }>({
       socketPath,
-      method: 'schema.listTables',
+      method: 'schema.list-tables',
       params: { schema: 'public' },
     });
 
     expect(result).toEqual({ tables: ['users', 'orders'] });
     expect(received).toHaveLength(1);
-    expect(received[0]?.method).toBe('schema.listTables');
+    expect(received[0]?.method).toBe('schema.list-tables');
     expect(received[0]?.params).toEqual({ schema: 'public' });
     expect(received[0]?.id).not.toBeNull();
   });
@@ -97,7 +97,7 @@ describe('postRpc', () => {
       removeSocketFile(socketPath);
     });
 
-    await expect(postRpc({ socketPath, method: 'schema.listTables' })).rejects.toMatchObject({
+    await expect(postRpc({ socketPath, method: 'schema.list-tables' })).rejects.toMatchObject({
       kind: 'rpc-error',
       rpcCode: -32002,
       rpcKind: 'app-not-ready',
@@ -120,7 +120,7 @@ describe('postRpc', () => {
       removeSocketFile(socketPath);
     });
 
-    await expect(postRpc({ socketPath, method: 'schema.listTables' })).rejects.toMatchObject({
+    await expect(postRpc({ socketPath, method: 'schema.list-tables' })).rejects.toMatchObject({
       kind: 'rpc-error',
       rpcCode: -32001,
       rpcKind: 'unauthenticated',

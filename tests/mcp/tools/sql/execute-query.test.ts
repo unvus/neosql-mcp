@@ -5,7 +5,7 @@ import { createServer } from '../../../../src/mcp/server.js';
 import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
-describe('executeQuery tool', () => {
+describe('execute-query tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
 
   afterEach(async () => {
@@ -15,7 +15,7 @@ describe('executeQuery tool', () => {
     }
   });
 
-  it('calls sql.executeQuery with the input envelope', async () => {
+  it('calls sql.execute-query with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -56,7 +56,7 @@ describe('executeQuery tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'executeQuery',
+      name: 'execute-query',
       arguments: { sql: 'SELECT id FROM users', connectionId: '57', schema: 'analytics' },
     });
 
@@ -79,7 +79,7 @@ describe('executeQuery tool', () => {
       [1, null],
       [2, 'blue'],
     ]);
-    expect(received[0]?.method).toBe('sql.executeQuery');
+    expect(received[0]?.method).toBe('sql.execute-query');
     expect(received[0]?.params).toMatchObject({
       context: {
         projectId: 'proj-1',
@@ -119,7 +119,7 @@ describe('executeQuery tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'executeQuery',
+      name: 'execute-query',
       arguments: { sql: 'INSERT INTO users (id) VALUES (1)' },
     });
 
@@ -158,7 +158,7 @@ describe('executeQuery tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'executeQuery',
+      name: 'execute-query',
       arguments: { sql: 'SELECT id FROM users', autoCommit: false },
     });
 
@@ -225,7 +225,7 @@ describe('executeQuery tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'executeQuery',
+      name: 'execute-query',
       arguments: { sql: testCase.sql },
     });
 
@@ -260,7 +260,7 @@ describe('executeQuery tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'executeQuery',
+      name: 'execute-query',
       arguments: { sql: 'CREATE TABLE users (id int)' },
     });
 
@@ -268,7 +268,7 @@ describe('executeQuery tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]?.text).toBe(`{
   "success" : false,
-  "message" : "Failed to execute query: DDL statements are not allowed in executeQuery. Use createTables or modifyTables."
+  "message" : "Failed to execute query: DDL statements are not allowed in execute-query. Use create-tables or modify-tables."
 }`);
     expect(received).toHaveLength(0);
   });

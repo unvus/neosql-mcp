@@ -42,10 +42,10 @@ describe('createServer', () => {
     expect(content[0]?.text).toBe('pong');
   });
 
-  it('returns the process-scoped mcpSessionId when getMcpSessionId is called', async () => {
+  it('returns the process-scoped mcpSessionId when get-mcp-session-id is called', async () => {
     await connectClientToServer();
-    const first = await client!.callTool({ name: 'getMcpSessionId', arguments: {} });
-    const second = await client!.callTool({ name: 'getMcpSessionId', arguments: {} });
+    const first = await client!.callTool({ name: 'get-mcp-session-id', arguments: {} });
+    const second = await client!.callTool({ name: 'get-mcp-session-id', arguments: {} });
 
     expect(first.isError).not.toBe(true);
     expect(second.isError).not.toBe(true);
@@ -63,17 +63,31 @@ describe('createServer', () => {
     expect(toolNames).toEqual(
       new Set([
         'ping',
-        'getMcpSessionId',
-        'generateCode',
-        'listConnections',
-        'listTables',
-        'getTableDetails',
-        'getContextHelp',
-        'createTables',
-        'modifyTables',
-        'executeQuery',
+        'get-mcp-session-id',
+        'generate-code',
+        'list-connections',
+        'list-tables',
+        'get-table-details',
+        'get-context-help',
+        'create-tables',
+        'modify-tables',
+        'execute-query',
       ]),
     );
+
+    const toolTitles = new Map(result.tools.map((t) => [t.name, t.title]));
+    expect(Object.fromEntries(toolTitles)).toMatchObject({
+      ping: 'Ping',
+      'get-mcp-session-id': 'Get MCP Session ID',
+      'generate-code': 'Generate Code',
+      'list-connections': 'List Connections',
+      'list-tables': 'List Tables',
+      'get-table-details': 'Get Table Details',
+      'get-context-help': 'Get Context Help',
+      'create-tables': 'Create Tables',
+      'modify-tables': 'Modify Tables',
+      'execute-query': 'Execute Query',
+    });
   });
 
   it('exposes embedded-server ToolParam descriptions in tools/list', async () => {
@@ -81,45 +95,45 @@ describe('createServer', () => {
     const result = await client!.listTools();
 
     const expectedDescriptions: Record<string, Record<string, string>> = {
-      listTables: {
+      'list-tables': {
         connectionId:
-          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
         schema:
-          "MCP-enabled database schema name from listConnections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
+          "MCP-enabled database schema name from list-connections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
         search:
           'Search keyword to filter tables by name or comment (case-insensitive). If omitted, returns all tables.',
       },
-      getTableDetails: {
+      'get-table-details': {
         tableNames: 'List of table names to get details for (e.g. ["users", "orders", "products"])',
         connectionId:
-          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
         schema:
-          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
-      createTables: {
+      'create-tables': {
         tableDefinitions:
           'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
         connectionId:
-          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
         schema:
-          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
-      modifyTables: {
+      'modify-tables': {
         alterations:
           'List of table alterations. Each specifies a target table and the changes to apply.',
         connectionId:
-          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
         schema:
-          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
-      executeQuery: {
+      'execute-query': {
         sql: 'The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).',
         connectionId:
-          'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
         schema:
-          'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
-      generateCode: {
+      'generate-code': {
         tableName: 'Table name to generate code for',
         templatePackId: 'Template pack ID to use for code generation',
         schema: 'Database schema name. If omitted, uses current context schema.',
@@ -143,19 +157,19 @@ describe('createServer', () => {
     await connectClientToServer();
     const result = await client!.listTools();
 
-    const generateCodeSchema = inputSchemaFor(result.tools, 'generateCode');
+    const generateCodeSchema = inputSchemaFor(result.tools, 'generate-code');
     expect(requiredFields(generateCodeSchema)).toEqual(['tableName', 'templatePackId']);
     expect(propertySchema(generateCodeSchema, 'tableName').minLength).toBeUndefined();
     expect(propertySchema(generateCodeSchema, 'templatePackId').minLength).toBeUndefined();
 
-    const getTableDetailsSchema = inputSchemaFor(result.tools, 'getTableDetails');
+    const getTableDetailsSchema = inputSchemaFor(result.tools, 'get-table-details');
     expect(propertySchema(getTableDetailsSchema, 'tableNames').minItems).toBeUndefined();
 
-    const executeQuerySchema = inputSchemaFor(result.tools, 'executeQuery');
+    const executeQuerySchema = inputSchemaFor(result.tools, 'execute-query');
     expect(propertySchema(executeQuerySchema, 'sql').minLength).toBeUndefined();
     expect(executeQuerySchema.properties).not.toHaveProperty('autoCommit');
 
-    const createTablesSchema = inputSchemaFor(result.tools, 'createTables');
+    const createTablesSchema = inputSchemaFor(result.tools, 'create-tables');
     expect(requiredFields(createTablesSchema)).toEqual(['tableDefinitions']);
     expect(createTablesSchema.properties).not.toHaveProperty('executeImmediately');
     const tableDefSchema = arrayItemSchema(propertySchema(createTablesSchema, 'tableDefinitions'));
@@ -182,7 +196,7 @@ describe('createServer', () => {
       'remarks',
     ]);
 
-    const modifyTablesSchema = inputSchemaFor(result.tools, 'modifyTables');
+    const modifyTablesSchema = inputSchemaFor(result.tools, 'modify-tables');
     expect(requiredFields(modifyTablesSchema)).toEqual(['alterations']);
     expect(modifyTablesSchema.properties).not.toHaveProperty('executeImmediately');
     const alterTableDefSchema = arrayItemSchema(propertySchema(modifyTablesSchema, 'alterations'));

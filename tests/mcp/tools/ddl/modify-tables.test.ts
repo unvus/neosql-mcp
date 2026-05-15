@@ -5,7 +5,7 @@ import { createServer } from '../../../../src/mcp/server.js';
 import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
-describe('modifyTables tool', () => {
+describe('modify-tables tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
 
   afterEach(async () => {
@@ -15,7 +15,7 @@ describe('modifyTables tool', () => {
     }
   });
 
-  it('calls ddl.modifyTables with the input envelope', async () => {
+  it('calls ddl.modify-tables with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -41,7 +41,7 @@ describe('modifyTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'modifyTables',
+      name: 'modify-tables',
       arguments: {
         connectionId: '57',
         schema: 'analytics',
@@ -81,7 +81,7 @@ describe('modifyTables tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { modified: string[] };
     expect(data.modified).toEqual(['users']);
-    expect(received[0]?.method).toBe('ddl.modifyTables');
+    expect(received[0]?.method).toBe('ddl.modify-tables');
     expect(received[0]?.params).toMatchObject({
       context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
       input: {
@@ -141,7 +141,7 @@ describe('modifyTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'modifyTables',
+      name: 'modify-tables',
       arguments: {
         alterations: [
           {
@@ -201,7 +201,7 @@ describe('modifyTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'modifyTables',
+      name: 'modify-tables',
       arguments: {
         alterations: [
           {
@@ -247,7 +247,7 @@ describe('modifyTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'modifyTables',
+      name: 'modify-tables',
       arguments: {
         alterations: [
           {

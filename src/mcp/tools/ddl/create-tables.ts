@@ -7,9 +7,9 @@ export type CreateTablesDeps = UpstreamToolDeps;
 
 export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDeps): void => {
   server.registerTool(
-    'createTables',
+    'create-tables',
     {
-      title: 'createTables',
+      title: 'Create Tables',
       description:
         'Create one or more new tables in the NeoSQL application. ' +
         'Pass multiple table definitions to create them in a single call. ' +
@@ -26,13 +26,13 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
         connectionId: z
           .string()
           .describe(
-            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
           )
           .optional(),
         schema: z
           .string()
           .describe(
-            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+            'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
           )
           .optional(),
       },
@@ -41,7 +41,7 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
       const { connectionId, schema, ...input } = args;
       return callUpstreamTool(
         deps,
-        'ddl.createTables',
+        'ddl.create-tables',
         input,
         { connectionId, schema },
         { timeoutMs: 60_000 },

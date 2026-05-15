@@ -5,7 +5,7 @@ import { createServer } from '../../../../src/mcp/server.js';
 import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
-describe('generateCode tool', () => {
+describe('generate-code tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
 
   afterEach(async () => {
@@ -15,7 +15,7 @@ describe('generateCode tool', () => {
     }
   });
 
-  it('calls codeGeneration.generateCode with tableName converted to tableNames', async () => {
+  it('calls code-generation.generate-code with tableName converted to tableNames', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -38,7 +38,7 @@ describe('generateCode tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'generateCode',
+      name: 'generate-code',
       arguments: { tableName: 'users', templatePackId: 'java-jpa', schema: 'public' },
     });
 
@@ -48,7 +48,7 @@ describe('generateCode tool', () => {
     const data = JSON.parse(content[0]?.text ?? '{}') as { files: unknown[] };
     expect(data.files).toEqual([{ path: 'User.java', content: '...' }]);
     expect(received).toHaveLength(1);
-    expect(received[0]?.method).toBe('codeGeneration.generateCode');
+    expect(received[0]?.method).toBe('code-generation.generate-code');
     expect(received[0]?.params).toMatchObject({
       context: { schema: 'public' },
       input: { tableNames: ['users'], templatePackId: 'java-jpa' },

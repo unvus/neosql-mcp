@@ -6,9 +6,9 @@ export type GetTableDetailsDeps = UpstreamToolDeps;
 
 export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDetailsDeps): void => {
   server.registerTool(
-    'getTableDetails',
+    'get-table-details',
     {
-      title: 'getTableDetails',
+      title: 'Get Table Details',
       description:
         'Get detailed information about one or more tables including columns, indexes, primary keys, and foreign keys. ' +
         'Pass multiple table names to retrieve details in a single call. ' +
@@ -22,13 +22,13 @@ export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDet
         connectionId: z
           .string()
           .describe(
-            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
           )
           .optional(),
         schema: z
           .string()
           .describe(
-            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+            'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
           )
           .optional(),
       },
@@ -37,7 +37,7 @@ export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDet
       const { connectionId: _connectionId, ...input } = args;
       return callUpstreamTool(
         deps,
-        'schema.getTableDetails',
+        'schema.get-table-details',
         input,
         { connectionId: args.connectionId, schema: args.schema },
         { timeoutMs: 30_000 },

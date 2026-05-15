@@ -12,13 +12,13 @@ export type ExecuteQueryDeps = UpstreamToolDeps;
 
 export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDeps): void => {
   server.registerTool(
-    'executeQuery',
+    'execute-query',
     {
-      title: 'executeQuery',
+      title: 'Execute Query',
       description:
         'Execute a SQL query on the database through NeoSQL. ' +
         'Supports SELECT, INSERT, UPDATE, DELETE, and EXPLAIN statements. ' +
-        'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use createTables or modifyTables tools instead. ' +
+        'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use create-tables or modify-tables tools instead. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
         'Uses the current context (project/connection/schema).',
       inputSchema: {
@@ -28,13 +28,13 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         connectionId: z
           .string()
           .describe(
-            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
           )
           .optional(),
         schema: z
           .string()
           .describe(
-            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+            'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
           )
           .optional(),
       },
@@ -42,14 +42,14 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
     async (args) => {
       if (isDdlStatement(args.sql)) {
         return executeQueryErrorResult(
-          'DDL statements are not allowed in executeQuery. Use createTables or modifyTables.',
+          'DDL statements are not allowed in execute-query. Use create-tables or modify-tables.',
         );
       }
 
       const { connectionId, schema, ...input } = args;
       return callUpstreamTool(
         deps,
-        'sql.executeQuery',
+        'sql.execute-query',
         input,
         { connectionId, schema },
         {

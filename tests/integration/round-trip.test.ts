@@ -13,17 +13,17 @@ interface ToolCase {
 }
 
 const RPC_TOOL_CASES: ToolCase[] = [
-  { name: 'listConnections', method: 'connection.list', args: {} },
+  { name: 'list-connections', method: 'connection.list-connections', args: {} },
   {
-    name: 'generateCode',
-    method: 'codeGeneration.generateCode',
+    name: 'generate-code',
+    method: 'code-generation.generate-code',
     args: { tableName: 'users', templatePackId: 'java-jpa' },
   },
-  { name: 'listTables', method: 'schema.listTables', args: {} },
-  { name: 'getTableDetails', method: 'schema.getTableDetails', args: { tableNames: ['users'] } },
+  { name: 'list-tables', method: 'schema.list-tables', args: {} },
+  { name: 'get-table-details', method: 'schema.get-table-details', args: { tableNames: ['users'] } },
   {
-    name: 'createTables',
-    method: 'ddl.createTables',
+    name: 'create-tables',
+    method: 'ddl.create-tables',
     args: {
       tableDefinitions: [
         {
@@ -39,8 +39,8 @@ const RPC_TOOL_CASES: ToolCase[] = [
     },
   },
   {
-    name: 'modifyTables',
-    method: 'ddl.modifyTables',
+    name: 'modify-tables',
+    method: 'ddl.modify-tables',
     args: {
       alterations: [
         {
@@ -56,11 +56,11 @@ const RPC_TOOL_CASES: ToolCase[] = [
       ],
     },
   },
-  { name: 'executeQuery', method: 'sql.executeQuery', args: { sql: 'SELECT 1' } },
+  { name: 'execute-query', method: 'sql.execute-query', args: { sql: 'SELECT 1' } },
 ];
 
 const CONTEXT_TOOL_CASES: ToolCase[] = [
-  { name: 'getContextHelp', args: {} },
+  { name: 'get-context-help', args: {} },
 ];
 
 describe('round-trip integration', () => {
@@ -132,7 +132,7 @@ describe('round-trip integration', () => {
 
     const client = await setupClientServer(socketPath);
     const result = await client.callTool({
-      name: 'listTables',
+      name: 'list-tables',
       arguments: {},
     });
     expect(result.isError).toBe(true);
@@ -165,7 +165,7 @@ describe('round-trip integration', () => {
     await client.connect(ct);
     cleanups.push(() => client.close());
     const result = await client.callTool({
-      name: 'listTables',
+      name: 'list-tables',
       arguments: {},
     });
     expect(result.isError).toBe(true);

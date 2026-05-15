@@ -5,7 +5,7 @@ import { createServer } from '../../../../src/mcp/server.js';
 import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
-describe('createTables tool', () => {
+describe('create-tables tool', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
 
   afterEach(async () => {
@@ -15,7 +15,7 @@ describe('createTables tool', () => {
     }
   });
 
-  it('calls ddl.createTables with the input envelope', async () => {
+  it('calls ddl.create-tables with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -44,7 +44,7 @@ describe('createTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'createTables',
+      name: 'create-tables',
       arguments: {
         connectionId: '57',
         schema: 'analytics',
@@ -66,7 +66,7 @@ describe('createTables tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { created: string[] };
     expect(data.created).toEqual(['users']);
-    expect(received[0]?.method).toBe('ddl.createTables');
+    expect(received[0]?.method).toBe('ddl.create-tables');
     expect(received[0]?.params).toMatchObject({
       context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
       input: {
@@ -108,7 +108,7 @@ describe('createTables tool', () => {
     cleanups.push(() => client.close());
 
     const result = await client.callTool({
-      name: 'createTables',
+      name: 'create-tables',
       arguments: {
         tableDefinitions: [
           {

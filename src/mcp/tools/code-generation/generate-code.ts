@@ -6,9 +6,9 @@ export type GenerateCodeDeps = UpstreamToolDeps;
 
 export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDeps): void => {
   server.registerTool(
-    'generateCode',
+    'generate-code',
     {
-      title: 'generateCode',
+      title: 'Generate Code',
       description:
         'Generate source code from a database table using a template pack. ' +
         'Uses the current context (project/connection/schema) for database connection. ' +
@@ -25,7 +25,7 @@ export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDe
     async (args) =>
       callUpstreamTool(
         deps,
-        'codeGeneration.generateCode',
+        'code-generation.generate-code',
         {
           tableNames: [args.tableName],
           templatePackId: args.templatePackId,

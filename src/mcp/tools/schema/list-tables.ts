@@ -6,9 +6,9 @@ export type ListTablesDeps = UpstreamToolDeps;
 
 export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps): void => {
   server.registerTool(
-    'listTables',
+    'list-tables',
     {
-      title: 'listTables',
+      title: 'List Tables',
       description:
         'List all tables and views in a database schema. Returns table names, types (TABLE/VIEW), and comments. ' +
         'Uses the current context (project/connection/schema) if parameters are not specified.',
@@ -16,13 +16,13 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
         connectionId: z
           .string()
           .describe(
-            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
           )
           .optional(),
         schema: z
           .string()
           .describe(
-            "MCP-enabled database schema name from listConnections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
+            "MCP-enabled database schema name from list-connections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
           )
           .optional(),
         search: z
@@ -37,7 +37,7 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
       const { connectionId: _connectionId, ...input } = args;
       return callUpstreamTool(
         deps,
-        'schema.listTables',
+        'schema.list-tables',
         input,
         { connectionId: args.connectionId, schema: args.schema },
         { timeoutMs: 30_000 },

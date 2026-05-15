@@ -7,9 +7,9 @@ export type ModifyTablesDeps = UpstreamToolDeps;
 
 export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDeps): void => {
   server.registerTool(
-    'modifyTables',
+    'modify-tables',
     {
-      title: 'modifyTables',
+      title: 'Modify Tables',
       description:
         'Modify one or more existing tables in the NeoSQL application. ' +
         'Each alteration can include: table rename, comment operation, primary key operations, ' +
@@ -30,13 +30,13 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
         connectionId: z
           .string()
           .describe(
-            'NeoSQL connection ID from listConnections. If omitted, uses current context connectionId.',
+            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
           )
           .optional(),
         schema: z
           .string()
           .describe(
-            'MCP-enabled database schema name from listConnections. If omitted, uses current context schema.',
+            'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
           )
           .optional(),
       },
@@ -45,7 +45,7 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
       const { connectionId, schema, ...input } = args;
       return callUpstreamTool(
         deps,
-        'ddl.modifyTables',
+        'ddl.modify-tables',
         input,
         { connectionId, schema },
         { timeoutMs: 60_000 },

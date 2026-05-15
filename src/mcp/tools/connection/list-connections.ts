@@ -5,9 +5,9 @@ export type ListConnectionsDeps = UpstreamToolDeps;
 
 export const registerListConnectionsTool = (server: McpServer, deps: ListConnectionsDeps): void => {
   server.registerTool(
-    'listConnections',
+    'list-connections',
     {
-      title: 'listConnections',
+      title: 'List Connections',
       description:
         'List database connections that have MCP access enabled in the current NeoSQL project. ' +
         'Only connections (and schemas) that the user opted-in via the connection MCP tab are returned. ' +
@@ -19,6 +19,6 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
       inputSchema: {},
     },
     async () =>
-      callUpstreamTool(deps, 'connection.list', {}, {}, { timeoutMs: 30_000 }),
+      callUpstreamTool(deps, 'connection.list-connections', {}, {}, { timeoutMs: 30_000 }),
   );
 };

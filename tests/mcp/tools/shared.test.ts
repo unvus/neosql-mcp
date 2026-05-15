@@ -40,7 +40,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       }),
     };
 
-    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+    const result = await callUpstreamTool(deps, 'schema.list-tables', {});
 
     expect(result.isError).toBe(true);
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as { status?: string };
@@ -60,7 +60,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
     };
 
-    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+    const result = await callUpstreamTool(deps, 'schema.list-tables', {});
 
     expect(result.isError).toBe(true);
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
@@ -68,7 +68,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       reason?: string;
     };
     expect(payload).toMatchObject({ status: 'unresponsive', reason: 'request_timeout' });
-    expect(rpcCalls).toEqual(['schema.listTables']);
+    expect(rpcCalls).toEqual(['schema.list-tables']);
   });
 
   it('does not call upstream RPC when desktop is not installed', async () => {
@@ -101,7 +101,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       }),
     };
 
-    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+    const result = await callUpstreamTool(deps, 'schema.list-tables', {});
 
     expect(result.isError).toBe(true);
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
@@ -133,7 +133,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
     };
 
-    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+    const result = await callUpstreamTool(deps, 'schema.list-tables', {});
 
     expect(result.isError).toBe(true);
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as { status?: string };
@@ -155,7 +155,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
     };
 
-    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+    const result = await callUpstreamTool(deps, 'schema.list-tables', {});
 
     expect(result.isError).toBe(true);
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
@@ -182,7 +182,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       requestDesktopFocus,
     };
 
-    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+    const result = await callUpstreamTool(deps, 'schema.list-tables', {});
 
     expect(result.isError).toBe(true);
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
@@ -218,7 +218,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
       requestDesktopFocus,
     };
 
-    const result = await callUpstreamTool(deps, 'schema.listTables', {});
+    const result = await callUpstreamTool(deps, 'schema.list-tables', {});
 
     expect(result.isError).toBe(true);
     const payload = JSON.parse(result.content[0]?.text ?? '{}') as {

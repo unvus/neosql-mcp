@@ -40,7 +40,7 @@ Request:
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "schema.listTables",
+  "method": "schema.list-tables",
   "params": {
     "sessionId": "mcp-session-id",
     "context": {
@@ -100,7 +100,7 @@ Node responsibility:
 - JSON-RPC method 호출
 - JSON-RPC error를 MCP `tools/call` response로 변환
   - 기본 upstream tool은 `isError: true` tool result로 변환한다.
-  - `executeQuery`는 SQL editor UX 호환을 위해 RPC error와 DDL rejection을 정상
+  - `execute-query`는 SQL editor UX 호환을 위해 RPC error와 DDL rejection을 정상
     tool result의 `{ success: false, message }` JSON으로 반환한다.
   - desktop lifecycle/access 계열 error(`app-not-ready`, `unavailable`,
     `unauthenticated`, `timeout`)는
@@ -139,20 +139,20 @@ Electron responsibility:
 
 ## Methods
 
-| MCP tool          | RPC method                    | Electron 호출 | Timeout |
-| ----------------- | ----------------------------- | ------------- | ------: |
-| `listConnections` | `connection.list`             | yes           |     30s |
-| `listTables`      | `schema.listTables`           | yes           |     30s |
-| `getTableDetails` | `schema.getTableDetails`      | yes           |     30s |
-| `executeQuery`    | `sql.executeQuery`            | yes           |     60s |
-| `createTables`    | `ddl.createTables`            | yes           |     60s |
-| `modifyTables`    | `ddl.modifyTables`            | yes           |     60s |
-| `generateCode`    | `codeGeneration.generateCode` | yes           |     60s |
-| `getContextHelp`  | N/A                           | no            |     N/A |
+| MCP tool            | RPC method                       | Electron 호출 | Timeout |
+| ------------------- | -------------------------------- | ------------- | ------: |
+| `list-connections`  | `connection.list-connections`    | yes           |     30s |
+| `list-tables`       | `schema.list-tables`             | yes           |     30s |
+| `get-table-details` | `schema.get-table-details`       | yes           |     30s |
+| `execute-query`     | `sql.execute-query`              | yes           |     60s |
+| `create-tables`     | `ddl.create-tables`              | yes           |     60s |
+| `modify-tables`     | `ddl.modify-tables`              | yes           |     60s |
+| `generate-code`     | `code-generation.generate-code`  | yes           |     60s |
+| `get-context-help`  | N/A                              | no            |     N/A |
 
 이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
-다룬다. `ping`과 `getMcpSessionId`는 Node-local diagnostic tool이므로 Electron RPC
-method를 만들지 않는다. `getContextHelp`도 Node-local이다.
+다룬다. `ping`과 `get-mcp-session-id`는 Node-local diagnostic tool이므로 Electron RPC
+method를 만들지 않는다. `get-context-help`도 Node-local이다.
 
 ## Per-call Context Override
 
@@ -165,10 +165,10 @@ Electron payload가 아니라 upstream `params.context`에 merge된다.
 2. Node context store (`--default-connection`, `--default-schema`)
 3. empty context
 
-`generateCode`는 현재 `connectionId` per-call override를 받지 않는다. 기존 호환성을 위해
+`generate-code`는 현재 `connectionId` per-call override를 받지 않는다. 기존 호환성을 위해
 `schema` override만 유지한다.
 
-## `connection.list`
+## `connection.list-connections`
 
 Input:
 
@@ -219,7 +219,7 @@ interface SchemaInfo {
 }
 ```
 
-## `schema.listTables`
+## `schema.list-tables`
 
 Input:
 
@@ -258,7 +258,7 @@ type ListTablesResult = TableInfo[];
 Node handler는 upstream result shape를 변환하지 않고 JSON text로 반환한다. 현재
 Electron handler는 배열을 직접 반환한다.
 
-## `schema.getTableDetails`
+## `schema.get-table-details`
 
 Input:
 
@@ -327,7 +327,7 @@ interface GetTableDetailsResult {
 }
 ```
 
-## `sql.executeQuery`
+## `sql.execute-query`
 
 Input:
 
@@ -381,7 +381,7 @@ type ExecuteQueryResult =
     };
 ```
 
-## `ddl.createTables`
+## `ddl.create-tables`
 
 Input:
 
@@ -474,7 +474,7 @@ interface DdlExecutionResult {
 }
 ```
 
-## `ddl.modifyTables`
+## `ddl.modify-tables`
 
 Input:
 
@@ -581,7 +581,7 @@ interface ModifyTablesResult {
 }
 ```
 
-## `codeGeneration.generateCode`
+## `code-generation.generate-code`
 
 Input:
 

@@ -81,18 +81,18 @@ The context store is initialized from CLI options and can be updated later with 
 process only by restarting the MCP server with different CLI options.
 
 For example, if the MCP host config sets `--default-connection=88
---default-schema=appdb` but a `listTables` call passes `connectionId: "57"` and
+--default-schema=appdb` but a `list-tables` call passes `connectionId: "57"` and
 `schema: "analytics"`, that call uses connection `57` and schema `analytics`.
 
 Tools that accept per-call `connectionId` / `schema` overrides:
 
-- `listTables`
-- `getTableDetails`
-- `executeQuery`
-- `createTables`
-- `modifyTables`
+- `list-tables`
+- `get-table-details`
+- `execute-query`
+- `create-tables`
+- `modify-tables`
 
-`generateCode` currently accepts a per-call `schema` override.
+`generate-code` currently accepts a per-call `schema` override.
 
 Prefer explicit per-call `connectionId` / `schema` values when switching frequently
 between MCP-enabled connections or schemas. Use CLI options for stable defaults or
