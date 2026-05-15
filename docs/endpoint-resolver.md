@@ -47,7 +47,7 @@ HTTP_PATH = '/mcp/rpc'
 ```
 
 - 양쪽 코드의 상수로 보유. config 미저장.
-- 단일 path 위에서 JSON-RPC method 로 분기 (`schema.list-tables`, `sql.execute-query`, …).
+- 단일 path 위에서 JSON-RPC method 로 분기 (`list-tables`, `execute-query`, …).
 - `/mcp/` 네임스페이스로 묶어 향후 `/health`, `/version` 등 비-RPC endpoint 또는 다른 RPC 묶음과 충돌하지 않도록 한다.
 - 서버 push 가 필요한 경우 같은 path 의 GET SSE 채널 별도 오픈 (Phase 2).
 

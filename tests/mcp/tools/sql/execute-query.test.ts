@@ -15,7 +15,7 @@ describe('execute-query tool', () => {
     }
   });
 
-  it('calls sql.execute-query with the input envelope', async () => {
+  it('calls execute-query with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -79,7 +79,7 @@ describe('execute-query tool', () => {
       [1, null],
       [2, 'blue'],
     ]);
-    expect(received[0]?.method).toBe('sql.execute-query');
+    expect(received[0]?.method).toBe('execute-query');
     expect(received[0]?.params).toMatchObject({
       context: {
         projectId: 'proj-1',

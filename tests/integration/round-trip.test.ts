@@ -13,12 +13,12 @@ interface ToolCase {
 }
 
 const RPC_TOOL_CASES: ToolCase[] = [
-  { name: 'list-connections', method: 'connection.list-connections', args: {} },
-  { name: 'list-tables', method: 'schema.list-tables', args: {} },
-  { name: 'get-table-details', method: 'schema.get-table-details', args: { tableNames: ['users'] } },
+  { name: 'list-connections', method: 'list-connections', args: {} },
+  { name: 'list-tables', method: 'list-tables', args: {} },
+  { name: 'get-table-details', method: 'get-table-details', args: { tableNames: ['users'] } },
   {
     name: 'create-tables',
-    method: 'ddl.create-tables',
+    method: 'create-tables',
     args: {
       tableDefinitions: [
         {
@@ -35,7 +35,7 @@ const RPC_TOOL_CASES: ToolCase[] = [
   },
   {
     name: 'modify-tables',
-    method: 'ddl.modify-tables',
+    method: 'modify-tables',
     args: {
       alterations: [
         {
@@ -51,7 +51,7 @@ const RPC_TOOL_CASES: ToolCase[] = [
       ],
     },
   },
-  { name: 'execute-query', method: 'sql.execute-query', args: { sql: 'SELECT 1' } },
+  { name: 'execute-query', method: 'execute-query', args: { sql: 'SELECT 1' } },
 ];
 
 const CONTEXT_TOOL_CASES: ToolCase[] = [

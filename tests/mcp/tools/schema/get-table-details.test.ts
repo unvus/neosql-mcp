@@ -15,7 +15,7 @@ describe('get-table-details tool', () => {
     }
   });
 
-  it('calls schema.get-table-details with table names inside the input envelope', async () => {
+  it('calls get-table-details with table names inside the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -54,7 +54,7 @@ describe('get-table-details tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { tables: unknown[] };
     expect(data.tables).toHaveLength(2);
-    expect(received[0]?.method).toBe('schema.get-table-details');
+    expect(received[0]?.method).toBe('get-table-details');
     expect(received[0]?.params).toMatchObject({
       context: { connectionId: '57', schema: 'analytics' },
       input: { tableNames: ['users', 'orders'], schema: 'analytics' },

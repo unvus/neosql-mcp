@@ -37,7 +37,7 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
       const { connectionId: _connectionId, ...input } = args;
       return callUpstreamTool(
         deps,
-        'schema.list-tables',
+        'list-tables',
         input,
         { connectionId: args.connectionId, schema: args.schema },
         { timeoutMs: 30_000 },

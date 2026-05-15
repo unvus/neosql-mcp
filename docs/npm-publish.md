@@ -157,7 +157,7 @@ publish blocker 목록이다.
 - [x] `docs/upstream-rpc-contract.md`는 공개 전 실제 구현과 다시 대조해 보정한다.
   - 확인 대상: error code table, lifecycle error handling, `execute-query` error result
     shape, `generate-code` placeholder 응답, DDL input optionality,
-    `schema.list-tables` result shape.
+    `list-tables` result shape.
   - `src/mcp/tools/*`, `src/mcp/error-map.ts`, `src/upstream/http-client.ts`,
     `tests/mcp/**`, `tests/upstream/**`, `tests/helpers/mock-uds-server.ts`를 기준으로
     문서가 implementation contract인지 design note인지 구분해 정리한다.

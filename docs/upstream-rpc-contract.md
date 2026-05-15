@@ -40,7 +40,7 @@ Request:
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "schema.list-tables",
+  "method": "list-tables",
   "params": {
     "sessionId": "mcp-session-id",
     "context": {
@@ -139,15 +139,15 @@ Electron responsibility:
 
 ## Methods
 
-| MCP tool            | RPC method                       | Electron 호출 | Timeout |
-| ------------------- | -------------------------------- | ------------- | ------: |
-| `list-connections`  | `connection.list-connections`    | yes           |     30s |
-| `list-tables`       | `schema.list-tables`             | yes           |     30s |
-| `get-table-details` | `schema.get-table-details`       | yes           |     30s |
-| `execute-query`     | `sql.execute-query`              | yes           |     60s |
-| `create-tables`     | `ddl.create-tables`              | yes           |     60s |
-| `modify-tables`     | `ddl.modify-tables`              | yes           |     60s |
-| `get-context-help`  | N/A                              | no            |     N/A |
+| MCP tool            | RPC method          | Electron 호출 | Timeout |
+| ------------------- | ------------------- | ------------- | ------: |
+| `list-connections`  | `list-connections`  | yes           |     30s |
+| `list-tables`       | `list-tables`       | yes           |     30s |
+| `get-table-details` | `get-table-details` | yes           |     30s |
+| `execute-query`     | `execute-query`     | yes           |     60s |
+| `create-tables`     | `create-tables`     | yes           |     60s |
+| `modify-tables`     | `modify-tables`     | yes           |     60s |
+| `get-context-help`  | N/A                 | no            |     N/A |
 
 이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
 다룬다. `ping`, `get-mcp-session-id`, `get-context-help`, `generate-code`는 Node-local
@@ -165,7 +165,7 @@ Electron payload가 아니라 upstream `params.context`에 merge된다.
 2. Node context store (`--default-connection`, `--default-schema`)
 3. empty context
 
-## `connection.list-connections`
+## `list-connections`
 
 Input:
 
@@ -216,7 +216,7 @@ interface SchemaInfo {
 }
 ```
 
-## `schema.list-tables`
+## `list-tables`
 
 Input:
 
@@ -255,7 +255,7 @@ type ListTablesResult = TableInfo[];
 Node handler는 upstream result shape를 변환하지 않고 JSON text로 반환한다. 현재
 Electron handler는 배열을 직접 반환한다.
 
-## `schema.get-table-details`
+## `get-table-details`
 
 Input:
 
@@ -324,7 +324,7 @@ interface GetTableDetailsResult {
 }
 ```
 
-## `sql.execute-query`
+## `execute-query`
 
 Input:
 
@@ -378,7 +378,7 @@ type ExecuteQueryResult =
     };
 ```
 
-## `ddl.create-tables`
+## `create-tables`
 
 Input:
 
@@ -471,7 +471,7 @@ interface DdlExecutionResult {
 }
 ```
 
-## `ddl.modify-tables`
+## `modify-tables`
 
 Input:
 

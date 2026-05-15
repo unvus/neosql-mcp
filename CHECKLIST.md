@@ -87,11 +87,11 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] 도구별 단위 테스트에 contract 시나리오(정상/에러/스키마) 추가
 - [x] `context/get-context-help` — stdio MCP 구조에 맞게 도움말 보정
 - [x] 기존 HTTP header 기반 초기 context를 stdio/npx CLI 옵션으로 대응
-- [x] `schema/list-tables` — `schema.list-tables` contract 기반 forward 구현
-- [x] `schema/get-table-details` — `schema.get-table-details` contract 기반 forward 구현
-- [x] `sql/execute-query` — DDL guard + `sql.execute-query` contract 기반 forward 구현
-- [x] `ddl/create-tables` — `ddl.create-tables` forward 구현
-- [x] `ddl/modify-tables` — `ddl.modify-tables` forward 구현
+- [x] `schema/list-tables` — `list-tables` contract 기반 forward 구현
+- [x] `schema/get-table-details` — `get-table-details` contract 기반 forward 구현
+- [x] `sql/execute-query` — DDL guard + `execute-query` contract 기반 forward 구현
+- [x] `ddl/create-tables` — `create-tables` forward 구현
+- [x] `ddl/modify-tables` — `modify-tables` forward 구현
 - [x] `code-generation/generate-code` — 개발중 placeholder 응답(`개발중입니다`) 구현
 
 ### Phase 2-4 · Real Electron MCP tool migration
@@ -102,9 +102,9 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 #### SchemaTools
 
-- [x] (본체 PR) `schema.list-tables` 구현
+- [x] (본체 PR) `list-tables` 구현
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `list-tables`
-- [x] (본체 PR) `schema.get-table-details` 구현
+- [x] (본체 PR) `get-table-details` 구현
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `get-table-details`
 
 #### ContextTools
@@ -114,15 +114,15 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 #### SqlTools
 
-- [x] (본체 PR) `sql.execute-query` 구현
+- [x] (본체 PR) `execute-query` 구현
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `execute-query` SELECT
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `execute-query` INSERT
 
 #### DdlTools
 
-- [x] (본체 PR) `ddl.create-tables` 구현
+- [x] (본체 PR) `create-tables` 구현
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `create-tables`
-- [x] (본체 PR) `ddl.modify-tables` 구현
+- [x] (본체 PR) `modify-tables` 구현
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modify-tables`
 
 #### CodeGenerationTools

@@ -15,7 +15,7 @@ describe('modify-tables tool', () => {
     }
   });
 
-  it('calls ddl.modify-tables with the input envelope', async () => {
+  it('calls modify-tables with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -81,7 +81,7 @@ describe('modify-tables tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { modified: string[] };
     expect(data.modified).toEqual(['users']);
-    expect(received[0]?.method).toBe('ddl.modify-tables');
+    expect(received[0]?.method).toBe('modify-tables');
     expect(received[0]?.params).toMatchObject({
       context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
       input: {

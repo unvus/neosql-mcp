@@ -45,7 +45,7 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
       const { connectionId, schema, ...input } = args;
       return callUpstreamTool(
         deps,
-        'ddl.modify-tables',
+        'modify-tables',
         input,
         { connectionId, schema },
         { timeoutMs: 60_000 },

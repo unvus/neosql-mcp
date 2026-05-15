@@ -49,7 +49,7 @@ describe('desktop lifecycle integration', () => {
     const result = await client.callTool({ name: 'list-tables', arguments: {} });
 
     expect(result.isError).not.toBe(true);
-    expect(received.map((req) => req.method)).toEqual(['schema.list-tables']);
+    expect(received.map((req) => req.method)).toEqual(['list-tables']);
   });
 
   it('returns unauthenticated when the desktop is running but NeoSQL is not signed in', async () => {
@@ -94,7 +94,7 @@ describe('desktop lifecycle integration', () => {
       status: 'unauthenticated',
       reason: 'unauthenticated',
     });
-    expect(received.map((req) => req.method)).toEqual(['schema.list-tables']);
+    expect(received.map((req) => req.method)).toEqual(['list-tables']);
     expect(activationCalls).toEqual(['prod']);
   });
 

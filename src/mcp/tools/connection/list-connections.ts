@@ -19,6 +19,6 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
       inputSchema: {},
     },
     async () =>
-      callUpstreamTool(deps, 'connection.list-connections', {}, {}, { timeoutMs: 30_000 }),
+      callUpstreamTool(deps, 'list-connections', {}, {}, { timeoutMs: 30_000 }),
   );
 };

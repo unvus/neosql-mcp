@@ -15,7 +15,7 @@ describe('create-tables tool', () => {
     }
   });
 
-  it('calls ddl.create-tables with the input envelope', async () => {
+  it('calls create-tables with the input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -66,7 +66,7 @@ describe('create-tables tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as { created: string[] };
     expect(data.created).toEqual(['users']);
-    expect(received[0]?.method).toBe('ddl.create-tables');
+    expect(received[0]?.method).toBe('create-tables');
     expect(received[0]?.params).toMatchObject({
       context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
       input: {

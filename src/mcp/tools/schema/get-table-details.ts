@@ -37,7 +37,7 @@ export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDet
       const { connectionId: _connectionId, ...input } = args;
       return callUpstreamTool(
         deps,
-        'schema.get-table-details',
+        'get-table-details',
         input,
         { connectionId: args.connectionId, schema: args.schema },
         { timeoutMs: 30_000 },

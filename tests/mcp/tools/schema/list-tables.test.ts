@@ -15,7 +15,7 @@ describe('list-tables tool', () => {
     }
   });
 
-  it('calls schema.list-tables with resolved context and input envelope', async () => {
+  it('calls list-tables with resolved context and input envelope', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
@@ -50,7 +50,7 @@ describe('list-tables tool', () => {
     const data = JSON.parse(content[0]?.text ?? '{}') as { tables: unknown[] };
     expect(data.tables).toEqual([{ name: 'users', type: 'TABLE' }]);
     expect(received).toHaveLength(1);
-    expect(received[0]?.method).toBe('schema.list-tables');
+    expect(received[0]?.method).toBe('list-tables');
     expect(received[0]?.params).toMatchObject({
       context: { connectionId: '57', schema: 'analytics' },
       input: { schema: 'analytics', search: 'user' },

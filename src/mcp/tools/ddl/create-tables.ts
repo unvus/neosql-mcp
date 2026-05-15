@@ -41,7 +41,7 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
       const { connectionId, schema, ...input } = args;
       return callUpstreamTool(
         deps,
-        'ddl.create-tables',
+        'create-tables',
         input,
         { connectionId, schema },
         { timeoutMs: 60_000 },

@@ -49,7 +49,7 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
       const { connectionId, schema, ...input } = args;
       return callUpstreamTool(
         deps,
-        'sql.execute-query',
+        'execute-query',
         input,
         { connectionId, schema },
         {
