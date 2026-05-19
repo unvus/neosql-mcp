@@ -20,7 +20,13 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
         'For primary keys, omit primaryKeyOperations or pass [] for no change; dropping every PK column requires ' +
         'an explicit DROP operation for each current PK column. ' +
         'Pass multiple alterations to modify several tables in a single call. ' +
-        'Uses the current context (project/connection).',
+        'Uses the current context (project/connection). ' +
+        'Response semantics — ERD save and DDL execution are SEPARATE phases: `summary.modifiedInErd` counts tables ' +
+        'applied to the ERD model; DB application is tracked under `summary.ddl` / `ddlExecution.results[]`. ' +
+        'A call is fully successful ONLY when both `summary.failed === 0` AND ' +
+        '`summary.ddl.reason === "attempted" && summary.ddl.failed === 0`. ' +
+        'On DDL failure, `ddlExecution.results[].error` contains the raw underlying DB error ' +
+        '(e.g. `ORA-00904`, `SQLSTATE 42703`) — use it to diagnose and propose corrections; do not retry blindly.',
       inputSchema: {
         alterations: z
           .array(alterTableDefSchema)

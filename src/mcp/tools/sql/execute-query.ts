@@ -20,7 +20,9 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'Supports SELECT, INSERT, UPDATE, DELETE, and EXPLAIN statements. ' +
         'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use create-tables or modify-tables tools instead. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
-        'Uses the current context (project/connection/schema).',
+        'Uses the current context (project/connection/schema). ' +
+        'On failure, the error message contains the raw underlying DB error (e.g. `ORA-00904`, `SQLSTATE 42703`) — ' +
+        'use it to diagnose and propose corrections; do not retry blindly.',
       inputSchema: {
         sql: z
           .string()
