@@ -81,6 +81,32 @@ describe('postRpc', () => {
     expect(e.message).toBe('method not found');
   });
 
+  it('throws HttpClientError(bad-response) when JSON-RPC response id does not match', async () => {
+    const socketPath = makeTestSocketPath();
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'other-id',
+          result: { ok: true },
+        }),
+      );
+    });
+    cleanups.push(async () => {
+      await closeServer(server);
+      removeSocketFile(socketPath);
+    });
+    await listen(server, socketPath);
+
+    await expect(
+      postRpc({ socketPath, method: 'x', id: 'expected-id' }),
+    ).rejects.toMatchObject({
+      kind: 'bad-response',
+      message: 'Upstream JSON-RPC response id does not match the request id.',
+    });
+  });
+
   it('preserves JSON-RPC error data.kind for lifecycle error mapping', async () => {
     const socketPath = makeTestSocketPath();
     const mock = await startMockRpcServer({

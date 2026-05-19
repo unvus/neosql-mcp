@@ -40,6 +40,11 @@ export interface PostRpcOptions {
   socketPath: string;
   method: string;
   params?: unknown;
+  /**
+   * JSON-RPC request id for correlating the Electron response with this request.
+   * `postRpc` always sends one because it waits for a response; omitted ids are
+   * JSON-RPC notifications and must not produce a response.
+   */
   id?: string | number;
   timeoutMs?: number;
 }
@@ -65,7 +70,6 @@ interface JsonRpcFailure {
 let nextId = 1;
 
 export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => {
-  // TODO id는 필수인가? 역할은?
   const id = opts.id ?? nextId++;
   const body = JSON.stringify({
     jsonrpc: '2.0',
@@ -151,6 +155,16 @@ export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => 
                 kind: 'bad-response',
                 message: 'Upstream response body is not valid JSON.',
                 cause,
+              }),
+            );
+            return;
+          }
+
+          if (parsed.id !== id) {
+            settleReject(
+              new HttpClientError({
+                kind: 'bad-response',
+                message: 'Upstream JSON-RPC response id does not match the request id.',
               }),
             );
             return;
