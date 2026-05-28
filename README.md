@@ -21,12 +21,13 @@ through JSON-RPC over HTTP on a macOS Unix Domain Socket or Windows Named Pipe.
 
 ## Why neosql-mcp?
 
-- AI coding assistants generate better code when they can read your real schema
-  and run real queries instead of guessing. `neosql-mcp` exposes the database
-  your team already configured in NeoSQL Desktop to any MCP host.
-- One running NeoSQL Desktop, one `npx` command — Claude Code, Codex, and any
-  other MCP host share the same connections, schemas, and credentials. No
-  per-host setup.
+- AI coding assistants write better code when they can read your real schema
+  and run real queries, instead of guessing column names and table shapes.
+  neosql-mcp exposes the database your team already configured in NeoSQL Desktop
+  to any MCP host.
+- One running NeoSQL Desktop, one npx command — Claude Code, Codex, and any
+  other MCP host can use the connections and schemas already configured in
+  NeoSQL Desktop. No per-host setup, and credentials never leave NeoSQL Desktop.
 
 ## Security
 
@@ -94,11 +95,11 @@ args = [
 
 ## CLI Options
 
-| Option | Description |
-| --- | --- |
-| `--project=<value>` | Sets the default NeoSQL project id for tool calls. |
-| `--default-connection=<value>` | Sets the default connection id. |
-| `--default-schema=<value>` | Sets the default schema name. |
+| Option                         | Description                                        |
+| ------------------------------ | -------------------------------------------------- |
+| `--project=<value>`            | Sets the default NeoSQL project id for tool calls. |
+| `--default-connection=<value>` | Sets the default connection id.                    |
+| `--default-schema=<value>`     | Sets the default schema name.                      |
 
 Use the `--key=value` form in MCP host config. Space-separated forms such as
 `--project value` are intentionally not supported.
@@ -121,16 +122,16 @@ Tools that accept per-call `connectionId` and `schema` overrides:
 
 ## Available Tools
 
-| Tool | Purpose |
-| --- | --- |
-| `ping` | Returns `pong` for a lightweight MCP health check. |
-| `list-connections` | Lists MCP-enabled NeoSQL connections and schemas for the current project. |
-| `get-context-help` | Explains how to find and configure NeoSQL context values. |
-| `list-tables` | Lists tables for the selected connection/schema. |
-| `get-table-details` | Returns columns, keys, indexes, and related table metadata. |
-| `execute-query` | Executes non-DDL SQL using the selected context. |
-| `create-tables` | Requests table creation through NeoSQL Desktop. |
-| `modify-tables` | Requests table modification through NeoSQL Desktop. |
+| Tool                 | Purpose                                                                    |
+| -------------------- | -------------------------------------------------------------------------- |
+| `ping`               | Returns `pong` for a lightweight MCP health check.                         |
+| `list-connections`   | Lists MCP-enabled NeoSQL connections and schemas for the current project.  |
+| `get-context-help`   | Explains how to find and configure NeoSQL context values.                  |
+| `list-tables`        | Lists tables for the selected connection/schema.                           |
+| `get-table-details`  | Returns columns, keys, indexes, and related table metadata.                |
+| `execute-query`      | Executes non-DDL SQL using the selected context.                           |
+| `create-tables`      | Requests table creation through NeoSQL Desktop.                            |
+| `modify-tables`      | Requests table modification through NeoSQL Desktop.                        |
 | `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process. |
 
 ## Transport
