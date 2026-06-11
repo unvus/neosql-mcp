@@ -47,7 +47,7 @@ describe('execute-query tool', () => {
 
     const server = createServer({
       socketPath,
-      initialContext: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
+      initialContext: { projectId: 'proj-1', connectionId: '0', database: 'sales', schema: 'public' },
     });
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
@@ -57,7 +57,12 @@ describe('execute-query tool', () => {
 
     const result = await client.callTool({
       name: 'execute-query',
-      arguments: { sql: 'SELECT id FROM users', connectionId: '57', schema: 'analytics' },
+      arguments: {
+        sql: 'SELECT id FROM users',
+        connectionId: '57',
+        database: 'analytics',
+        schema: 'analytics',
+      },
     });
 
     expect(result.isError).not.toBe(true);
@@ -84,9 +89,10 @@ describe('execute-query tool', () => {
       context: {
         projectId: 'proj-1',
         connectionId: '57',
+        database: 'analytics',
         schema: 'analytics',
       },
-      input: { sql: 'SELECT id FROM users' },
+      input: { sql: 'SELECT id FROM users', database: 'analytics' },
     });
   });
 

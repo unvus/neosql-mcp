@@ -15,12 +15,18 @@ export const parseCliArgs = (argv: readonly string[]): ParsedCliArgs => {
     if (arg.startsWith('--profile=')) profile = parseProfile(valueAfterEquals(arg)) ?? profile;
     else if (arg.startsWith('--project=')) initialContext.projectId = valueAfterEquals(arg);
     else if (arg.startsWith('--default-connection=')) initialContext.connectionId = valueAfterEquals(arg);
+    else if (arg.startsWith('--default-database=')) initialContext.database = nullableValueAfterEquals(arg);
     else if (arg.startsWith('--default-schema=')) initialContext.schema = valueAfterEquals(arg);
   }
   return { profile, initialContext };
 };
 
 const valueAfterEquals = (arg: string): string => arg.slice(arg.indexOf('=') + 1);
+
+const nullableValueAfterEquals = (arg: string): string | null => {
+  const value = valueAfterEquals(arg);
+  return value.trim() === '' ? null : value;
+};
 
 const parseProfile = (value: string | undefined): Profile | undefined => {
   if (value === 'prod' || value === 'dev' || value === 'local' || value === 'stage') return value;

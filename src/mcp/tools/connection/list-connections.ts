@@ -15,7 +15,8 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
         'Each connection entry includes id, name, description, dataSource (DBMS family), ' +
         'dbVersion (database product version, useful for dialect-version features), ' +
         'the per-user profile (envPreset such as local/dev/staging/prod, label, protection), ' +
-        'and the list of MCP-enabled schemas with their per-schema policies (ddlExecute / autoCommit).',
+        'the compatibility list of MCP-enabled schemas, and database-aware schemas under databases ' +
+        'when NeoSQL exposes a database hierarchy.',
       inputSchema: {},
     },
     async () =>

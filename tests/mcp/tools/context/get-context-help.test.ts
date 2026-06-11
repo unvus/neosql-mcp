@@ -43,6 +43,11 @@ describe('get-context-help tool', () => {
         description:
           'Connection ID is returned as connectionId by list-connections for MCP-enabled connections',
       },
+      database: {
+        example: 'sales',
+        description:
+          'Use a databaseName returned by list-connections when the connection exposes a database hierarchy. Use null or omit it for DBMSs without a database hierarchy.',
+      },
       schema: {
         example: 'public',
         description:
@@ -57,13 +62,14 @@ describe('get-context-help tool', () => {
                 'neosql-mcp',
                 '--project=YOUR_PROJECT_ID',
                 '--default-connection=0',
+                '--default-database=sales',
                 '--default-schema=public',
               ],
             },
           },
         },
         description:
-          'You can set default context via CLI args in MCP client configuration, then override connectionId/schema per tool call when needed.',
+          'You can set default context via CLI args in MCP client configuration, then override connectionId/database/schema per tool call when needed.',
       },
     });
   });

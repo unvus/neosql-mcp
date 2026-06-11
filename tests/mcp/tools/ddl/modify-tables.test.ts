@@ -32,7 +32,7 @@ describe('modify-tables tool', () => {
 
     const server = createServer({
       socketPath,
-      initialContext: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
+      initialContext: { projectId: 'proj-1', connectionId: '0', database: 'sales', schema: 'public' },
     });
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
@@ -44,6 +44,7 @@ describe('modify-tables tool', () => {
       name: 'modify-tables',
       arguments: {
         connectionId: '57',
+        database: 'analytics',
         schema: 'analytics',
         alterations: [
           {
@@ -83,8 +84,14 @@ describe('modify-tables tool', () => {
     expect(data.modified).toEqual(['users']);
     expect(received[0]?.method).toBe('modify-tables');
     expect(received[0]?.params).toMatchObject({
-      context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
+      context: {
+        projectId: 'proj-1',
+        connectionId: '57',
+        database: 'analytics',
+        schema: 'analytics',
+      },
       input: {
+        database: 'analytics',
         alterations: [
           {
             tableName: 'users',

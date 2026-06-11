@@ -1,12 +1,14 @@
 export interface NeosqlContext {
   projectId?: string;
   connectionId?: string;
+  database?: string | null;
   schema?: string;
 }
 
 export interface NeosqlContextPatch {
   projectId?: string | undefined;
   connectionId?: string | undefined;
+  database?: string | null | undefined;
   schema?: string | undefined;
 }
 
@@ -20,6 +22,7 @@ export const mergeContext = (current: NeosqlContext, patch: NeosqlContextPatch):
 
   assignString(next, 'projectId', patch.projectId);
   assignString(next, 'connectionId', patch.connectionId);
+  assignNullableString(next, 'database', patch.database);
   assignString(next, 'schema', patch.schema);
 
   return next;
@@ -44,4 +47,13 @@ const assignString = (
 ): void => {
   if (value === undefined || value.trim() === '') return;
   target[key] = value;
+};
+
+const assignNullableString = (
+  target: NeosqlContext,
+  key: 'database',
+  value: string | null | undefined,
+): void => {
+  if (value === undefined) return;
+  target[key] = value === null || value.trim() === '' ? null : value;
 };

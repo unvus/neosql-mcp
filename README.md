@@ -52,6 +52,7 @@ No global install is required. Configure your MCP host to run the package with `
 npx -y neosql-mcp \
   --project=YOUR_PROJECT_ID \
   --default-connection=YOUR_CONNECTION_ID \
+  --default-database=YOUR_DATABASE \
   --default-schema=YOUR_SCHEMA
 ```
 
@@ -72,6 +73,7 @@ look like it is waiting for input. That is expected.
         "neosql-mcp",
         "--project=YOUR_PROJECT_ID",
         "--default-connection=YOUR_CONNECTION_ID",
+        "--default-database=YOUR_DATABASE",
         "--default-schema=YOUR_SCHEMA"
       ]
     }
@@ -89,6 +91,7 @@ args = [
   "neosql-mcp",
   "--project=YOUR_PROJECT_ID",
   "--default-connection=YOUR_CONNECTION_ID",
+  "--default-database=YOUR_DATABASE",
   "--default-schema=YOUR_SCHEMA",
 ]
 ```
@@ -99,6 +102,7 @@ args = [
 | ------------------------------ | -------------------------------------------------- |
 | `--project=<value>`            | Sets the default NeoSQL project id for tool calls. |
 | `--default-connection=<value>` | Sets the default connection id.                    |
+| `--default-database=<value>`   | Sets the default database name. Use an empty value for `null`. |
 | `--default-schema=<value>`     | Sets the default schema name.                      |
 
 Use the `--key=value` form in MCP host config. Space-separated forms such as
@@ -106,13 +110,13 @@ Use the `--key=value` form in MCP host config. Space-separated forms such as
 
 ## Context Resolution
 
-NeoSQL tools resolve project, connection, and schema in this order:
+NeoSQL tools resolve project, connection, database, and schema in this order:
 
 1. Explicit arguments on the tool call.
 2. The Node-local context store (set from CLI options at startup; restart to change).
 3. Empty context.
 
-Tools that accept per-call `connectionId` and `schema` overrides:
+Tools that accept per-call `connectionId`, `database`, and `schema` overrides:
 
 - `list-tables`
 - `get-table-details`
@@ -164,7 +168,8 @@ Desktop.
 ### Context-sensitive tools fail
 
 Run `list-connections` or `get-context-help`, then check that `--project`,
-`--default-connection`, and `--default-schema` match an MCP-enabled connection/schema.
+`--default-connection`, `--default-database`, and `--default-schema` match an
+MCP-enabled connection/database/schema.
 
 ### `npx` cannot find or run the package
 

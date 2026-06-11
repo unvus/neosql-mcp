@@ -84,6 +84,14 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
   }
 };
 
+export const normalizeOptionalNullableString = (
+  value: string | null | undefined,
+): string | null | undefined => {
+  if (value === undefined) return undefined;
+  if (value === null || value.trim() === '') return null;
+  return value;
+};
+
 export const jacksonPrettyJsonStringify = (payload: unknown): string => {
   const compact = JSON.stringify(payload);
   if (compact === undefined) return 'null';

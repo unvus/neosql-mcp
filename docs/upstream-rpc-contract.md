@@ -87,6 +87,7 @@ interface UpstreamToolParams<TInput> {
   context: {
     projectId?: string;
     connectionId?: string;
+    database?: string | null;
     schema?: string;
   };
   input: TInput;
@@ -110,7 +111,7 @@ Electron responsibility:
 
 - project assignment/permission validation
 - active project/session 준비
-- connection/schema lookup
+- connection/database/schema lookup
 - app store, renderer-facing state, SQL Editor, ERD, code generation, DDL 실행 처리
 - domain validation과 domain error 반환
 
@@ -156,14 +157,17 @@ placeholder로 `개발중입니다`를 반환한다.
 
 ## Per-call Context Override
 
-일부 MCP tool은 `connectionId`와 `schema`를 tool argument로 받을 수 있다. 이 값은
+일부 MCP tool은 `connectionId`, `database`, `schema`를 tool argument로 받을 수 있다. 이 값은
 Electron payload가 아니라 upstream `params.context`에 merge된다.
 
 우선순위:
 
-1. tool argument `connectionId` / `schema`
-2. Node context store (`--default-connection`, `--default-schema`)
+1. tool argument `connectionId` / `database` / `schema`
+2. Node context store (`--default-connection`, `--default-database`, `--default-schema`)
 3. empty context
+
+`database`는 `string | null`이다. Tool argument나 `--default-database=` 값이 blank이면
+명시적 `null`로 정규화하며, 이 값은 저장된 default database보다 우선한다.
 
 ## `list-connections`
 
@@ -179,12 +183,15 @@ Context requirements:
 
 Rules:
 
-- `connectionId` and `schema` context values are ignored.
+- `connectionId`, `database`, and `schema` context values are ignored.
 - Only connections that are not disabled and have at least one MCP-enabled schema are returned.
-- Only schemas with `mcpConfigMap[schemaName].enabled === true` are returned under each connection.
+- Only schemas with matching `(databaseName, schemaName)` MCP config `enabled === true` are
+  returned under each connection.
 - Returned `connectionId` values are stringified `Connection.id` values and can be passed as
   per-tool `connectionId` arguments.
-- Returned `schemaName` values can be passed as per-tool `schema` arguments.
+- Returned `databaseName` / `schemaName` values can be passed as per-tool `database` / `schema`
+  arguments. SQLServer connections additionally expose database-grouped coordinates under
+  `databases`.
 
 Result:
 
@@ -201,6 +208,7 @@ interface ConnectionInfo {
   dbVersion: string;
   profile: ConnectionProfileInfo | null;
   schemas: SchemaInfo[];
+  databases?: DatabaseInfo[];
 }
 
 interface ConnectionProfileInfo {
@@ -210,9 +218,15 @@ interface ConnectionProfileInfo {
 }
 
 interface SchemaInfo {
+  databaseName: string | null;
   schemaName: string;
   ddlExecute: boolean;
   autoCommit: boolean;
+}
+
+interface DatabaseInfo {
+  databaseName: string | null;
+  schemas: SchemaInfo[];
 }
 ```
 
@@ -223,6 +237,7 @@ Input:
 ```ts
 interface ListTablesInput {
   connectionId?: string; // MCP input only; forwarded through params.context
+  database?: string | null;
   schema?: string;
   search?: string;
 }
@@ -232,11 +247,14 @@ Context requirements:
 
 - `projectId`
 - `connectionId`
+- `database` after input override/default when present
 - `schema` after input override
 
 Rules:
 
 - `connectionId` is removed from upstream `input` and sent through `params.context`.
+- `database` remains in upstream `input` for compatibility and is also merged into
+  `params.context`.
 - `schema` remains in upstream `input` for compatibility and is also merged into
   `params.context`.
 
@@ -263,6 +281,7 @@ Input:
 interface GetTableDetailsInput {
   tableNames: string[];
   connectionId?: string; // MCP input only; forwarded through params.context
+  database?: string | null;
   schema?: string;
 }
 ```
@@ -271,11 +290,14 @@ Context requirements:
 
 - `projectId`
 - `connectionId` after input override
+- `database` after input override/default when present
 - `schema` after input override
 
 Rules:
 
 - `connectionId` is removed from upstream `input` and sent through `params.context`.
+- `database` remains in upstream `input` for compatibility and is also merged into
+  `params.context`.
 - `schema` remains in upstream `input` for compatibility and is also merged into
   `params.context`.
 
@@ -332,6 +354,7 @@ Input:
 interface ExecuteQueryInput {
   sql: string;
   connectionId?: string; // MCP input only; forwarded through params.context
+  database?: string | null; // MCP input only; forwarded through params.context
   schema?: string; // MCP input only; forwarded through params.context
 }
 ```
@@ -340,13 +363,16 @@ Rules:
 
 - DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`) is rejected.
 - SELECT/EXPLAIN returns up to 200 rows.
-- `connectionId` and `schema` are removed from upstream `input` and sent through
-  `params.context`.
+- `connectionId`, `database`, and `schema` are sent through `params.context`.
+- `connectionId` and `schema` are removed from upstream `input`; `database` remains
+  in upstream `input` for compatibility before Electron main strips context overrides
+  from the renderer payload.
 
 Context requirements:
 
 - `projectId`
 - `connectionId` after input override
+- `database` after input override/default when present
 - `schema` after input override
 
 Result:
@@ -386,6 +412,7 @@ Input:
 interface CreateTablesInput {
   tableDefinitions: McpTableDef[];
   connectionId?: string; // MCP input only; forwarded through params.context
+  database?: string | null; // MCP input only; forwarded through params.context
   schema?: string; // MCP input only; forwarded through params.context
 }
 
@@ -439,13 +466,16 @@ interface McpConstraintDef {
 
 Rules:
 
-- `connectionId` and `schema` are removed from upstream `input` and sent through
-  `params.context`.
+- `connectionId`, `database`, and `schema` are sent through `params.context`.
+- `connectionId` and `schema` are removed from upstream `input`; `database` remains
+  in upstream `input` for compatibility before Electron main strips context overrides
+  from the renderer payload.
 
 Context requirements:
 
 - `projectId`
 - `connectionId` after input override
+- `database` after input override/default when present
 - `schema` after input override
 
 Result:
@@ -479,6 +509,7 @@ Input:
 interface ModifyTablesInput {
   alterations: McpAlterTableDef[];
   connectionId?: string; // MCP input only; forwarded through params.context
+  database?: string | null; // MCP input only; forwarded through params.context
   schema?: string; // MCP input only; forwarded through params.context
 }
 
@@ -559,13 +590,16 @@ Primary key operation semantics:
 - `DROP`: remove that column from the current primary key.
 - Dropping all primary key columns requires one explicit `DROP` operation per current PK column.
 - Legacy `newRemarks` and `newPrimaryKeys` inputs are rejected by the Node MCP tool schema.
-- `connectionId` and `schema` are removed from upstream `input` and sent through
-  `params.context`.
+- `connectionId`, `database`, and `schema` are sent through `params.context`.
+- `connectionId` and `schema` are removed from upstream `input`; `database` remains
+  in upstream `input` for compatibility before Electron main strips context overrides
+  from the renderer payload.
 
 Context requirements:
 
 - `projectId`
 - `connectionId` after input override
+- `database` after input override/default when present
 - `schema` after input override
 
 Result:

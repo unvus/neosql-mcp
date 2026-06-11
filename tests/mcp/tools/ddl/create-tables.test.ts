@@ -35,7 +35,7 @@ describe('create-tables tool', () => {
 
     const server = createServer({
       socketPath,
-      initialContext: { projectId: 'proj-1', connectionId: '0', schema: 'public' },
+      initialContext: { projectId: 'proj-1', connectionId: '0', database: 'sales', schema: 'public' },
     });
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
@@ -47,6 +47,7 @@ describe('create-tables tool', () => {
       name: 'create-tables',
       arguments: {
         connectionId: '57',
+        database: 'analytics',
         schema: 'analytics',
         tableDefinitions: [
           {
@@ -68,8 +69,14 @@ describe('create-tables tool', () => {
     expect(data.created).toEqual(['users']);
     expect(received[0]?.method).toBe('create-tables');
     expect(received[0]?.params).toMatchObject({
-      context: { projectId: 'proj-1', connectionId: '57', schema: 'analytics' },
+      context: {
+        projectId: 'proj-1',
+        connectionId: '57',
+        database: 'analytics',
+        schema: 'analytics',
+      },
       input: {
+        database: 'analytics',
         tableDefinitions: [
           {
             name: 'users',

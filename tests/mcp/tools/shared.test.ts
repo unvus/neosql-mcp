@@ -234,3 +234,65 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
     expect(requestDesktopFocusMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('callUpstreamTool database context', () => {
+  it('uses the default database from the context store when the tool call omits database', async () => {
+    const contextStore = createContextStore();
+    contextStore.set({ connectionId: '88', database: 'sales', schema: 'public' });
+    let receivedParams: unknown;
+    const deps: UpstreamToolDeps = {
+      postRpc: async (_method, params) => {
+        receivedParams = params;
+        return { ok: true } as never;
+      },
+      contextStore,
+      sessionId: 'session-1',
+    };
+
+    await callUpstreamTool(deps, 'list-tables', {});
+
+    expect(receivedParams).toMatchObject({
+      context: { connectionId: '88', database: 'sales', schema: 'public' },
+    });
+  });
+
+  it('lets an explicit database override the default database', async () => {
+    const contextStore = createContextStore();
+    contextStore.set({ connectionId: '88', database: 'sales', schema: 'public' });
+    let receivedParams: unknown;
+    const deps: UpstreamToolDeps = {
+      postRpc: async (_method, params) => {
+        receivedParams = params;
+        return { ok: true } as never;
+      },
+      contextStore,
+      sessionId: 'session-1',
+    };
+
+    await callUpstreamTool(deps, 'list-tables', {}, { database: 'analytics' });
+
+    expect(receivedParams).toMatchObject({
+      context: { connectionId: '88', database: 'analytics', schema: 'public' },
+    });
+  });
+
+  it('normalizes a blank explicit database to null instead of falling back to default database', async () => {
+    const contextStore = createContextStore();
+    contextStore.set({ connectionId: '88', database: 'sales', schema: 'public' });
+    let receivedParams: unknown;
+    const deps: UpstreamToolDeps = {
+      postRpc: async (_method, params) => {
+        receivedParams = params;
+        return { ok: true } as never;
+      },
+      contextStore,
+      sessionId: 'session-1',
+    };
+
+    await callUpstreamTool(deps, 'list-tables', {}, { database: '   ' });
+
+    expect(receivedParams).toMatchObject({
+      context: { connectionId: '88', database: null, schema: 'public' },
+    });
+  });
+});

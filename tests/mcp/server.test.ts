@@ -98,6 +98,8 @@ describe('createServer', () => {
       'list-tables': {
         connectionId:
           'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+        database:
+          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
         schema:
           "MCP-enabled database schema name from list-connections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
         search:
@@ -107,6 +109,8 @@ describe('createServer', () => {
         tableNames: 'List of table names to get details for (e.g. ["users", "orders", "products"])',
         connectionId:
           'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+        database:
+          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
         schema:
           'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
@@ -115,6 +119,8 @@ describe('createServer', () => {
           'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
         connectionId:
           'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+        database:
+          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
         schema:
           'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
@@ -123,6 +129,8 @@ describe('createServer', () => {
           'List of table alterations. Each specifies a target table and the changes to apply.',
         connectionId:
           'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+        database:
+          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
         schema:
           'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
@@ -130,6 +138,8 @@ describe('createServer', () => {
         sql: 'The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).',
         connectionId:
           'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+        database:
+          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
         schema:
           'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
       },
@@ -158,13 +168,16 @@ describe('createServer', () => {
 
     const getTableDetailsSchema = inputSchemaFor(result.tools, 'get-table-details');
     expect(propertySchema(getTableDetailsSchema, 'tableNames').minItems).toBeUndefined();
+    expect(allowsNull(propertySchema(getTableDetailsSchema, 'database'))).toBe(true);
 
     const executeQuerySchema = inputSchemaFor(result.tools, 'execute-query');
     expect(propertySchema(executeQuerySchema, 'sql').minLength).toBeUndefined();
+    expect(allowsNull(propertySchema(executeQuerySchema, 'database'))).toBe(true);
     expect(executeQuerySchema.properties).not.toHaveProperty('autoCommit');
 
     const createTablesSchema = inputSchemaFor(result.tools, 'create-tables');
     expect(requiredFields(createTablesSchema)).toEqual(['tableDefinitions']);
+    expect(allowsNull(propertySchema(createTablesSchema, 'database'))).toBe(true);
     expect(createTablesSchema.properties).not.toHaveProperty('executeImmediately');
     const tableDefSchema = arrayItemSchema(propertySchema(createTablesSchema, 'tableDefinitions'));
     expect(tableDefSchema.additionalProperties).toBe(false);
@@ -192,6 +205,7 @@ describe('createServer', () => {
 
     const modifyTablesSchema = inputSchemaFor(result.tools, 'modify-tables');
     expect(requiredFields(modifyTablesSchema)).toEqual(['alterations']);
+    expect(allowsNull(propertySchema(modifyTablesSchema, 'database'))).toBe(true);
     expect(modifyTablesSchema.properties).not.toHaveProperty('executeImmediately');
     const alterTableDefSchema = arrayItemSchema(propertySchema(modifyTablesSchema, 'alterations'));
     expect(alterTableDefSchema.additionalProperties).toBe(false);
@@ -241,7 +255,7 @@ interface JsonSchema {
   minLength?: number;
   properties?: Record<string, JsonSchema>;
   required?: string[];
-  type?: string;
+  type?: string | string[];
 }
 
 const inputSchemaFor = (
@@ -267,5 +281,10 @@ const arrayItemSchema = (schema: JsonSchema): JsonSchema => {
 
 const nonNullSchema = (schema: JsonSchema): JsonSchema =>
   schema.anyOf?.find((candidate) => candidate.type !== 'null') ?? schema;
+
+const allowsNull = (schema: JsonSchema): boolean =>
+  schema.type === 'null' ||
+  (Array.isArray(schema.type) && schema.type.includes('null')) ||
+  !!schema.anyOf?.some((candidate) => allowsNull(candidate));
 
 const requiredFields = (schema: JsonSchema): string[] => schema.required ?? [];

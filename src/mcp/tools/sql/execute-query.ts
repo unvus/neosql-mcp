@@ -5,6 +5,7 @@ import {
   callUpstreamTool,
   jsonTextResult,
   jacksonPrettyJsonStringify,
+  normalizeOptionalNullableString,
   type UpstreamToolDeps,
 } from '../shared.js';
 
@@ -33,6 +34,13 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
             'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
           )
           .optional(),
+        database: z
+          .string()
+          .nullable()
+          .describe(
+            'MCP-enabled database name from list-connections. If omitted, uses current context database.',
+          )
+          .optional(),
         schema: z
           .string()
           .describe(
@@ -48,12 +56,13 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         );
       }
 
-      const { connectionId, schema, ...input } = args;
+      const database = normalizeOptionalNullableString(args.database);
+      const { connectionId, database: _database, schema, ...input } = args;
       return callUpstreamTool(
         deps,
         'execute-query',
-        input,
-        { connectionId, schema },
+        { ...input, ...(database === undefined ? {} : { database }) },
+        { connectionId, database, schema },
         {
           timeoutMs: 60_000,
           stringifyResult: jacksonPrettyJsonStringify,

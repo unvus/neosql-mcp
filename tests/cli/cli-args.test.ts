@@ -47,6 +47,8 @@ describe('parseCliArgs', () => {
         '6c9fede500f949079f7c553cfd96ec72',
         '--default-connection',
         '88',
+        '--default-database',
+        'sales',
         '--default-schema',
         'appdb',
       ]),
@@ -61,6 +63,7 @@ describe('parseCliArgs', () => {
       parseCliArgs([
         '--project=project-1',
         '--default-connection=0',
+        '--default-database=sales',
         '--default-schema=public',
       ]),
     ).toEqual({
@@ -68,7 +71,17 @@ describe('parseCliArgs', () => {
       initialContext: {
         projectId: 'project-1',
         connectionId: '0',
+        database: 'sales',
         schema: 'public',
+      },
+    });
+  });
+
+  it('normalizes a blank default database to null', () => {
+    expect(parseCliArgs(['--default-database=   '])).toEqual({
+      profile: 'prod',
+      initialContext: {
+        database: null,
       },
     });
   });

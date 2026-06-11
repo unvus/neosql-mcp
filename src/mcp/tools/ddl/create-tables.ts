@@ -1,6 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { callUpstreamTool, type UpstreamToolDeps } from '../shared.js';
+import {
+  callUpstreamTool,
+  normalizeOptionalNullableString,
+  type UpstreamToolDeps,
+} from '../shared.js';
 import { tableDefSchema } from './input-models.js';
 
 export type CreateTablesDeps = UpstreamToolDeps;
@@ -35,6 +39,13 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
             'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
           )
           .optional(),
+        database: z
+          .string()
+          .nullable()
+          .describe(
+            'MCP-enabled database name from list-connections. If omitted, uses current context database.',
+          )
+          .optional(),
         schema: z
           .string()
           .describe(
@@ -44,12 +55,13 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
       },
     },
     async (args) => {
-      const { connectionId, schema, ...input } = args;
+      const database = normalizeOptionalNullableString(args.database);
+      const { connectionId, database: _database, schema, ...input } = args;
       return callUpstreamTool(
         deps,
         'create-tables',
-        input,
-        { connectionId, schema },
+        { ...input, ...(database === undefined ? {} : { database }) },
+        { connectionId, database, schema },
         { timeoutMs: 60_000 },
       );
     },

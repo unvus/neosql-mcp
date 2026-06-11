@@ -47,6 +47,7 @@ context. The stdio transport has no HTTP headers, so those values move to CLI op
 | --- | --- | --- | --- |
 | `x-neosql-project` | `--project` | `projectId` | string |
 | `x-neosql-connection` | `--default-connection` | `connectionId` | string |
+| `x-neosql-database` | `--default-database` | `database` | string \| null |
 | `x-neosql-schema` | `--default-schema` | `schema` | string |
 
 ## CLI Option Rules
@@ -56,6 +57,7 @@ Supported forms:
 ```text
 --project=<value>
 --default-connection=<value>
+--default-database=<value>
 --default-schema=<value>
 --profile=<prod|dev|local|stage>
 ```
@@ -64,9 +66,11 @@ Rules:
 
 - Use one complete `--key=value` string per item in MCP host `args`.
 - `--project`, `--default-connection`, and `--default-schema` are stored as strings.
+- `--default-database` is stored as a string, or as `null` when the value is blank.
 - `connectionId` stays a string even when it looks numeric. NeoSQL Desktop can convert
   it later if a handler needs a number.
-- Empty string context values are ignored during context merge.
+- Empty string context values are ignored during context merge, except `database`, where
+  blank means explicit `null` so it can override a default database.
 - Space-separated forms such as `--project value` are not supported.
 
 ## Context Resolution
@@ -81,10 +85,11 @@ The context store is initialized from CLI options and can be updated later with 
 process only by restarting the MCP server with different CLI options.
 
 For example, if the MCP host config sets `--default-connection=88
---default-schema=appdb` but a `list-tables` call passes `connectionId: "57"` and
-`schema: "analytics"`, that call uses connection `57` and schema `analytics`.
+--default-database=sales --default-schema=appdb` but a `list-tables` call passes
+`connectionId: "57"`, `database: "analytics"`, and `schema: "dbo"`, that call uses
+connection `57`, database `analytics`, and schema `dbo`.
 
-Tools that accept per-call `connectionId` / `schema` overrides:
+Tools that accept per-call `connectionId` / `database` / `schema` overrides:
 
 - `list-tables`
 - `get-table-details`
@@ -94,8 +99,8 @@ Tools that accept per-call `connectionId` / `schema` overrides:
 
 `generate-code` is currently under development and returns `개발중입니다`.
 
-Prefer explicit per-call `connectionId` / `schema` values when switching frequently
-between MCP-enabled connections or schemas. Use CLI options for stable defaults or
+Prefer explicit per-call `connectionId` / `database` / `schema` values when switching
+frequently between MCP-enabled coordinates. Use CLI options for stable defaults or
 project selection.
 
 ## Upstream Params
@@ -108,6 +113,7 @@ interface UpstreamToolParams<TInput> {
   context: {
     projectId?: string;
     connectionId?: string;
+    database?: string | null;
     schema?: string;
   };
   input: TInput;
