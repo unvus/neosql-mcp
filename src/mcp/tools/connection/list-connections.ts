@@ -11,7 +11,9 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
       description:
         'List database connections that have MCP access enabled in the current NeoSQL project. ' +
         'Only connections (and schemas) that the user opted-in via the connection MCP tab are returned. ' +
-        'Use this to discover which connectionId / schema values you can pass to other tools. ' +
+        'Use this optional discovery tool when you need a coordinate other than the active project Default, ' +
+        'or when no Default is configured. ' +
+        'Copy connectionId, databaseName, and schemaName together when calling another database tool. ' +
         'Each connection entry includes id, name, description, dataSource (DBMS family), ' +
         'dbVersion (database product version, useful for dialect-version features), ' +
         'the per-user profile (envPreset such as local/dev/staging/prod, label, protection), ' +
@@ -20,6 +22,6 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
       inputSchema: {},
     },
     async () =>
-      callUpstreamTool(deps, 'list-connections', {}, {}, { timeoutMs: 30_000 }),
+      callUpstreamTool(deps, 'list-connections', {}, { timeoutMs: 30_000 }),
   );
 };

@@ -49,11 +49,7 @@ permissions are not duplicated here.
 No global install is required. Configure your MCP host to run the package with `npx`.
 
 ```bash
-npx -y neosql-mcp \
-  --project=YOUR_PROJECT_ID \
-  --default-connection=YOUR_CONNECTION_ID \
-  --default-database=YOUR_DATABASE \
-  --default-schema=YOUR_SCHEMA
+npx -y neosql-mcp
 ```
 
 The process is a stdio MCP server, so running the command directly in a terminal may
@@ -68,14 +64,7 @@ look like it is waiting for input. That is expected.
   "mcpServers": {
     "neosql": {
       "command": "npx",
-      "args": [
-        "-y",
-        "neosql-mcp",
-        "--project=YOUR_PROJECT_ID",
-        "--default-connection=YOUR_CONNECTION_ID",
-        "--default-database=YOUR_DATABASE",
-        "--default-schema=YOUR_SCHEMA"
-      ]
+      "args": ["-y", "neosql-mcp"]
     }
   }
 }
@@ -89,34 +78,34 @@ command = "npx"
 args = [
   "-y",
   "neosql-mcp",
-  "--project=YOUR_PROJECT_ID",
-  "--default-connection=YOUR_CONNECTION_ID",
-  "--default-database=YOUR_DATABASE",
-  "--default-schema=YOUR_SCHEMA",
 ]
 ```
 
 ## CLI Options
 
-| Option                         | Description                                        |
-| ------------------------------ | -------------------------------------------------- |
-| `--project=<value>`            | Sets the default NeoSQL project id for tool calls. |
-| `--default-connection=<value>` | Sets the default connection id.                    |
-| `--default-database=<value>`   | Sets the default database name. Use an empty value for `null`. |
-| `--default-schema=<value>`     | Sets the default schema name.                      |
+| Option                                     | Description                                      |
+| ------------------------------------------ | ------------------------------------------------ |
+| `--profile=<prod\|dev\|local\|stage>`     | Connects to the matching NeoSQL Desktop profile. |
 
 Use the `--key=value` form in MCP host config. Space-separated forms such as
-`--project value` are intentionally not supported.
+`--profile dev` are intentionally not supported. The default profile is `prod`.
 
 ## Context Resolution
 
-NeoSQL tools resolve project, connection, database, and schema in this order:
+NeoSQL tools always use the project currently selected and fully loaded in NeoSQL
+Desktop. The Node process does not store a project or default database coordinate.
 
-1. Explicit arguments on the tool call.
-2. The Node-local context store (set from CLI options at startup; restart to change).
-3. Empty context.
+Database tools accept coordinates in one of two forms:
 
-Tools that accept per-call `connectionId`, `database`, and `schema` overrides:
+1. Omit `connectionId`, `database`, and `schema` together to use the active project's
+   Default selected in NeoSQL MCP Access Control.
+2. Pass all three values together to use an explicit MCP-enabled coordinate returned by
+   `list-connections`. Use `database: null` for DBMSs without a database hierarchy.
+
+Passing only one or two coordinate fields is invalid. Explicit coordinates never fall
+back to the project Default when they are invalid.
+
+Tools that accept the complete explicit coordinate tuple:
 
 - `list-tables`
 - `get-table-details`
@@ -130,10 +119,10 @@ Tools that accept per-call `connectionId`, `database`, and `schema` overrides:
 | -------------------- | -------------------------------------------------------------------------- |
 | `ping`               | Returns `pong` for a lightweight MCP health check.                         |
 | `list-connections`   | Lists MCP-enabled NeoSQL connections and schemas for the current project.  |
-| `get-context-help`   | Explains how to find and configure NeoSQL context values.                  |
-| `list-tables`        | Lists tables for the selected connection/schema.                           |
+| `get-context-help`   | Explains active-project Default and explicit coordinate usage.             |
+| `list-tables`        | Lists tables using the project Default or an explicit coordinate.          |
 | `get-table-details`  | Returns columns, keys, indexes, and related table metadata.                |
-| `execute-query`      | Executes non-DDL SQL using the selected context.                           |
+| `execute-query`      | Executes non-DDL SQL using the Default or an explicit coordinate.          |
 | `create-tables`      | Requests table creation through NeoSQL Desktop.                            |
 | `modify-tables`      | Requests table modification through NeoSQL Desktop.                        |
 | `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process. |
@@ -167,14 +156,14 @@ Desktop.
 
 ### Context-sensitive tools fail
 
-Run `list-connections` or `get-context-help`, then check that `--project`,
-`--default-connection`, `--default-database`, and `--default-schema` match an
-MCP-enabled connection/database/schema.
+Select a project in NeoSQL Desktop and configure an enabled Default in MCP Access
+Control. To use another coordinate, run `list-connections` and pass its `connectionId`,
+`databaseName`, and `schemaName` values together as `connectionId`, `database`, and
+`schema`.
 
 ### `npx` cannot find or run the package
 
-Check that the MCP host can access `npx`, that Node.js is 20 or later, and that each CLI
-option is a separate item in the MCP host `args` array.
+Check that the MCP host can access `npx` and that Node.js is 20 or later.
 
 ## Development
 

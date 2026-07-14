@@ -8,8 +8,6 @@ import type {
   DesktopInstallationChecker,
 } from '../upstream/desktop-readiness.js';
 import { requestAppActivation as defaultRequestAppActivation } from '../upstream/app-activation.js';
-import { createContextStore } from './tools/context/store.js';
-import type { ContextStore, NeosqlContextPatch } from './tools/context/store.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
 import { registerListConnectionsTool } from './tools/connection/list-connections.js';
 import { registerListTablesTool } from './tools/schema/list-tables.js';
@@ -28,7 +26,6 @@ export const SERVER_VERSION = '0.0.1';
 export interface CreateServerOptions {
   profile?: Profile;
   socketPath?: string;
-  initialContext?: NeosqlContextPatch;
   desktopHealthTimeoutMs?: number;
   requestAppActivation?: AppActivationRequester;
   checkDesktopInstallation?: DesktopInstallationChecker;
@@ -38,30 +35,19 @@ export const createServer = (opts: CreateServerOptions = {}): McpServer => {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
   const profile = opts.profile ?? 'prod';
   const socketPath = opts.socketPath ?? resolveSocketPath(profile);
-  const contextStore = createContextStore();
-  applyInitialContext(contextStore, opts.initialContext);
 
-  const upstreamDeps = createUpstreamToolDeps(opts, profile, socketPath, contextStore);
-  registerTools(server, contextStore, upstreamDeps);
+  const upstreamDeps = createUpstreamToolDeps(opts, profile, socketPath);
+  registerTools(server, upstreamDeps);
 
   return server;
-};
-
-const applyInitialContext = (
-  contextStore: ContextStore,
-  initialContext: NeosqlContextPatch | undefined,
-): void => {
-  if (initialContext !== undefined) contextStore.set(initialContext);
 };
 
 const createUpstreamToolDeps = (
   opts: CreateServerOptions,
   profile: Profile,
   socketPath: string,
-  contextStore: ContextStore,
 ): UpstreamToolDeps => ({
   postRpc: createPostRpc(socketPath),
-  contextStore,
   sessionId: mcpSessionId,
   ensureDesktopReady: createDesktopReadyChecker(opts, profile, socketPath),
   requestDesktopFocus: createDesktopFocusRequester(opts, profile),
@@ -104,7 +90,6 @@ const createDesktopFocusRequester = (opts: CreateServerOptions, profile: Profile
 
 const registerTools = (
   server: McpServer,
-  contextStore: ContextStore,
   upstreamDeps: UpstreamToolDeps,
 ): void => {
   registerPingTool(server);

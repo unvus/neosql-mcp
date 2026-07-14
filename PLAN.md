@@ -210,6 +210,35 @@ Node 측 핸들러를 일괄 구현(mock UDS 대상)한 뒤, Phase 2-4에서 본
 
 ---
 
+## Cross-cutting · Active project runtime context migration
+
+NeoSQL runtime context의 원본은 MCP client나 Node process가 아니라 NeoSQL Desktop의
+현재 활성 프로젝트다. 상위 cross-repo 계약은 NeoSQL 본체의
+`docs/plan/mcp-runtime-context.html`을 기준으로 하고, 이 저장소는 아래 Node 경계를
+소유한다.
+
+- 공개 MCP client config는 `npx -y neosql-mcp`만 포함하는 universal config다.
+- `--project`, `--default-connection`, `--default-database`, `--default-schema`는 기존
+  설정 기동 호환을 위해 오류·경고 없이 무시한다.
+- Node는 project/default context store를 보유하거나 좌표를 병합하지 않는다.
+- DB 도구는 `connectionId`, `database`, `schema`를 모두 명시하거나 모두 생략한다.
+  `database: null`은 database 계층이 없는 DBMS의 유효한 명시 값이다.
+- 좌표는 도구 입력의 존재 여부를 유지해 upstream `params.input`으로 전달한다.
+  Electron main은 이전 Node 버전을 위해 `params.context` fallback을 유지하지만 새 Node는
+  이를 보내지 않는다.
+- 전체 생략 좌표는 Renderer가 활성 프로젝트의 enabled Default로 해석한다. 일부 명시,
+  Default 없음, 중복/손상 Default, 존재하지 않거나 허용되지 않은 명시 좌표는 Renderer의
+  공통 검증에서 실패한다.
+- `list-connections`는 현재 활성 프로젝트의 MCP-enabled 좌표를 찾는 선택적 탐색
+  도구다.
+- `project-not-selected`는 Renderer가 현재 locale로 만든 message를 Node가 변형하지 않고
+  반환한다.
+
+Node와 Electron의 정확한 wire shape는 `docs/upstream-rpc-contract.md`, legacy CLI 동작은
+`docs/mcp-client-config.md`, 진행 상태는 `CHECKLIST.md`를 각각 단일 진실의 원천으로 삼는다.
+
+---
+
 ## Phase 3 · Desktop lifecycle UX
 
 **목표**: `neosql-mcp` 사용자가 NeoSQL Desktop 실행 여부 때문에 막히는 상황을

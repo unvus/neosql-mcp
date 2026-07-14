@@ -45,10 +45,7 @@ describe('execute-query tool', () => {
       removeSocketFile(socketPath);
     });
 
-    const server = createServer({
-      socketPath,
-      initialContext: { projectId: 'proj-1', connectionId: '0', database: 'sales', schema: 'public' },
-    });
+    const server = createServer({ socketPath });
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
     const client = new Client({ name: 'test', version: '0.0.0' });
@@ -86,13 +83,13 @@ describe('execute-query tool', () => {
     ]);
     expect(received[0]?.method).toBe('execute-query');
     expect(received[0]?.params).toMatchObject({
-      context: {
-        projectId: 'proj-1',
+      sessionId: expect.any(String),
+      input: {
+        sql: 'SELECT id FROM users',
         connectionId: '57',
         database: 'analytics',
         schema: 'analytics',
       },
-      input: { sql: 'SELECT id FROM users', database: 'analytics' },
     });
   });
 
@@ -170,11 +167,10 @@ describe('execute-query tool', () => {
 
     expect(result.isError).not.toBe(true);
     expect(received).toHaveLength(1);
-    const params = received[0]?.params as {
-      context?: Record<string, unknown>;
+    const params = received[0]?.params as Record<string, unknown> & {
       input?: Record<string, unknown>;
     };
-    expect(params.context).not.toHaveProperty('autoCommit');
+    expect(params).not.toHaveProperty('context');
     expect(params.input).not.toHaveProperty('autoCommit');
   });
 

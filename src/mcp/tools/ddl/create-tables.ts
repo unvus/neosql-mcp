@@ -5,6 +5,7 @@ import {
   normalizeOptionalNullableString,
   type UpstreamToolDeps,
 } from '../shared.js';
+import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
 import { tableDefSchema } from './input-models.js';
 
 export type CreateTablesDeps = UpstreamToolDeps;
@@ -20,7 +21,7 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
         'Each definition may include columns, primary keys, foreign keys, indexes, and ' +
         'table-level constraints (UNIQUE / CHECK / EXCLUSION). ' +
         'Tables that fail (e.g. duplicates) are skipped and reported; successfully created tables are added to the ERD. ' +
-        'Uses the current context (project/connection). ' +
+        'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
         'Response semantics — ERD save and DDL execution are SEPARATE phases: `summary.createdInErd` counts tables ' +
         'added to the ERD model; DB application is tracked under `summary.ddl` / `ddlExecution.results[]`. ' +
         'A call is fully successful ONLY when both `summary.failed === 0` AND ' +
@@ -33,35 +34,16 @@ export const registerCreateTablesTool = (server: McpServer, deps: CreateTablesDe
           .describe(
             'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
           ),
-        connectionId: z
-          .string()
-          .describe(
-            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
-          )
-          .optional(),
-        database: z
-          .string()
-          .nullable()
-          .describe(
-            'MCP-enabled database name from list-connections. If omitted, uses current context database.',
-          )
-          .optional(),
-        schema: z
-          .string()
-          .describe(
-            'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
-          )
-          .optional(),
+        ...coordinateInputShape,
       },
     },
     async (args) => {
+      validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
-      const { connectionId, database: _database, schema, ...input } = args;
       return callUpstreamTool(
         deps,
         'create-tables',
-        { ...input, ...(database === undefined ? {} : { database }) },
-        { connectionId, database, schema },
+        { ...args, ...(database === undefined ? {} : { database }) },
         { timeoutMs: 60_000 },
       );
     },

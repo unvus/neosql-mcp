@@ -43,6 +43,29 @@ describe('built CLI via stdio spawn', () => {
     expect(content[0]?.text).toBe('pong');
   });
 
+  it('starts without warnings or errors when legacy context flags are present', async () => {
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [
+        CLI_PATH,
+        '--project=legacy-project',
+        '--default-connection=88',
+        '--default-database=sales',
+        '--default-schema=public',
+      ],
+      env: {
+        NEOSQL_MCP_LOG_PARENT_DIR: logParentDir,
+      },
+    });
+    const client = new Client({ name: 'spawn-test-client', version: '0.0.0' });
+    clients.push(client);
+    await client.connect(transport);
+
+    const result = await client.callTool({ name: 'ping', arguments: {} });
+    const content = result.content as Array<{ type: string; text?: string }>;
+    expect(content[0]?.text).toBe('pong');
+  });
+
   it('returns a stable mcpSessionId within the spawned process', async () => {
     const transport = new StdioClientTransport({
       command: process.execPath,

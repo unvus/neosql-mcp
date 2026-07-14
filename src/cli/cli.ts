@@ -5,11 +5,11 @@ import { parseCliArgs } from './cli-args.js';
 import { resolveSocketPath, HTTP_PATH } from '../upstream/endpoint-resolver.js';
 
 const main = async (): Promise<void> => {
-  const { profile, initialContext } = parseCliArgs(process.argv.slice(2));
+  const { profile } = parseCliArgs(process.argv.slice(2));
   configureLogger(profile);
   const socketPath = resolveSocketPath(profile);
 
-  const server = createServer({ profile, socketPath, initialContext });
+  const server = createServer({ profile, socketPath });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   logger.info(

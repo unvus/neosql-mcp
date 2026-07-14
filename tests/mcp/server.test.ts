@@ -97,51 +97,51 @@ describe('createServer', () => {
     const expectedDescriptions: Record<string, Record<string, string>> = {
       'list-tables': {
         connectionId:
-          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
         database:
-          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
+          'MCP-enabled database name from list-connections. Use null for DBMSs without a database hierarchy. Provide it with connectionId and schema, or omit all three to use the active project Default.',
         schema:
-          "MCP-enabled database schema name from list-connections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
+          'MCP-enabled schema name from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
         search:
           'Search keyword to filter tables by name or comment (case-insensitive). If omitted, returns all tables.',
       },
       'get-table-details': {
         tableNames: 'List of table names to get details for (e.g. ["users", "orders", "products"])',
         connectionId:
-          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
         database:
-          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
+          'MCP-enabled database name from list-connections. Use null for DBMSs without a database hierarchy. Provide it with connectionId and schema, or omit all three to use the active project Default.',
         schema:
-          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
+          'MCP-enabled schema name from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
       },
       'create-tables': {
         tableDefinitions:
           'List of table definitions to create (e.g. [{name, remarks, columns, primaryKeys, ...}])',
         connectionId:
-          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
         database:
-          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
+          'MCP-enabled database name from list-connections. Use null for DBMSs without a database hierarchy. Provide it with connectionId and schema, or omit all three to use the active project Default.',
         schema:
-          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
+          'MCP-enabled schema name from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
       },
       'modify-tables': {
         alterations:
           'List of table alterations. Each specifies a target table and the changes to apply.',
         connectionId:
-          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
         database:
-          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
+          'MCP-enabled database name from list-connections. Use null for DBMSs without a database hierarchy. Provide it with connectionId and schema, or omit all three to use the active project Default.',
         schema:
-          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
+          'MCP-enabled schema name from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
       },
       'execute-query': {
         sql: 'The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).',
         connectionId:
-          'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
+          'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
         database:
-          'MCP-enabled database name from list-connections. If omitted, uses current context database.',
+          'MCP-enabled database name from list-connections. Use null for DBMSs without a database hierarchy. Provide it with connectionId and schema, or omit all three to use the active project Default.',
         schema:
-          'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
+          'MCP-enabled schema name from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
       },
     };
 
@@ -244,6 +244,30 @@ describe('createServer', () => {
       'defaultValue',
       'remarks',
     ]);
+  });
+
+  it('rejects partial coordinate tuples for every database tool', async () => {
+    await connectClientToServer();
+    const cases = [
+      { name: 'list-tables', arguments: { connectionId: '57' } },
+      {
+        name: 'get-table-details',
+        arguments: { tableNames: ['users'], connectionId: '57' },
+      },
+      { name: 'create-tables', arguments: { tableDefinitions: [], connectionId: '57' } },
+      { name: 'modify-tables', arguments: { alterations: [], connectionId: '57' } },
+      { name: 'execute-query', arguments: { sql: 'SELECT 1', connectionId: '57' } },
+    ];
+
+    for (const testCase of cases) {
+      const result = await client!.callTool(testCase);
+      const content = result.content as Array<{ type: string; text?: string }>;
+      expect(result.isError, testCase.name).toBe(true);
+      expect(content[0]?.text, testCase.name).toContain('-32602');
+      expect(content[0]?.text, testCase.name).toContain(
+        'connectionId, database, and schema must be provided together or all omitted.',
+      );
+    }
   });
 });
 

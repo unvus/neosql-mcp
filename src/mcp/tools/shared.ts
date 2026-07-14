@@ -1,12 +1,6 @@
 import { toolErrorResult } from '../error-map.js';
 import { HttpClientError } from '../../upstream/http-client.js';
 import type { DesktopReadyResult } from '../../upstream/desktop-readiness.js';
-import {
-  mergeContext,
-  type ContextStore,
-  type NeosqlContext,
-  type NeosqlContextPatch,
-} from './context/store.js';
 import { logger } from '../../infra/logger.js';
 
 export interface ToolTextResult {
@@ -27,7 +21,6 @@ export type DesktopFocusRequester = () => Promise<void>;
 
 export interface UpstreamToolDeps {
   postRpc: PostRpc;
-  contextStore: ContextStore;
   sessionId: string;
   ensureDesktopReady?: () => Promise<DesktopReadyResult>;
   requestDesktopFocus?: DesktopFocusRequester;
@@ -35,7 +28,6 @@ export interface UpstreamToolDeps {
 
 export interface UpstreamToolParams<TInput> {
   sessionId: string;
-  context: NeosqlContext;
   input: TInput;
 }
 
@@ -50,7 +42,6 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
   deps: UpstreamToolDeps,
   method: string,
   input: TInput,
-  contextPatch: NeosqlContextPatch = {},
   opts: {
     timeoutMs?: number;
     stringifyResult?: JsonStringifier;
@@ -63,10 +54,8 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
       if (desktopReady.status !== 'ready') return desktopLifecycleResult(desktopReady);
     }
 
-    const context = mergeContext(deps.contextStore.get(), contextPatch);
     const params: UpstreamToolParams<TInput> = {
       sessionId: deps.sessionId,
-      context,
       input,
     };
     const rpcOpts = opts.timeoutMs === undefined ? undefined : { timeoutMs: opts.timeoutMs };
@@ -159,6 +148,10 @@ const desktopLifecycleErrorResult = (
     });
   }
 
+  if (err.kind === 'rpc-error' && err.rpcKind === 'project-not-selected') {
+    return textToolErrorResult(err.message);
+  }
+
   if (err.kind === 'rpc-error' && err.rpcKind === 'unauthenticated') {
     requestDesktopFocusWithoutBlockingResponse(deps);
     return jsonToolErrorResult({
@@ -196,6 +189,11 @@ const requestDesktopFocusWithoutBlockingResponse = (deps: UpstreamToolDeps): voi
 const jsonToolErrorResult = (payload: unknown): ToolTextResult => ({
   isError: true,
   content: [{ type: 'text', text: JSON.stringify(payload) }],
+});
+
+const textToolErrorResult = (message: string): ToolTextResult => ({
+  isError: true,
+  content: [{ type: 'text', text: message }],
 });
 
 const formatJacksonPrettyValue = (value: unknown, indentLevel: number): string => {

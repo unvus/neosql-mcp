@@ -1,32 +1,31 @@
 import type { Profile } from '../upstream/endpoint-resolver.js';
-import type { NeosqlContextPatch } from '../mcp/tools/context/store.js';
+
+const LEGACY_CONTEXT_ARG_PREFIXES = [
+  '--project=',
+  '--default-connection=',
+  '--default-database=',
+  '--default-schema=',
+] as const;
 
 export interface ParsedCliArgs {
   profile: Profile;
-  initialContext: NeosqlContextPatch;
 }
 
 export const parseCliArgs = (argv: readonly string[]): ParsedCliArgs => {
   let profile: Profile = 'prod';
-  const initialContext: NeosqlContextPatch = {};
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i] ?? '';
     if (arg.startsWith('--profile=')) profile = parseProfile(valueAfterEquals(arg)) ?? profile;
-    else if (arg.startsWith('--project=')) initialContext.projectId = valueAfterEquals(arg);
-    else if (arg.startsWith('--default-connection=')) initialContext.connectionId = valueAfterEquals(arg);
-    else if (arg.startsWith('--default-database=')) initialContext.database = nullableValueAfterEquals(arg);
-    else if (arg.startsWith('--default-schema=')) initialContext.schema = valueAfterEquals(arg);
+    else if (isLegacyContextArg(arg)) continue;
   }
-  return { profile, initialContext };
+  return { profile };
 };
 
 const valueAfterEquals = (arg: string): string => arg.slice(arg.indexOf('=') + 1);
 
-const nullableValueAfterEquals = (arg: string): string | null => {
-  const value = valueAfterEquals(arg);
-  return value.trim() === '' ? null : value;
-};
+const isLegacyContextArg = (arg: string): boolean =>
+  LEGACY_CONTEXT_ARG_PREFIXES.some((prefix) => arg.startsWith(prefix));
 
 const parseProfile = (value: string | undefined): Profile | undefined => {
   if (value === 'prod' || value === 'dev' || value === 'local' || value === 'stage') return value;

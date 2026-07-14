@@ -79,17 +79,16 @@ publish blocker 목록이다.
     CLI option/profile/context mapping 참고 문서로 유지한다.
 - [x] README에 CLI option 표를 추가한다.
   - `--profile=<prod|dev|local|stage>`.
-  - `--project=<value>`.
-  - `--default-connection=<value>`.
-  - `--default-schema=<value>`.
+- [x] 공개 설정을 식별자 없는 universal config로 갱신한다.
+  - 활성 프로젝트와 Default 좌표는 NeoSQL Desktop이 소유한다.
+  - legacy project/default CLI 인자는 README에 노출하지 않는다.
+  - legacy 인자의 무시 동작은 내부 `docs/mcp-client-config.md`에만 기록한다.
 - [x] README에 현재 제공하는 MCP tool 목록을 추가한다.
   - `ping`.
   - `list-connections`.
   - `generate-code`.
   - `list-tables`.
   - `get-table-details`.
-  - `setContext`.
-  - `getContext`.
   - `get-context-help`.
   - `create-tables`.
   - `modify-tables`.

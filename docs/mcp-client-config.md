@@ -1,7 +1,7 @@
 # MCP Client Configuration Internals
 
 This document is an internal developer reference for `neosql-mcp` CLI option parsing,
-profile routing, legacy context mapping, and upstream context shape.
+profile routing, active-project context ownership, and the upstream input envelope.
 
 End-user MCP host setup examples belong in `README.md`, because npm displays the README
 as the package landing page.
@@ -14,7 +14,7 @@ work to NeoSQL Desktop over the local UDS/Named Pipe upstream channel.
 The public command shape is:
 
 ```bash
-npx -y neosql-mcp [options]
+npx -y neosql-mcp [--profile=<prod|dev|local|stage>]
 ```
 
 This file intentionally does not duplicate host-specific JSON/TOML snippets. Keep those
@@ -38,58 +38,38 @@ profile.
 If multiple valid `--profile=...` values are present, the last valid value wins. Invalid
 profile values are ignored and the previous valid profile is kept.
 
-## Legacy HTTP Config Mapping
+## Legacy Context CLI Compatibility
 
-The previous embedded-server MCP setup used an HTTP endpoint and headers to inject
-context. The stdio transport has no HTTP headers, so those values move to CLI options.
-
-| Legacy HTTP header | CLI option | Context field | Type |
-| --- | --- | --- | --- |
-| `x-neosql-project` | `--project` | `projectId` | string |
-| `x-neosql-connection` | `--default-connection` | `connectionId` | string |
-| `x-neosql-database` | `--default-database` | `database` | string \| null |
-| `x-neosql-schema` | `--default-schema` | `schema` | string |
-
-## CLI Option Rules
-
-Supported forms:
+The following legacy equals-form options remain harmless inputs so existing MCP host
+configurations continue to start without an error or warning:
 
 ```text
 --project=<value>
 --default-connection=<value>
 --default-database=<value>
 --default-schema=<value>
---profile=<prod|dev|local|stage>
 ```
 
-Rules:
+Their values are ignored. They do not create process-local state, affect upstream RPC
+params, select a NeoSQL project, or participate in coordinate fallback. They are not
+part of the public README or generated client setup.
 
-- Use one complete `--key=value` string per item in MCP host `args`.
-- `--project`, `--default-connection`, and `--default-schema` are stored as strings.
-- `--default-database` is stored as a string, or as `null` when the value is blank.
-- `connectionId` stays a string even when it looks numeric. NeoSQL Desktop can convert
-  it later if a handler needs a number.
-- Empty string context values are ignored during context merge, except `database`, where
-  blank means explicit `null` so it can override a default database.
-- Space-separated forms such as `--project value` are not supported.
+## Active Project and Coordinate Resolution
 
-## Context Resolution
+NeoSQL Desktop owns runtime context:
 
-The Node MCP server resolves context in this order:
+- The project currently selected and fully loaded in NeoSQL Desktop is the only project
+  used for tool calls.
+- A project can store one enabled Default coordinate in its MCP Access Control settings.
+- Omitting `connectionId`, `database`, and `schema` together asks the Renderer to use
+  that Default.
+- Passing an explicit coordinate requires all three fields. `database: null` represents
+  DBMSs without a database hierarchy.
+- Partial coordinates are rejected as `invalid-params` and Node never combines explicit
+  fields with a Default.
+- Invalid explicit coordinates do not fall back to the project Default.
 
-1. Explicit tool-call arguments.
-2. Node-local context store.
-3. Empty context.
-
-The context store is initialized from CLI options and can be updated later with the
-process only by restarting the MCP server with different CLI options.
-
-For example, if the MCP host config sets `--default-connection=88
---default-database=sales --default-schema=appdb` but a `list-tables` call passes
-`connectionId: "57"`, `database: "analytics"`, and `schema: "dbo"`, that call uses
-connection `57`, database `analytics`, and schema `dbo`.
-
-Tools that accept per-call `connectionId` / `database` / `schema` overrides:
+Tools that accept the complete coordinate tuple are:
 
 - `list-tables`
 - `get-table-details`
@@ -97,11 +77,9 @@ Tools that accept per-call `connectionId` / `database` / `schema` overrides:
 - `create-tables`
 - `modify-tables`
 
-`generate-code` is currently under development and returns `개발중입니다`.
-
-Prefer explicit per-call `connectionId` / `database` / `schema` values when switching
-frequently between MCP-enabled coordinates. Use CLI options for stable defaults or
-project selection.
+`list-connections` is an optional discovery tool for finding another MCP-enabled tuple
+or for projects without a Default. `generate-code` remains an under-development local
+placeholder and returns `개발중입니다`.
 
 ## Upstream Params
 
@@ -110,15 +88,14 @@ Electron main receives upstream JSON-RPC params in this shape:
 ```ts
 interface UpstreamToolParams<TInput> {
   sessionId: string;
-  context: {
-    projectId?: string;
-    connectionId?: string;
-    database?: string | null;
-    schema?: string;
-  };
   input: TInput;
 }
 ```
+
+For database tools, `TInput` preserves whether the three coordinate fields were all
+present or all absent. Node does not move coordinates to a `context` object. Electron
+main still accepts the old `params.context` shape as a compatibility fallback for older
+Node package versions, but new requests do not send it.
 
 `sessionId` is an upstream grouping key generated by the Node process. It is not the MCP
 Streamable HTTP `Mcp-Session-Id` header.

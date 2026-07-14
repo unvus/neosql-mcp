@@ -43,12 +43,11 @@ Request:
   "method": "list-tables",
   "params": {
     "sessionId": "mcp-session-id",
-    "context": {
-      "projectId": "project-id",
+    "input": {
       "connectionId": "0",
+      "database": null,
       "schema": "public"
-    },
-    "input": {}
+    }
   }
 }
 ```
@@ -84,12 +83,6 @@ Error response:
 ```ts
 interface UpstreamToolParams<TInput> {
   sessionId: string;
-  context: {
-    projectId?: string;
-    connectionId?: string;
-    database?: string | null;
-    schema?: string;
-  };
   input: TInput;
 }
 ```
@@ -97,7 +90,8 @@ interface UpstreamToolParams<TInput> {
 Node responsibility:
 
 - MCP tool input schema validation
-- context store merge
+- DB 도구의 전체 좌표 명시 또는 전체 생략 검증
+- 도구 입력의 좌표 존재 여부를 `params.input`에 보존
 - JSON-RPC method 호출
 - JSON-RPC error를 MCP `tools/call` response로 변환
   - 기본 upstream tool은 `isError: true` tool result로 변환한다.
@@ -106,11 +100,13 @@ Node responsibility:
   - desktop lifecycle/access 계열 error(`app-not-ready`, `unavailable`,
     `unauthenticated`, `timeout`)는
     공통 사용자-facing JSON error result로 변환한다.
+  - `project-not-selected`는 Renderer가 현재 locale로 생성한 message를 변형하지 않고
+    그대로 MCP error text로 반환한다.
 
 Electron responsibility:
 
-- project assignment/permission validation
-- active project/session 준비
+- 현재 활성 프로젝트와 project session 일치 여부 검증
+- 프로젝트 Default 또는 전체 명시 좌표 해석
 - connection/database/schema lookup
 - app store, renderer-facing state, SQL Editor, ERD, code generation, DDL 실행 처리
 - domain validation과 domain error 반환
@@ -130,6 +126,7 @@ Electron responsibility:
 | -32001 | `unauthenticated`      | NeoSQL Desktop 로그인 필요                       |
 | -32001 | `timeout`              | renderer response timeout                        |
 | -32002 | `app-not-ready`        | renderer target 또는 renderer handler 준비 안 됨 |
+| -32002 | `project-not-selected` | Desktop 활성 프로젝트 또는 준비된 session 없음  |
 | -32002 | `unavailable`          | project session 초기화 timeout 등 일시 처리 불가 |
 | -32003 | `forbidden`            | 현재 사용자에게 project 권한 없음                |
 
@@ -155,19 +152,21 @@ Electron responsibility:
 tool이므로 Electron RPC method를 만들지 않는다. `generate-code`는 현재 개발중
 placeholder로 `개발중입니다`를 반환한다.
 
-## Per-call Context Override
+## Database Coordinate Contract
 
-일부 MCP tool은 `connectionId`, `database`, `schema`를 tool argument로 받을 수 있다. 이 값은
-Electron payload가 아니라 upstream `params.context`에 merge된다.
+`list-tables`, `get-table-details`, `execute-query`, `create-tables`, `modify-tables`는
+`connectionId`, `database`, `schema`를 모두 명시하거나 모두 생략한다.
 
-우선순위:
+- 전체 명시: Node가 세 필드의 존재 여부를 유지해 `params.input`으로 전달한다.
+- 전체 생략: Node는 좌표 필드를 만들지 않는다. Renderer가 활성 프로젝트의 enabled
+  Default를 해석한다.
+- 일부 명시: Node에서 MCP `invalid-params`로 거부하고 upstream을 호출하지 않는다.
+- `database: null`: database 계층이 없는 DBMS의 유효한 명시 값이다.
+- 명시 좌표가 무효여도 프로젝트 Default로 fallback하지 않는다.
 
-1. tool argument `connectionId` / `database` / `schema`
-2. Node context store (`--default-connection`, `--default-database`, `--default-schema`)
-3. empty context
-
-`database`는 `string | null`이다. Tool argument나 `--default-database=` 값이 blank이면
-명시적 `null`로 정규화하며, 이 값은 저장된 default database보다 우선한다.
+Electron main은 이전 Node 패키지 호환을 위해 기존 `params.context` fallback을 당분간
+허용하지만, 새 Node 요청은 `context`를 보내지 않는다. Renderer는 어떤 경로로 들어온
+요청이든 같은 전체 좌표/Default 및 MCP 정책 검증을 수행한다.
 
 ## `list-connections`
 
@@ -177,13 +176,9 @@ Input:
 type ListConnectionsInput = Record<string, never>;
 ```
 
-Context requirements:
-
-- `projectId`
-
 Rules:
 
-- `connectionId`, `database`, and `schema` context values are ignored.
+- 파라미터 없이 현재 NeoSQL Desktop 활성 프로젝트를 사용한다.
 - Only connections that are not disabled and have at least one MCP-enabled schema are returned.
 - Only schemas with matching `(databaseName, schemaName)` MCP config `enabled === true` are
   returned under each connection.
@@ -236,27 +231,18 @@ Input:
 
 ```ts
 interface ListTablesInput {
-  connectionId?: string; // MCP input only; forwarded through params.context
+  connectionId?: string;
   database?: string | null;
   schema?: string;
   search?: string;
 }
 ```
 
-Context requirements:
-
-- `projectId`
-- `connectionId`
-- `database` after input override/default when present
-- `schema` after input override
-
 Rules:
 
-- `connectionId` is removed from upstream `input` and sent through `params.context`.
-- `database` remains in upstream `input` for compatibility and is also merged into
-  `params.context`.
-- `schema` remains in upstream `input` for compatibility and is also merged into
-  `params.context`.
+- 세 좌표를 모두 명시하거나 모두 생략한다.
+- Node는 좌표와 `search`를 모두 `params.input`에 유지한다.
+- Electron main이 좌표를 renderer request field로 추출하고 실제 tool payload에서는 제거한다.
 
 Result:
 
@@ -280,26 +266,17 @@ Input:
 ```ts
 interface GetTableDetailsInput {
   tableNames: string[];
-  connectionId?: string; // MCP input only; forwarded through params.context
+  connectionId?: string;
   database?: string | null;
   schema?: string;
 }
 ```
 
-Context requirements:
-
-- `projectId`
-- `connectionId` after input override
-- `database` after input override/default when present
-- `schema` after input override
-
 Rules:
 
-- `connectionId` is removed from upstream `input` and sent through `params.context`.
-- `database` remains in upstream `input` for compatibility and is also merged into
-  `params.context`.
-- `schema` remains in upstream `input` for compatibility and is also merged into
-  `params.context`.
+- 세 좌표를 모두 명시하거나 모두 생략한다.
+- Node는 좌표와 `tableNames`를 모두 `params.input`에 유지한다.
+- Electron main이 좌표를 renderer request field로 추출하고 실제 tool payload에서는 제거한다.
 
 Result:
 
@@ -353,9 +330,9 @@ Input:
 ```ts
 interface ExecuteQueryInput {
   sql: string;
-  connectionId?: string; // MCP input only; forwarded through params.context
-  database?: string | null; // MCP input only; forwarded through params.context
-  schema?: string; // MCP input only; forwarded through params.context
+  connectionId?: string;
+  database?: string | null;
+  schema?: string;
 }
 ```
 
@@ -363,17 +340,8 @@ Rules:
 
 - DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`) is rejected.
 - SELECT/EXPLAIN returns up to 200 rows.
-- `connectionId`, `database`, and `schema` are sent through `params.context`.
-- `connectionId` and `schema` are removed from upstream `input`; `database` remains
-  in upstream `input` for compatibility before Electron main strips context overrides
-  from the renderer payload.
-
-Context requirements:
-
-- `projectId`
-- `connectionId` after input override
-- `database` after input override/default when present
-- `schema` after input override
+- 세 좌표를 모두 명시하거나 모두 생략하며 Node는 이를 `params.input`에 유지한다.
+- Electron main이 좌표를 renderer request field로 추출하고 SQL payload에서는 제거한다.
 
 Result:
 
@@ -411,9 +379,9 @@ Input:
 ```ts
 interface CreateTablesInput {
   tableDefinitions: McpTableDef[];
-  connectionId?: string; // MCP input only; forwarded through params.context
-  database?: string | null; // MCP input only; forwarded through params.context
-  schema?: string; // MCP input only; forwarded through params.context
+  connectionId?: string;
+  database?: string | null;
+  schema?: string;
 }
 
 interface McpTableDef {
@@ -466,17 +434,8 @@ interface McpConstraintDef {
 
 Rules:
 
-- `connectionId`, `database`, and `schema` are sent through `params.context`.
-- `connectionId` and `schema` are removed from upstream `input`; `database` remains
-  in upstream `input` for compatibility before Electron main strips context overrides
-  from the renderer payload.
-
-Context requirements:
-
-- `projectId`
-- `connectionId` after input override
-- `database` after input override/default when present
-- `schema` after input override
+- 세 좌표를 모두 명시하거나 모두 생략하며 Node는 이를 `params.input`에 유지한다.
+- Electron main이 좌표를 renderer request field로 추출하고 DDL payload에서는 제거한다.
 
 Result:
 
@@ -508,9 +467,9 @@ Input:
 ```ts
 interface ModifyTablesInput {
   alterations: McpAlterTableDef[];
-  connectionId?: string; // MCP input only; forwarded through params.context
-  database?: string | null; // MCP input only; forwarded through params.context
-  schema?: string; // MCP input only; forwarded through params.context
+  connectionId?: string;
+  database?: string | null;
+  schema?: string;
 }
 
 interface McpAlterTableDef {
@@ -590,17 +549,8 @@ Primary key operation semantics:
 - `DROP`: remove that column from the current primary key.
 - Dropping all primary key columns requires one explicit `DROP` operation per current PK column.
 - Legacy `newRemarks` and `newPrimaryKeys` inputs are rejected by the Node MCP tool schema.
-- `connectionId`, `database`, and `schema` are sent through `params.context`.
-- `connectionId` and `schema` are removed from upstream `input`; `database` remains
-  in upstream `input` for compatibility before Electron main strips context overrides
-  from the renderer payload.
-
-Context requirements:
-
-- `projectId`
-- `connectionId` after input override
-- `database` after input override/default when present
-- `schema` after input override
+- 세 좌표를 모두 명시하거나 모두 생략하며 Node는 이를 `params.input`에 유지한다.
+- Electron main이 좌표를 renderer request field로 추출하고 DDL payload에서는 제거한다.
 
 Result:
 

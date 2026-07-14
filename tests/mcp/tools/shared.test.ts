@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { HttpClientError } from '../../../src/upstream/http-client.js';
 import { callUpstreamTool, type UpstreamToolDeps } from '../../../src/mcp/tools/shared.js';
-import { createContextStore } from '../../../src/mcp/tools/context/store.js';
 
 describe('callUpstreamTool desktop lifecycle handling', () => {
   it('does not call upstream RPC when desktop activation was requested', async () => {
@@ -11,7 +10,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         rpcCalls.push(method);
         return { ok: true } as never;
       },
-      contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({
         status: 'activation_requested',
@@ -55,7 +53,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         rpcCalls.push(method);
         throw new HttpClientError({ kind: 'timeout', message: 'Upstream request timed out.' });
       },
-      contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
     };
@@ -78,7 +75,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         rpcCalls.push(method);
         return { ok: true } as never;
       },
-      contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({
         status: 'not_installed',
@@ -128,7 +124,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
           message: 'NeoSQL renderer is not ready.',
         });
       },
-      contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
     };
@@ -150,7 +145,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
           message: 'Timed out waiting for project session initialization.',
         });
       },
-      contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
     };
@@ -176,7 +170,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
           message: 'User is not authenticated. Sign in to the NeoSQL app first.',
         });
       },
-      contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
       requestDesktopFocus,
@@ -212,7 +205,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
           message: 'User is not authenticated. Sign in to the NeoSQL app first.',
         });
       },
-      contextStore: createContextStore(),
       sessionId: 'session-1',
       ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
       requestDesktopFocus,
@@ -233,66 +225,70 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
     expect(payload.focus).toBeUndefined();
     expect(requestDesktopFocusMock).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    'No project is selected in NeoSQL Desktop. Select a project and try again.',
+    'NeoSQL Desktop에서 프로젝트가 선택되지 않았습니다. 프로젝트를 선택한 뒤 다시 시도하세요.',
+  ])('preserves a project-not-selected renderer message exactly: %s', async (message) => {
+    const deps: UpstreamToolDeps = {
+      postRpc: async () => {
+        throw new HttpClientError({
+          kind: 'rpc-error',
+          rpcCode: -32002,
+          rpcKind: 'project-not-selected',
+          message,
+        });
+      },
+      sessionId: 'session-1',
+      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+    };
+
+    const result = await callUpstreamTool(deps, 'execute-query', { sql: 'SELECT 1' }, {
+      mapErrorResult: () => ({
+        content: [{ type: 'text', text: 'tool-specific wrapper' }],
+      }),
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toBe(message);
+  });
 });
 
-describe('callUpstreamTool database context', () => {
-  it('uses the default database from the context store when the tool call omits database', async () => {
-    const contextStore = createContextStore();
-    contextStore.set({ connectionId: '88', database: 'sales', schema: 'public' });
+describe('callUpstreamTool input forwarding', () => {
+  it('forwards omitted coordinates without a context envelope', async () => {
     let receivedParams: unknown;
     const deps: UpstreamToolDeps = {
       postRpc: async (_method, params) => {
         receivedParams = params;
         return { ok: true } as never;
       },
-      contextStore,
       sessionId: 'session-1',
     };
 
     await callUpstreamTool(deps, 'list-tables', {});
 
-    expect(receivedParams).toMatchObject({
-      context: { connectionId: '88', database: 'sales', schema: 'public' },
-    });
+    expect(receivedParams).toEqual({ sessionId: 'session-1', input: {} });
   });
 
-  it('lets an explicit database override the default database', async () => {
-    const contextStore = createContextStore();
-    contextStore.set({ connectionId: '88', database: 'sales', schema: 'public' });
+  it('forwards an explicit coordinate tuple in the input envelope', async () => {
     let receivedParams: unknown;
     const deps: UpstreamToolDeps = {
       postRpc: async (_method, params) => {
         receivedParams = params;
         return { ok: true } as never;
       },
-      contextStore,
       sessionId: 'session-1',
     };
 
-    await callUpstreamTool(deps, 'list-tables', {}, { database: 'analytics' });
-
-    expect(receivedParams).toMatchObject({
-      context: { connectionId: '88', database: 'analytics', schema: 'public' },
+    await callUpstreamTool(deps, 'list-tables', {
+      connectionId: '88',
+      database: 'analytics',
+      schema: 'public',
     });
-  });
 
-  it('normalizes a blank explicit database to null instead of falling back to default database', async () => {
-    const contextStore = createContextStore();
-    contextStore.set({ connectionId: '88', database: 'sales', schema: 'public' });
-    let receivedParams: unknown;
-    const deps: UpstreamToolDeps = {
-      postRpc: async (_method, params) => {
-        receivedParams = params;
-        return { ok: true } as never;
-      },
-      contextStore,
+    expect(receivedParams).toEqual({
       sessionId: 'session-1',
-    };
-
-    await callUpstreamTool(deps, 'list-tables', {}, { database: '   ' });
-
-    expect(receivedParams).toMatchObject({
-      context: { connectionId: '88', database: null, schema: 'public' },
+      input: { connectionId: '88', database: 'analytics', schema: 'public' },
     });
   });
 });

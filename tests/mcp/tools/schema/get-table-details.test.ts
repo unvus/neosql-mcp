@@ -60,9 +60,14 @@ describe('get-table-details tool', () => {
     const data = JSON.parse(content[0]?.text ?? '{}') as { tables: unknown[] };
     expect(data.tables).toHaveLength(2);
     expect(received[0]?.method).toBe('get-table-details');
-    expect(received[0]?.params).toMatchObject({
-      context: { connectionId: '57', database: 'sales', schema: 'analytics' },
-      input: { tableNames: ['users', 'orders'], database: 'sales', schema: 'analytics' },
+    expect(received[0]?.params).toEqual({
+      sessionId: expect.any(String),
+      input: {
+        tableNames: ['users', 'orders'],
+        connectionId: '57',
+        database: 'sales',
+        schema: 'analytics',
+      },
     });
   });
 
@@ -94,7 +99,8 @@ describe('get-table-details tool', () => {
     });
 
     expect(result.isError).not.toBe(true);
-    expect(received[0]?.params).toMatchObject({
+    expect(received[0]?.params).toEqual({
+      sessionId: expect.any(String),
       input: { tableNames: [] },
     });
   });

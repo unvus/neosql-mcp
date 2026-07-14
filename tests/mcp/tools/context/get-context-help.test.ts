@@ -13,7 +13,7 @@ describe('get-context-help tool', () => {
     }
   });
 
-  it('returns a static help payload describing how to find IDs', async () => {
+  it('explains active project Default and optional coordinate discovery', async () => {
     const server = createServer();
     const [st, ct] = InMemoryTransport.createLinkedPair();
     await server.connect(st);
@@ -30,46 +30,38 @@ describe('get-context-help tool', () => {
     const content = result.content as Array<{ type: string; text: string }>;
     const data = JSON.parse(content[0]?.text ?? '{}') as Record<string, unknown>;
     expect(data).toEqual({
-      description: 'NeoSQL context configuration guide',
-      projectId: {
-        example: '71ef287779c14fc6b3bb86f88acdb216',
-        location: '{project-root}/.neosql/project-config.json',
+      description: 'NeoSQL active project context guide',
+      activeProject: {
+        source: 'NeoSQL Desktop',
         description:
-          'Project ID can be found in the NeoSQL UI project settings, or in the .neosql/project-config.json file',
+          'Tools always use the project currently selected and fully loaded in NeoSQL Desktop.',
       },
-      connectionId: {
-        example: '0',
-        location: 'list-connections tool result',
+      defaultContext: {
+        location: 'NeoSQL project MCP Access Control',
         description:
-          'Connection ID is returned as connectionId by list-connections for MCP-enabled connections',
+          'Omit connectionId, database, and schema together to use the active project Default.',
       },
-      database: {
-        example: 'sales',
+      explicitContext: {
+        fields: ['connectionId', 'database', 'schema'],
+        rule: 'Provide all three fields together or omit all three.',
         description:
-          'Use a databaseName returned by list-connections when the connection exposes a database hierarchy. Use null or omit it for DBMSs without a database hierarchy.',
+          'Copy one MCP-enabled tuple from list-connections. Use database: null for DBMSs without a database hierarchy.',
       },
-      schema: {
-        example: 'public',
+      discovery: {
+        tool: 'list-connections',
         description:
-          "Use a schemaName returned by list-connections. Only MCP-enabled schemas can be used by tools.",
+          'Use list-connections when no Default is configured or when you need a different enabled coordinate.',
       },
-      cliConfig: {
+      clientConfig: {
         example: {
           mcpServers: {
             neosql: {
               command: 'npx',
-              args: [
-                'neosql-mcp',
-                '--project=YOUR_PROJECT_ID',
-                '--default-connection=0',
-                '--default-database=sales',
-                '--default-schema=public',
-              ],
+              args: ['-y', 'neosql-mcp'],
             },
           },
         },
-        description:
-          'You can set default context via CLI args in MCP client configuration, then override connectionId/database/schema per tool call when needed.',
+        description: 'The same identifier-free client configuration works for every project.',
       },
     });
   });

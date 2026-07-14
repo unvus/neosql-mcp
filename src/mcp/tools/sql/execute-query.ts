@@ -8,6 +8,7 @@ import {
   normalizeOptionalNullableString,
   type UpstreamToolDeps,
 } from '../shared.js';
+import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
 
 export type ExecuteQueryDeps = UpstreamToolDeps;
 
@@ -21,35 +22,18 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'Supports SELECT, INSERT, UPDATE, DELETE, and EXPLAIN statements. ' +
         'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use create-tables or modify-tables tools instead. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
-        'Uses the current context (project/connection/schema). ' +
+        'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
         'On failure, the error message contains the raw underlying DB error (e.g. `ORA-00904`, `SQLSTATE 42703`) — ' +
         'use it to diagnose and propose corrections; do not retry blindly.',
       inputSchema: {
         sql: z
           .string()
           .describe('The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).'),
-        connectionId: z
-          .string()
-          .describe(
-            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
-          )
-          .optional(),
-        database: z
-          .string()
-          .nullable()
-          .describe(
-            'MCP-enabled database name from list-connections. If omitted, uses current context database.',
-          )
-          .optional(),
-        schema: z
-          .string()
-          .describe(
-            'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
-          )
-          .optional(),
+        ...coordinateInputShape,
       },
     },
     async (args) => {
+      validateCoordinateInput(args);
       if (isDdlStatement(args.sql)) {
         return executeQueryErrorResult(
           'DDL statements are not allowed in execute-query. Use create-tables or modify-tables.',
@@ -57,12 +41,10 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
       }
 
       const database = normalizeOptionalNullableString(args.database);
-      const { connectionId, database: _database, schema, ...input } = args;
       return callUpstreamTool(
         deps,
         'execute-query',
-        { ...input, ...(database === undefined ? {} : { database }) },
-        { connectionId, database, schema },
+        { ...args, ...(database === undefined ? {} : { database }) },
         {
           timeoutMs: 60_000,
           stringifyResult: jacksonPrettyJsonStringify,

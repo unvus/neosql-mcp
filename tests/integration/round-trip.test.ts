@@ -108,10 +108,8 @@ describe('round-trip integration', () => {
     expect(sessionIds.size).toBe(1);
     expect([...sessionIds][0]).toEqual(expect.any(String));
     for (const req of received) {
-      expect(req.params).toMatchObject({
-        context: expect.any(Object),
-        input: expect.any(Object),
-      });
+      expect(req.params).toMatchObject({ input: expect.any(Object) });
+      expect(req.params).not.toHaveProperty('context');
     }
   });
 

@@ -22,19 +22,16 @@ which neosql-mcp    # 경로 확인 (예: ~/.nvm/.../bin/neosql-mcp)
 # prod profile (기본)
 npx @modelcontextprotocol/inspector neosql-mcp
 
-# dev profile + initial context
-npx @modelcontextprotocol/inspector neosql-mcp --profile=dev \
-  --project=6c9fede500f949079f7c553cfd96ec72 \
-  --default-connection=88 \
-  --default-schema=appdb
+# dev profile
+npx @modelcontextprotocol/inspector neosql-mcp --profile=dev
 ```
 
 - 브라우저 UI가 자동으로 열린다.
 - prod profile 은 `neosql-mcp.sock` / `\\.\pipe\neosql-mcp` 로 연결한다.
 - dev profile 은 `neosql-mcp-dev.sock` / `\\.\pipe\neosql-mcp-dev` 로 연결한다.
 - MCP host 설정 예시는 [`README.md`](../README.md)를 기준으로 한다.
-- 초기 context 옵션(`--project`, `--default-connection`, `--default-schema`)의 상세
-  mapping은 [`docs/mcp-client-config.md`](mcp-client-config.md)를 따른다.
+- 활성 프로젝트와 좌표 해석 계약은
+  [`docs/mcp-client-config.md`](mcp-client-config.md)를 따른다.
 - **Tools** 탭 → `ping` 선택 → **Run Tool** → 응답 `"pong"` 확인.
 - 핸드셰이크 / `tools/list` / `tools/call` 셋을 한 화면에서 본다. 어디서 끊겼는지 즉시 보이므로 디버깅 효율이 가장 좋다.
 
@@ -54,7 +51,8 @@ claude mcp add neosql-ping neosql-mcp
 
 - 세션에서 `/mcp` → `neosql` 가 connected 로 보이는지.
 - 대화에서 "ping 툴 호출해줘" → `pong` 반환 확인.
-- `get-context-help` 툴 호출 → CLI 기본 context 설정 안내가 표시되는지 확인.
+- `get-context-help` 툴 호출 → 활성 프로젝트 Default와 선택적 `list-connections`
+  사용 안내가 표시되는지 확인.
 
 ## 3. Codex CLI
 
@@ -86,21 +84,21 @@ schema, template pack 이 필요하므로 이 절차는 수동 e2e로 유지한�
 3. 비교에 사용할 project/connection/schema 를 정한다.
 4. to-be MCP host 는 `neosql-mcp` stdio 설정을 사용한다.
 5. as-is MCP host 는 기존 embedded-server MCP 설정을 사용한다.
-6. 양쪽에 같은 context 를 넣는다.
-   - to-be: `--project`, `--default-connection`, `--default-schema`
-   - as-is: 기존 HTTP header 또는 기존 host 설정의 context 주입 방식
+6. 양쪽이 같은 DB 좌표를 사용하도록 준비한다.
+   - to-be: NeoSQL Desktop에서 비교 프로젝트를 열고 Default를 지정하거나,
+     `connectionId` / `database` / `schema`를 도구 호출에 모두 명시한다.
+   - as-is: 기존 HTTP header 또는 기존 host 설정의 context 주입 방식을 사용한다.
 
 ### 비교 대상
 
 | Tool              | 입력                                                                         | 기대 비교 포인트                                     | 상태                              |
 | ----------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------- |
 | `get-context-help` | `{}`                                                                         | stdio/npx 기준 도움말                                | 확인 완료                         |
-| `list-tables`      | `{ "connectionId": "<id>", "schema": "<schema>" }`                           | table/view 목록, comment                             | 확인 완료                         |
-| `get-table-details` | `{ "tableNames": ["<table>"], "connectionId": "<id>", "schema": "<schema>" }` | columns/indexes/fks/constraints                      | 확인 완료                         |
-| `execute-query`    | `{ "sql": "SELECT 1", "connectionId": "<id>", "schema": "<schema>" }`        | SELECT result JSON                                   | 확인 완료                         |
-| `execute-query`    | `{ "sql": "INSERT ...", "connectionId": "<id>", "schema": "<schema>" }`      | DML result                                           | 확인 완료                         |
-| `create-tables`    | `tableDefinitions` + optional `connectionId` / `schema`                      | ERD 생성 결과                                        | 확인 완료                         |
-| `modify-tables`    | `alterations` + optional `connectionId` / `schema`                           | ERD 수정 결과                                        | 확인 완료                         |
+| `list-tables`      | `{ "connectionId": "<id>", "database": null, "schema": "<schema>" }`        | table/view 목록, comment                             | 재검증 필요                       |
+| `get-table-details` | `tableNames` + 전체 명시 좌표 또는 좌표 전체 생략                         | columns/indexes/fks/constraints                      | 재검증 필요                       |
+| `execute-query`    | `sql` + 전체 명시 좌표 또는 좌표 전체 생략                                | SELECT/DML result                                    | 재검증 필요                       |
+| `create-tables`    | `tableDefinitions` + 전체 명시 좌표 또는 좌표 전체 생략                   | ERD 생성 결과                                        | 재검증 필요                       |
+| `modify-tables`    | `alterations` + 전체 명시 좌표 또는 좌표 전체 생략                        | ERD 수정 결과                                        | 재검증 필요                       |
 | `generate-code`    | `{}`                                                                         | `개발중입니다`                                      | 개발중 placeholder                |
 
 ### generate-code 추가 조건
@@ -116,6 +114,29 @@ schema, template pack 이 필요하므로 이 절차는 수동 e2e로 유지한�
 | ---------- | ------------------ | ------------------------- | ---------------- | -------------------------- | ------- | --------------------------------------- |
 | 2026-05-11 | automated mock UDS | profile path independent  | 9개 Node handler | contract fixtures          | pass    | `npm test` 기준, real Desktop 비교 아님 |
 | TBD        | real Desktop       | prod 또는 dev             | `generate-code`  | 없음                       | pending | placeholder 응답 확인                   |
+
+## Active project runtime context
+
+실제 NeoSQL Desktop에서 다음 시나리오를 같은 MCP process로 연속 검증한다.
+
+1. 프로젝트 A를 열고 MCP Access Control에서 enabled 좌표 하나를 Default로 지정한다.
+2. 좌표 없이 `list-tables`를 호출해 프로젝트 A의 Default가 사용되는지 확인한다.
+3. `list-connections`에서 다른 enabled 좌표를 찾고 세 좌표를 모두 명시해 호출한다.
+4. `connectionId`만 전달한 호출이 `invalid-params`로 실패하고 upstream DB 작업이 실행되지
+   않는지 확인한다.
+5. 프로젝트 B로 전환한 뒤 MCP process를 재시작하지 않고 좌표 생략 호출을 실행해 프로젝트
+   B의 Default가 사용되는지 확인한다.
+6. Default를 해제하고 좌표 생략 호출이 `invalid-params`로 실패하는지 확인한다.
+7. 아래처럼 legacy 인자를 포함한 별도 Inspector process를 시작하고 오류·경고 없이 기동하는지,
+   인자 값과 무관하게 현재 Desktop 활성 프로젝트가 사용되는지 확인한다.
+
+```bash
+npx @modelcontextprotocol/inspector neosql-mcp \
+  --project=ignored-project \
+  --default-connection=999 \
+  --default-database=ignored \
+  --default-schema=ignored
+```
 
 ## Phase 3-1. Desktop readiness UX
 

@@ -3,44 +3,35 @@ import { parseCliArgs } from '../../src/cli/cli-args.js';
 
 describe('parseCliArgs', () => {
   it('defaults to prod profile when no flags are given', () => {
-    expect(parseCliArgs([])).toEqual({ profile: 'prod', initialContext: {} });
+    expect(parseCliArgs([])).toEqual({ profile: 'prod' });
   });
 
   it('parses equals-form profile flags', () => {
-    expect(parseCliArgs(['--profile=dev'])).toEqual({ profile: 'dev', initialContext: {} });
+    expect(parseCliArgs(['--profile=dev'])).toEqual({ profile: 'dev' });
   });
 
   it('accepts local and stage profiles', () => {
-    expect(parseCliArgs(['--profile=stage'])).toEqual({ profile: 'stage', initialContext: {} });
-    expect(parseCliArgs(['--profile=local'])).toEqual({ profile: 'local', initialContext: {} });
+    expect(parseCliArgs(['--profile=stage'])).toEqual({ profile: 'stage' });
+    expect(parseCliArgs(['--profile=local'])).toEqual({ profile: 'local' });
   });
 
   it('uses the last profile value when multiple profile flags are given', () => {
-    expect(parseCliArgs(['--profile=dev', '--profile=prod'])).toEqual({
-      profile: 'prod',
-      initialContext: {},
-    });
+    expect(parseCliArgs(['--profile=dev', '--profile=prod'])).toEqual({ profile: 'prod' });
   });
 
   it('ignores invalid profile values and keeps the previous profile', () => {
-    expect(parseCliArgs(['--profile=dev', '--profile=staging'])).toEqual({
-      profile: 'dev',
-      initialContext: {},
-    });
+    expect(parseCliArgs(['--profile=dev', '--profile=staging'])).toEqual({ profile: 'dev' });
   });
 
   it('ignores space-separated profile flags and unsupported aliases', () => {
-    expect(parseCliArgs(['--dev', '--prod', '--profile', 'dev'])).toEqual({
-      profile: 'prod',
-      initialContext: {},
-    });
+    expect(parseCliArgs(['--dev', '--prod', '--profile', 'dev'])).toEqual({ profile: 'prod' });
   });
 
   it('ignores unknown arguments and falls back to prod', () => {
-    expect(parseCliArgs(['--foo'])).toEqual({ profile: 'prod', initialContext: {} });
+    expect(parseCliArgs(['--foo'])).toEqual({ profile: 'prod' });
   });
 
-  it('ignores space-separated initial context flags', () => {
+  it('ignores space-separated legacy context flags', () => {
     expect(
       parseCliArgs([
         '--project',
@@ -52,13 +43,10 @@ describe('parseCliArgs', () => {
         '--default-schema',
         'appdb',
       ]),
-    ).toEqual({
-      profile: 'prod',
-      initialContext: {},
-    });
+    ).toEqual({ profile: 'prod' });
   });
 
-  it('parses equals-form initial context flags', () => {
+  it('accepts legacy equals-form context flags without using their values', () => {
     expect(
       parseCliArgs([
         '--project=project-1',
@@ -66,24 +54,11 @@ describe('parseCliArgs', () => {
         '--default-database=sales',
         '--default-schema=public',
       ]),
-    ).toEqual({
-      profile: 'prod',
-      initialContext: {
-        projectId: 'project-1',
-        connectionId: '0',
-        database: 'sales',
-        schema: 'public',
-      },
-    });
+    ).toEqual({ profile: 'prod' });
   });
 
-  it('normalizes a blank default database to null', () => {
-    expect(parseCliArgs(['--default-database=   '])).toEqual({
-      profile: 'prod',
-      initialContext: {
-        database: null,
-      },
-    });
+  it('ignores a blank legacy default database', () => {
+    expect(parseCliArgs(['--default-database=   '])).toEqual({ profile: 'prod' });
   });
 
   it('ignores removed commit and DDL execution flags', () => {
@@ -97,11 +72,6 @@ describe('parseCliArgs', () => {
         '--auto-commit',
         'false',
       ]),
-    ).toEqual({
-      profile: 'prod',
-      initialContext: {
-        projectId: 'project-1',
-      },
-    });
+    ).toEqual({ profile: 'prod' });
   });
 });

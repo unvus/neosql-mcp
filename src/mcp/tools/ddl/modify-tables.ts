@@ -5,6 +5,7 @@ import {
   normalizeOptionalNullableString,
   type UpstreamToolDeps,
 } from '../shared.js';
+import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
 import { alterTableDefSchema } from './input-models.js';
 
 export type ModifyTablesDeps = UpstreamToolDeps;
@@ -24,7 +25,7 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
         'For primary keys, omit primaryKeyOperations or pass [] for no change; dropping every PK column requires ' +
         'an explicit DROP operation for each current PK column. ' +
         'Pass multiple alterations to modify several tables in a single call. ' +
-        'Uses the current context (project/connection). ' +
+        'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
         'Response semantics — ERD save and DDL execution are SEPARATE phases: `summary.modifiedInErd` counts tables ' +
         'applied to the ERD model; DB application is tracked under `summary.ddl` / `ddlExecution.results[]`. ' +
         'A call is fully successful ONLY when both `summary.failed === 0` AND ' +
@@ -37,35 +38,16 @@ export const registerModifyTablesTool = (server: McpServer, deps: ModifyTablesDe
           .describe(
             'List of table alterations. Each specifies a target table and the changes to apply.',
           ),
-        connectionId: z
-          .string()
-          .describe(
-            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
-          )
-          .optional(),
-        database: z
-          .string()
-          .nullable()
-          .describe(
-            'MCP-enabled database name from list-connections. If omitted, uses current context database.',
-          )
-          .optional(),
-        schema: z
-          .string()
-          .describe(
-            'MCP-enabled database schema name from list-connections. If omitted, uses current context schema.',
-          )
-          .optional(),
+        ...coordinateInputShape,
       },
     },
     async (args) => {
+      validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
-      const { connectionId, database: _database, schema, ...input } = args;
       return callUpstreamTool(
         deps,
         'modify-tables',
-        { ...input, ...(database === undefined ? {} : { database }) },
-        { connectionId, database, schema },
+        { ...args, ...(database === undefined ? {} : { database }) },
         { timeoutMs: 60_000 },
       );
     },

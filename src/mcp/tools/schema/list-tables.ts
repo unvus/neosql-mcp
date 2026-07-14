@@ -5,6 +5,7 @@ import {
   normalizeOptionalNullableString,
   type UpstreamToolDeps,
 } from '../shared.js';
+import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
 
 export type ListTablesDeps = UpstreamToolDeps;
 
@@ -15,43 +16,24 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
       title: 'List Tables',
       description:
         'List all tables and views in a database schema. Returns table names, types (TABLE/VIEW), and comments. ' +
-        'Uses the current context (project/connection/schema) if parameters are not specified.',
+        'Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
       inputSchema: {
-        connectionId: z
-          .string()
-          .describe(
-            'NeoSQL connection ID from list-connections. If omitted, uses current context connectionId.',
-          )
-          .optional(),
-        database: z
-          .string()
-          .nullable()
-          .describe(
-            'MCP-enabled database name from list-connections. If omitted, uses current context database.',
-          )
-          .optional(),
-        schema: z
-          .string()
-          .describe(
-            "MCP-enabled database schema name from list-connections (e.g., 'public', 'dbo'). If omitted, uses current context schema.",
-          )
-          .optional(),
         search: z
           .string()
           .describe(
             'Search keyword to filter tables by name or comment (case-insensitive). If omitted, returns all tables.',
           )
           .optional(),
+        ...coordinateInputShape,
       },
     },
     async (args) => {
+      validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
-      const { connectionId: _connectionId, database: _database, ...input } = args;
       return callUpstreamTool(
         deps,
         'list-tables',
-        { ...input, ...(database === undefined ? {} : { database }) },
-        { connectionId: args.connectionId, database, schema: args.schema },
+        { ...args, ...(database === undefined ? {} : { database }) },
         { timeoutMs: 30_000 },
       );
     },

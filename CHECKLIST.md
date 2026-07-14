@@ -137,6 +137,22 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 
 ---
 
+## Cross-cutting · Active project runtime context migration
+
+- [x] `initialContext`와 process-local `ContextStore` 제거
+- [x] legacy project/default CLI 인자를 오류·경고 없이 무시
+- [x] DB 도구 공통 전체 좌표 명시/전체 생략 검증 추가
+- [x] `database: null`과 좌표 전체 생략을 구분해 `params.input`으로 전달
+- [x] 새 upstream 요청에서 `projectId`와 `params.context` 제거
+- [x] `project-not-selected` Renderer 메시지 원문 보존
+- [x] `list-connections`, `get-context-help` 설명을 활성 프로젝트 Default 계약으로 갱신
+- [x] README를 식별자 없는 universal config로 갱신
+- [x] `PLAN.md`, upstream contract, client config, publish, e2e 문서 갱신
+- [x] CLI·도구·mock UDS·spawn 회귀 테스트 추가
+- [ ] 실제 NeoSQL Desktop에서 Default/명시/부분 좌표/프로젝트 전환/legacy CLI 무시 검증
+
+---
+
 ## Phase 3 · Desktop lifecycle UX
 
 Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검증까지 진행한 뒤
