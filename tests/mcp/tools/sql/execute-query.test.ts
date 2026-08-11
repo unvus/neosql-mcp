@@ -274,4 +274,5 @@ describe('execute-query tool', () => {
 }`);
     expect(received).toHaveLength(0);
   });
+
 });

@@ -23,6 +23,12 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use create-tables or modify-tables tools instead. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
+        'When a NeoSQL tool response indicates `autoCommit: false`, treat it as a user-configured safety policy. ' +
+        'Do not arbitrarily finalize or cancel the open transaction, or attempt to bypass or change this policy.\n\n' +
+        'You may execute transaction-control SQL only when the user has explicitly instructed when the transaction should be committed or rolled back.\n\n' +
+        'Without such explicit instruction, you must not take any action to finalize, cancel, bypass, or change the transaction or this policy. This includes, for example:\n' +
+        '- execute COMMIT, ROLLBACK, or equivalent transaction-control SQL through tools such as execute-query;\n' +
+        '- directly operate the NeoSQL Desktop UI to finalize the transaction using Commit/Rollback buttons or menu actions.\n\n' +
         'On failure, the error message contains the raw underlying DB error (e.g. `ORA-00904`, `SQLSTATE 42703`) — ' +
         'use it to diagnose and propose corrections; do not retry blindly.',
       inputSchema: {
@@ -39,7 +45,6 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
           'DDL statements are not allowed in execute-query. Use create-tables or modify-tables.',
         );
       }
-
       const database = normalizeOptionalNullableString(args.database);
       return callUpstreamTool(
         deps,
