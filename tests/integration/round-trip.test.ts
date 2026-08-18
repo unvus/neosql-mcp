@@ -16,41 +16,6 @@ const RPC_TOOL_CASES: ToolCase[] = [
   { name: 'list-connections', method: 'list-connections', args: {} },
   { name: 'list-tables', method: 'list-tables', args: {} },
   { name: 'get-table-details', method: 'get-table-details', args: { tableNames: ['users'] } },
-  {
-    name: 'create-tables',
-    method: 'create-tables',
-    args: {
-      tableDefinitions: [
-        {
-          name: 't1',
-          remarks: '',
-          columns: [],
-          primaryKeys: [],
-          importedKeys: [],
-          indexes: [],
-          constraints: [],
-        },
-      ],
-    },
-  },
-  {
-    name: 'modify-tables',
-    method: 'modify-tables',
-    args: {
-      alterations: [
-        {
-          tableName: 't1',
-          newTableName: '',
-          remarksOperation: { modify: true, remarks: '' },
-          primaryKeyOperations: [{ action: 'ADD', columnName: 'code' }],
-          columnOperations: [],
-          indexOperations: [],
-          foreignKeyOperations: [],
-          constraintOperations: [],
-        },
-      ],
-    },
-  },
   { name: 'execute-query', method: 'execute-query', args: { sql: 'SELECT 1' } },
 ];
 

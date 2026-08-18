@@ -239,14 +239,14 @@ describe('execute-query tool', () => {
 }`);
   });
 
-  it('returns DDL rejections as normal success=false payloads before calling upstream', async () => {
+  it('DDL 문도 차단 없이 upstream 으로 그대로 전달한다', async () => {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
       socketPath,
       handler: (req) => {
         received.push(req);
-        return { kind: 'result', result: {} };
+        return { kind: 'result', result: { type: 'DDL' } };
       },
     });
     cleanups.push(async () => {
@@ -267,12 +267,11 @@ describe('execute-query tool', () => {
     });
 
     expect(result.isError).not.toBe(true);
-    const content = result.content as Array<{ type: string; text: string }>;
-    expect(content[0]?.text).toBe(`{
-  "success" : false,
-  "message" : "Failed to execute query: DDL statements are not allowed in execute-query. Use create-tables or modify-tables."
-}`);
-    expect(received).toHaveLength(0);
+    expect(received).toHaveLength(1);
+    expect(received[0]?.method).toBe('execute-query');
+    expect((received[0]?.params as { input: { sql: string } }).input.sql).toBe(
+      'CREATE TABLE users (id int)',
+    );
   });
 
 });

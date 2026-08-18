@@ -143,9 +143,15 @@ Electron responsibility:
 | `list-tables`       | `list-tables`       | yes           |     30s |
 | `get-table-details` | `get-table-details` | yes           |     30s |
 | `execute-query`     | `execute-query`     | yes           |     60s |
-| `create-tables`     | `create-tables`     | yes           |     60s |
-| `modify-tables`     | `modify-tables`     | yes           |     60s |
+| ~~`create-tables`~~ | `create-tables`     | yes           |     60s |
+| ~~`modify-tables`~~ | `modify-tables`     | yes           |     60s |
 | `get-context-help`  | N/A                 | no            |     N/A |
+
+`create-tables` / `modify-tables`는 **더 이상 MCP tool로 등록되지 않는다.** Electron
+화이트리스트와 renderer handler는 남아 있어 구버전 `neosql-mcp` 패키지가 보내는 요청은
+계속 처리되지만, 신규 클라이언트는 이 method를 호출하지 않는다. LLM이 실행하는 DDL은
+`execute-query`로 간다. handler 제거 시점은 최소 지원 `neosql-mcp` 버전이 이 두 tool을
+등록하지 않는 릴리스 이상으로 올라간 뒤다.
 
 이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
 다룬다. `ping`, `get-mcp-session-id`, `get-context-help`, `generate-code`는 Node-local
@@ -215,7 +221,6 @@ interface ConnectionProfileInfo {
 interface SchemaInfo {
   databaseName: string | null;
   schemaName: string;
-  ddlExecute: boolean;
   autoCommit: boolean;
 }
 
@@ -338,7 +343,12 @@ interface ExecuteQueryInput {
 
 Rules:
 
-- DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`) is rejected.
+- DDL (`CREATE`, `ALTER`, `DROP`, `TRUNCATE`, ...)은 허용되지만 NeoSQL 쪽 승인 게이트를
+  거친다. 정책에 따라 즉시 실행 / 사용자 확인 다이얼로그 / 즉시 거절 중 하나이며, 거절
+  사유는 **에러 메시지 문자열로만** 전달된다 — Node가 RPC 에러를 `{success:false, message}`로
+  변환하면서 error code와 `data.kind`를 버리기 때문이다. 문구가 재시도 가능 여부를 명시한다.
+- 확인 다이얼로그는 동시에 하나만 뜬다. 대기 중인 확인이 있으면 다음 DDL 요청은 모달 없이
+  즉시 거절된다.
 - SELECT/EXPLAIN returns up to 200 rows.
 - 세 좌표를 모두 명시하거나 모두 생략하며 Node는 이를 `params.input`에 유지한다.
 - Electron main이 좌표를 renderer request field로 추출하고 SQL payload에서는 제거한다.

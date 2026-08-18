@@ -13,8 +13,6 @@ import { registerListConnectionsTool } from './tools/connection/list-connections
 import { registerListTablesTool } from './tools/schema/list-tables.js';
 import { registerGetTableDetailsTool } from './tools/schema/get-table-details.js';
 import { registerGetContextHelpTool } from './tools/context/get-context-help.js';
-import { registerCreateTablesTool } from './tools/ddl/create-tables.js';
-import { registerModifyTablesTool } from './tools/ddl/modify-tables.js';
 import { registerExecuteQueryTool } from './tools/sql/execute-query.js';
 import { mcpSessionId } from './session.js';
 import { registerGetMcpSessionIdTool } from './tools/get-mcp-session-id.js';
@@ -99,7 +97,5 @@ const registerTools = (
   registerListTablesTool(server, upstreamDeps);
   registerGetTableDetailsTool(server, upstreamDeps);
   registerGetContextHelpTool(server);
-  registerCreateTablesTool(server, upstreamDeps);
-  registerModifyTablesTool(server, upstreamDeps);
   registerExecuteQueryTool(server, upstreamDeps);
 };

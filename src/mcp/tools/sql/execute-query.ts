@@ -19,8 +19,15 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
       title: 'Execute Query',
       description:
         'Execute a SQL query on the database through NeoSQL. ' +
-        'Supports SELECT, INSERT, UPDATE, DELETE, and EXPLAIN statements. ' +
-        'DDL statements (CREATE, ALTER, DROP, TRUNCATE) are NOT allowed — use create-tables or modify-tables tools instead. ' +
+        'Supports SELECT, INSERT, UPDATE, DELETE, EXPLAIN, and DDL statements. ' +
+        'DDL (CREATE, ALTER, DROP, TRUNCATE, ...) is subject to a NeoSQL-side approval gate: ' +
+        'depending on the user policy it may run immediately, require the user to confirm a dialog in NeoSQL, ' +
+        'or be rejected outright — the error message states which. ' +
+        'Do not try to determine in advance whether DDL is permitted — no tool reports that. ' +
+        'Issue the statement and read the outcome. ' +
+        'If a DDL attempt is rejected, the message states whether it is a policy block (never retry), ' +
+        'a user decline (ask the user before any further schema change), ' +
+        'or an expired confirmation (retry at most once). Never retry DDL in a loop. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
         'When a NeoSQL tool response indicates `autoCommit: false`, treat it as a user-configured safety policy. ' +
@@ -34,17 +41,12 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
       inputSchema: {
         sql: z
           .string()
-          .describe('The SQL statement to execute. Must not be DDL (CREATE/ALTER/DROP/TRUNCATE).'),
+          .describe('The SQL statement to execute. DDL is allowed but passes the NeoSQL approval gate.'),
         ...coordinateInputShape,
       },
     },
     async (args) => {
       validateCoordinateInput(args);
-      if (isDdlStatement(args.sql)) {
-        return executeQueryErrorResult(
-          'DDL statements are not allowed in execute-query. Use create-tables or modify-tables.',
-        );
-      }
       const database = normalizeOptionalNullableString(args.database);
       return callUpstreamTool(
         deps,
@@ -80,37 +82,4 @@ const executeQueryErrorResult = (message: string) =>
 const withExecuteQueryErrorPrefix = (message: string): string => {
   const prefix = 'Failed to execute query: ';
   return message.startsWith(prefix) ? message : `${prefix}${message}`;
-};
-
-const isDdlStatement = (sql: string): boolean => {
-  const firstToken = stripLeadingComments(sql)
-    .match(/^[A-Za-z]+/)?.[0]
-    .toUpperCase();
-  return (
-    firstToken === 'CREATE' ||
-    firstToken === 'ALTER' ||
-    firstToken === 'DROP' ||
-    firstToken === 'TRUNCATE'
-  );
-};
-
-const stripLeadingComments = (sql: string): string => {
-  let remaining = sql.trimStart();
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-    if (remaining.startsWith('--')) {
-      const newlineIndex = remaining.search(/\r?\n/);
-      remaining = newlineIndex === -1 ? '' : remaining.slice(newlineIndex).trimStart();
-      changed = true;
-    } else if (remaining.startsWith('/*')) {
-      const endIndex = remaining.indexOf('*/');
-      if (endIndex === -1) return remaining;
-      remaining = remaining.slice(endIndex + 2).trimStart();
-      changed = true;
-    }
-  }
-
-  return remaining;
 };
