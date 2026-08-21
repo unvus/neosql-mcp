@@ -160,7 +160,7 @@ placeholder로 `개발중입니다`를 반환한다.
 
 ## Database Coordinate Contract
 
-`list-tables`, `get-table-details`, `execute-query`, `create-tables`, `modify-tables`는
+현재 MCP tool인 `list-tables`, `get-table-details`, `execute-query`는
 `connectionId`, `database`, `schema`를 모두 명시하거나 모두 생략한다.
 
 - 전체 명시: Node가 세 필드의 존재 여부를 유지해 `params.input`으로 전달한다.

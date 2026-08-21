@@ -110,22 +110,18 @@ Tools that accept the complete explicit coordinate tuple:
 - `list-tables`
 - `get-table-details`
 - `execute-query`
-- `create-tables`
-- `modify-tables`
 
 ## Available Tools
 
 | Tool                 | Purpose                                                                    |
 | -------------------- | -------------------------------------------------------------------------- |
 | `ping`               | Returns `pong` for a lightweight MCP health check.                         |
+| `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process. |
 | `list-connections`   | Lists MCP-enabled NeoSQL connections and schemas for the current project.  |
-| `get-context-help`   | Explains active-project Default and explicit coordinate usage.             |
 | `list-tables`        | Lists tables using the project Default or an explicit coordinate.          |
 | `get-table-details`  | Returns columns, keys, indexes, and related table metadata.                |
-| `execute-query`      | Executes non-DDL SQL using the Default or an explicit coordinate.          |
-| `create-tables`      | Requests table creation through NeoSQL Desktop.                            |
-| `modify-tables`      | Requests table modification through NeoSQL Desktop.                        |
-| `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process. |
+| `get-context-help`   | Explains active-project Default and explicit coordinate usage.             |
+| `execute-query`      | Executes SQL, including DDL, using the Default or an explicit coordinate.  |
 
 ## Transport
 

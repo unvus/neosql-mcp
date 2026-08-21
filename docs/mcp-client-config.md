@@ -74,8 +74,6 @@ Tools that accept the complete coordinate tuple are:
 - `list-tables`
 - `get-table-details`
 - `execute-query`
-- `create-tables`
-- `modify-tables`
 
 `list-connections` is an optional discovery tool for finding another MCP-enabled tuple
 or for projects without a Default. `generate-code` remains an under-development local

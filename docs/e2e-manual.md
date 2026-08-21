@@ -97,8 +97,6 @@ schema, template pack 이 필요하므로 이 절차는 수동 e2e로 유지한�
 | `list-tables`      | `{ "connectionId": "<id>", "database": null, "schema": "<schema>" }`        | table/view 목록, comment                             | 재검증 필요                       |
 | `get-table-details` | `tableNames` + 전체 명시 좌표 또는 좌표 전체 생략                         | columns/indexes/fks/constraints                      | 재검증 필요                       |
 | `execute-query`    | `sql` + 전체 명시 좌표 또는 좌표 전체 생략                                | SELECT/DML result                                    | 재검증 필요                       |
-| `create-tables`    | `tableDefinitions` + 전체 명시 좌표 또는 좌표 전체 생략                   | ERD 생성 결과                                        | 재검증 필요                       |
-| `modify-tables`    | `alterations` + 전체 명시 좌표 또는 좌표 전체 생략                        | ERD 수정 결과                                        | 재검증 필요                       |
 | `generate-code`    | `{}`                                                                         | `개발중입니다`                                      | 개발중 placeholder                |
 
 ### generate-code 추가 조건
