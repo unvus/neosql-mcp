@@ -124,6 +124,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `create-tables`
 - [x] (본체 PR) `modify-tables` 구현
 - [x] as-is embedded-server MCP vs to-be neosql-mcp 동일 tool/parameter 비교 테스트: `modify-tables`
+- [x] 기존 입력 계약을 유지한 `erd-create-tables` / `erd-modify-tables`로 전환하고 DDL 실행 책임 제거
 
 #### CodeGenerationTools
 

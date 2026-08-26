@@ -19,7 +19,7 @@ src/                            (프로덕션 코드만)
 │       ├── shared.ts           tool 응답/forward 공통 헬퍼
 │       ├── code-generation/
 │       ├── context/
-│       ├── ddl/
+│       ├── erd/                 ERD 전용 가상 테이블 생성·수정
 │       ├── schema/
 │       └── sql/
 ├── upstream/    electron-main HTTP 채널 (UDS / Named Pipe)

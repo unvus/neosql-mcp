@@ -69,6 +69,8 @@ describe('createServer', () => {
         'list-tables',
         'get-table-details',
         'get-context-help',
+        'erd-create-tables',
+        'erd-modify-tables',
         'execute-query',
       ]),
     );
@@ -82,8 +84,12 @@ describe('createServer', () => {
       'list-tables': 'List Tables',
       'get-table-details': 'Get Table Details',
       'get-context-help': 'Get Context Help',
+      'erd-create-tables': 'ERD Create Tables',
+      'erd-modify-tables': 'ERD Modify Tables',
       'execute-query': 'Execute Query',
     });
+    expect(toolNames.has('create-tables')).toBe(false);
+    expect(toolNames.has('modify-tables')).toBe(false);
   });
 
   it('모든 tool description 은 문자열 연결 사고 없이 온전해야 한다', async () => {
@@ -99,6 +105,13 @@ describe('createServer', () => {
 
     const executeQuery = result.tools.find((t) => t.name === 'execute-query');
     expect(executeQuery?.description).toContain('up to 200 rows');
+
+    for (const toolName of ['erd-create-tables', 'erd-modify-tables']) {
+      const tool = result.tools.find((candidate) => candidate.name === toolName);
+      expect(tool?.description, toolName).toContain(
+        'without executing SQL or changing the database',
+      );
+    }
   });
 
   it('exposes embedded-server ToolParam descriptions in tools/list', async () => {
@@ -118,6 +131,24 @@ describe('createServer', () => {
       },
       'get-table-details': {
         tableNames: 'List of table names to get details for (e.g. ["users", "orders", "products"])',
+        connectionId:
+          'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
+        database:
+          'MCP-enabled database name from list-connections. Use null for DBMSs without a database hierarchy. Provide it with connectionId and schema, or omit all three to use the active project Default.',
+        schema:
+          'MCP-enabled schema name from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
+      },
+      'erd-create-tables': {
+        tableDefinitions: 'Virtual table definitions to add to the ERD.',
+        connectionId:
+          'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
+        database:
+          'MCP-enabled database name from list-connections. Use null for DBMSs without a database hierarchy. Provide it with connectionId and schema, or omit all three to use the active project Default.',
+        schema:
+          'MCP-enabled schema name from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
+      },
+      'erd-modify-tables': {
+        alterations: 'Virtual table alterations to apply to the ERD model.',
         connectionId:
           'NeoSQL connection ID from list-connections. Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
         database:
@@ -194,6 +225,16 @@ describe('createServer', () => {
     expect(propertySchema(executeQuerySchema, 'sql').minLength).toBeUndefined();
     expect(allowsNull(propertySchema(executeQuerySchema, 'database'))).toBe(true);
     expect(executeQuerySchema.properties).not.toHaveProperty('autoCommit');
+
+    const erdCreateSchema = inputSchemaFor(result.tools, 'erd-create-tables');
+    expect(requiredFields(erdCreateSchema)).toEqual(['tableDefinitions']);
+    expect(allowsNull(propertySchema(erdCreateSchema, 'database'))).toBe(true);
+    expect(erdCreateSchema.properties).not.toHaveProperty('executeImmediately');
+
+    const erdModifySchema = inputSchemaFor(result.tools, 'erd-modify-tables');
+    expect(requiredFields(erdModifySchema)).toEqual(['alterations']);
+    expect(allowsNull(propertySchema(erdModifySchema, 'database'))).toBe(true);
+    expect(erdModifySchema.properties).not.toHaveProperty('executeImmediately');
   });
 
   it('rejects partial coordinate tuples for every database tool', async () => {
@@ -204,6 +245,8 @@ describe('createServer', () => {
         name: 'get-table-details',
         arguments: { tableNames: ['users'], connectionId: '57' },
       },
+      { name: 'erd-create-tables', arguments: { tableDefinitions: [], connectionId: '57' } },
+      { name: 'erd-modify-tables', arguments: { alterations: [], connectionId: '57' } },
       { name: 'execute-query', arguments: { sql: 'SELECT 1', connectionId: '57' } },
     ];
 

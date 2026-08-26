@@ -31,7 +31,7 @@
 핵심 근거:
 
 - 어떤 도구도 server→client push 를 사용하지 않음 (DDL approval 도 UI 측 모달).
-- execute-query / create-tables / modify-tables 가 60 s timeout 의 long-running 도구 → **요청 단위 격리** 가 안전.
+- execute-query / erd-create-tables / erd-modify-tables 가 60 s timeout 의 long-running 도구 → **요청 단위 격리** 가 안전.
 - 명시적 context payload 와 session id 를 분리해 전달하는 모델이 "연결=세션" 모델보다 정합.
 - 응답 크기 편차가 큼 (μs 작은 JSON ~ 향후 code generation 수십 KB) → 요청별 응답 형태 선택(단일 JSON / SSE) 이 future-proof.
 
@@ -82,7 +82,7 @@ TCP loopback 대신 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** 를 �
 ```
 
 - **클라이언트 ↔ Node**: MCP 표준 (JSON-RPC over stdio). MCP Server SDK 가 처리.
-- **Node ↔ electron-main**: 자체 RPC over HTTP, transport 는 **UDS (POSIX) / Named Pipe (Windows)**. POST 요청/응답이 기본. 서버 push 가 필요한 경우 GET SSE 채널 별도 오픈. HTTP path 하나, 그 위에서 method 로 분기 (예: `list-connections`, `execute-query`, `create-tables`). 메시지·메서드 정의는 도구 정의에 따라 추가. **MCP 도구 ↔ HTTP 메서드는 1:1 매핑이 보장되지 않는다** — 핸들러가 여러 HTTP 메서드를 조합하거나 단순 forward 하는 형태가 도구별로 혼합될 수 있다.
+- **Node ↔ electron-main**: 자체 RPC over HTTP, transport 는 **UDS (POSIX) / Named Pipe (Windows)**. POST 요청/응답이 기본. 서버 push 가 필요한 경우 GET SSE 채널 별도 오픈. HTTP path 하나, 그 위에서 method 로 분기 (예: `list-connections`, `execute-query`, `erd-create-tables`). 메시지·메서드 정의는 도구 정의에 따라 추가. **MCP 도구 ↔ HTTP 메서드는 1:1 매핑이 보장되지 않는다** — 핸들러가 여러 HTTP 메서드를 조합하거나 단순 forward 하는 형태가 도구별로 혼합될 수 있다.
 - **electron-main ↔ renderer**: 기존 IPC. main 의 핸들러가 받은 메서드 중 renderer 데이터·UI 가 필요한 것은 IPC 로 위임, main 안에서 끝나는 것은 직접 처리.
 - **도구 카탈로그는 Node 가 보유**. 클라이언트가 `tools/list` 를 요청하면 Node 가 자체 카탈로그로 응답. `tools/call` 시 Node 의 핸들러가 실행되며 필요에 따라 HTTP 메서드를 호출.
 
@@ -164,7 +164,7 @@ TCP loopback 대신 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** 를 �
 | Code Generation | `CodeGenerationTools.java` | `generate-code`                              |
 | Schema          | `SchemaTools.java`         | `list-tables`, `get-table-details`           |
 | Context         | `ContextTools.java`        | `get-context-help`                           |
-| DDL             | `DdlTools.java`            | `create-tables`, `modify-tables`             |
+| ERD             | 기존 `DdlTools.java` 입력 계약 | `erd-create-tables`, `erd-modify-tables`  |
 | SQL             | `SqlTools.java`            | `execute-query`                              |
 
 ### 구현 전략

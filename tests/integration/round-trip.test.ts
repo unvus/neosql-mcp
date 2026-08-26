@@ -16,6 +16,39 @@ const RPC_TOOL_CASES: ToolCase[] = [
   { name: 'list-connections', method: 'list-connections', args: {} },
   { name: 'list-tables', method: 'list-tables', args: {} },
   { name: 'get-table-details', method: 'get-table-details', args: { tableNames: ['users'] } },
+  {
+    name: 'erd-create-tables',
+    method: 'erd-create-tables',
+    args: {
+      tableDefinitions: [
+        {
+          name: 'users',
+          remarks: '',
+          columns: [],
+          primaryKeys: [],
+          importedKeys: [],
+          indexes: [],
+          constraints: [],
+        },
+      ],
+    },
+  },
+  {
+    name: 'erd-modify-tables',
+    method: 'erd-modify-tables',
+    args: {
+      alterations: [
+        {
+          tableName: 'users',
+          newTableName: '',
+          columnOperations: [],
+          indexOperations: [],
+          foreignKeyOperations: [],
+          constraintOperations: [],
+        },
+      ],
+    },
+  },
   { name: 'execute-query', method: 'execute-query', args: { sql: 'SELECT 1' } },
 ];
 

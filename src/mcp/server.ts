@@ -14,6 +14,8 @@ import { registerListTablesTool } from './tools/schema/list-tables.js';
 import { registerGetTableDetailsTool } from './tools/schema/get-table-details.js';
 import { registerGetContextHelpTool } from './tools/context/get-context-help.js';
 import { registerExecuteQueryTool } from './tools/sql/execute-query.js';
+import { registerErdCreateTablesTool } from './tools/erd/erd-create-tables.js';
+import { registerErdModifyTablesTool } from './tools/erd/erd-modify-tables.js';
 import { mcpSessionId } from './session.js';
 import { registerGetMcpSessionIdTool } from './tools/get-mcp-session-id.js';
 import type { PostRpc, UpstreamToolDeps } from './tools/shared.js';
@@ -53,11 +55,7 @@ const createUpstreamToolDeps = (
 
 const createPostRpc =
   (socketPath: string): PostRpc =>
-  <T = unknown>(
-    method: string,
-    params?: unknown,
-    rpcOpts?: { timeoutMs?: number },
-  ): Promise<T> =>
+  <T = unknown>(method: string, params?: unknown, rpcOpts?: { timeoutMs?: number }): Promise<T> =>
     defaultPostRpc<T>({
       socketPath,
       method,
@@ -86,10 +84,7 @@ const createDesktopFocusRequester = (opts: CreateServerOptions, profile: Profile
   await activationRequester({ profile });
 };
 
-const registerTools = (
-  server: McpServer,
-  upstreamDeps: UpstreamToolDeps,
-): void => {
+const registerTools = (server: McpServer, upstreamDeps: UpstreamToolDeps): void => {
   registerPingTool(server);
   registerGetMcpSessionIdTool(server, mcpSessionId);
   registerGenerateCodeTool(server, upstreamDeps);
@@ -97,5 +92,7 @@ const registerTools = (
   registerListTablesTool(server, upstreamDeps);
   registerGetTableDetailsTool(server, upstreamDeps);
   registerGetContextHelpTool(server);
+  registerErdCreateTablesTool(server, upstreamDeps);
+  registerErdModifyTablesTool(server, upstreamDeps);
   registerExecuteQueryTool(server, upstreamDeps);
 };

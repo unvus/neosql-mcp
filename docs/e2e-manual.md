@@ -96,6 +96,8 @@ schema, template pack 이 필요하므로 이 절차는 수동 e2e로 유지한�
 | `get-context-help` | `{}`                                                                         | stdio/npx 기준 도움말                                | 확인 완료                         |
 | `list-tables`      | `{ "connectionId": "<id>", "database": null, "schema": "<schema>" }`        | table/view 목록, comment                             | 재검증 필요                       |
 | `get-table-details` | `tableNames` + 전체 명시 좌표 또는 좌표 전체 생략                         | columns/indexes/fks/constraints                      | 재검증 필요                       |
+| `erd-create-tables` | `tableDefinitions` + 전체 명시 좌표 또는 좌표 전체 생략                    | ERD 가상 테이블 생성, DB 무변경                      | 재검증 필요                       |
+| `erd-modify-tables` | `alterations` + 전체 명시 좌표 또는 좌표 전체 생략                         | ERD 모델 수정, DB 무변경                             | 재검증 필요                       |
 | `execute-query`    | `sql` + 전체 명시 좌표 또는 좌표 전체 생략                                | SELECT/DML result                                    | 재검증 필요                       |
 | `generate-code`    | `{}`                                                                         | `개발중입니다`                                      | 개발중 placeholder                |
 

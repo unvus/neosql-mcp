@@ -73,6 +73,8 @@ Tools that accept the complete coordinate tuple are:
 
 - `list-tables`
 - `get-table-details`
+- `erd-create-tables`
+- `erd-modify-tables`
 - `execute-query`
 
 `list-connections` is an optional discovery tool for finding another MCP-enabled tuple

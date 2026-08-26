@@ -108,7 +108,8 @@ Electron responsibility:
 - 현재 활성 프로젝트와 project session 일치 여부 검증
 - 프로젝트 Default 또는 전체 명시 좌표 해석
 - connection/database/schema lookup
-- app store, renderer-facing state, SQL Editor, ERD, code generation, DDL 실행 처리
+- app store, renderer-facing state, SQL Editor, ERD, code generation 처리
+- 실제 DDL 실행은 `execute-query` 경로에서만 처리
 - domain validation과 domain error 반환
 
 ## Error Codes
@@ -137,21 +138,20 @@ Electron responsibility:
 
 ## Methods
 
-| MCP tool            | RPC method          | Electron 호출 | Timeout |
-| ------------------- | ------------------- | ------------- | ------: |
-| `list-connections`  | `list-connections`  | yes           |     30s |
-| `list-tables`       | `list-tables`       | yes           |     30s |
-| `get-table-details` | `get-table-details` | yes           |     30s |
-| `execute-query`     | `execute-query`     | yes           |     60s |
-| ~~`create-tables`~~ | `create-tables`     | yes           |     60s |
-| ~~`modify-tables`~~ | `modify-tables`     | yes           |     60s |
-| `get-context-help`  | N/A                 | no            |     N/A |
+| MCP tool             | RPC method           | Electron 호출 | Timeout |
+| -------------------- | -------------------- | ------------- | ------: |
+| `list-connections`   | `list-connections`   | yes           |     30s |
+| `list-tables`        | `list-tables`        | yes           |     30s |
+| `get-table-details`  | `get-table-details`  | yes           |     30s |
+| `erd-create-tables`  | `erd-create-tables`  | yes           |     60s |
+| `erd-modify-tables`  | `erd-modify-tables`  | yes           |     60s |
+| `execute-query`      | `execute-query`      | yes           |     60s |
+| `get-context-help`   | N/A                  | no            |     N/A |
 
-`create-tables` / `modify-tables`는 **더 이상 MCP tool로 등록되지 않는다.** Electron
-화이트리스트와 renderer handler는 남아 있어 구버전 `neosql-mcp` 패키지가 보내는 요청은
-계속 처리되지만, 신규 클라이언트는 이 method를 호출하지 않는다. LLM이 실행하는 DDL은
-`execute-query`로 간다. handler 제거 시점은 최소 지원 `neosql-mcp` 버전이 이 두 tool을
-등록하지 않는 릴리스 이상으로 올라간 뒤다.
+`erd-create-tables`와 `erd-modify-tables`는 NeoSQL ERD 모델만 저장한다. SQL을 생성하거나
+실행하지 않으며 연결된 데이터베이스를 변경하지 않는다. `create-tables`와
+`modify-tables` 구 이름은 MCP catalog와 Electron RPC whitelist에 등록하지 않는다.
+실제 DDL 실행은 `execute-query`를 사용한다.
 
 이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
 다룬다. `ping`, `get-mcp-session-id`, `get-context-help`, `generate-code`는 Node-local
@@ -160,7 +160,8 @@ placeholder로 `개발중입니다`를 반환한다.
 
 ## Database Coordinate Contract
 
-현재 MCP tool인 `list-tables`, `get-table-details`, `execute-query`는
+현재 MCP tool인 `list-tables`, `get-table-details`, `erd-create-tables`,
+`erd-modify-tables`, `execute-query`는
 `connectionId`, `database`, `schema`를 모두 명시하거나 모두 생략한다.
 
 - 전체 명시: Node가 세 필드의 존재 여부를 유지해 `params.input`으로 전달한다.
@@ -382,12 +383,12 @@ type ExecuteQueryResult =
     };
 ```
 
-## `create-tables`
+## `erd-create-tables`
 
 Input:
 
 ```ts
-interface CreateTablesInput {
+interface ErdCreateTablesInput {
   tableDefinitions: McpTableDef[];
   connectionId?: string;
   database?: string | null;
@@ -445,37 +446,30 @@ interface McpConstraintDef {
 Rules:
 
 - 세 좌표를 모두 명시하거나 모두 생략하며 Node는 이를 `params.input`에 유지한다.
-- Electron main이 좌표를 renderer request field로 추출하고 DDL payload에서는 제거한다.
+- Electron main이 좌표를 renderer request field로 추출하고 ERD payload에서는 제거한다.
+- 새 테이블은 `isAdded: true`인 가상 모델로 저장하며 실제 SQL/DDL은 생성하거나 실행하지 않는다.
+- 성공한 테이블은 `MCP: {sessionId}` ERD에 배치한다.
 
 Result:
 
 ```ts
-interface CreateTablesResult {
+interface ErdCreateTablesResult {
+  summary: {
+    requested: number;
+    createdInErd: number;
+    failed: number;
+  };
   created: Array<{ name: string }>;
   failed?: Array<{ name: string; error: string }>;
-  ddlExecution?: DdlExecutionResult;
-}
-
-interface DdlExecutionResult {
-  executed: boolean;
-  error?: string;
-  results?: Array<{
-    name: string;
-    success: boolean;
-    executedCount?: number;
-    ddlStatements?: string[];
-    error?: string;
-    fkError?: string;
-  }>;
 }
 ```
 
-## `modify-tables`
+## `erd-modify-tables`
 
 Input:
 
 ```ts
-interface ModifyTablesInput {
+interface ErdModifyTablesInput {
   alterations: McpAlterTableDef[];
   connectionId?: string;
   database?: string | null;
@@ -560,15 +554,22 @@ Primary key operation semantics:
 - Dropping all primary key columns requires one explicit `DROP` operation per current PK column.
 - Legacy `newRemarks` and `newPrimaryKeys` inputs are rejected by the Node MCP tool schema.
 - 세 좌표를 모두 명시하거나 모두 생략하며 Node는 이를 `params.input`에 유지한다.
-- Electron main이 좌표를 renderer request field로 추출하고 DDL payload에서는 제거한다.
+- Electron main이 좌표를 renderer request field로 추출하고 ERD payload에서는 제거한다.
+- 기존 테이블은 dirty 모델로만 저장하며 실제 SQL/DDL은 생성하거나 실행하지 않는다.
+- 인덱스, FK, UNIQUE/CHECK/EXCLUSION 변경은 기존 ERD 모델 동작과 동일하게 저장한다.
+- 성공한 테이블은 `MCP: {sessionId}` ERD에 배치한다.
 
 Result:
 
 ```ts
-interface ModifyTablesResult {
+interface ErdModifyTablesResult {
+  summary: {
+    requested: number;
+    modifiedInErd: number;
+    failed: number;
+  };
   modified: Array<{ name: string; warnings?: string[] }>;
   failed?: Array<{ name: string; error: string }>;
-  ddlExecution?: DdlExecutionResult;
 }
 ```
 

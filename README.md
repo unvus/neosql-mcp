@@ -109,6 +109,8 @@ Tools that accept the complete explicit coordinate tuple:
 
 - `list-tables`
 - `get-table-details`
+- `erd-create-tables`
+- `erd-modify-tables`
 - `execute-query`
 
 ## Available Tools
@@ -121,6 +123,8 @@ Tools that accept the complete explicit coordinate tuple:
 | `list-tables`        | Lists tables using the project Default or an explicit coordinate.          |
 | `get-table-details`  | Returns columns, keys, indexes, and related table metadata.                |
 | `get-context-help`   | Explains active-project Default and explicit coordinate usage.             |
+| `erd-create-tables`  | Adds virtual tables to an ERD without changing the database.               |
+| `erd-modify-tables`  | Modifies virtual ERD table models without changing the database.           |
 | `execute-query`      | Executes SQL, including DDL, using the Default or an explicit coordinate.  |
 
 ## Transport
