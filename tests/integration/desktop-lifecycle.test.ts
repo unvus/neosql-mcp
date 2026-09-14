@@ -36,6 +36,16 @@ describe('desktop lifecycle integration', () => {
     const mock = await startMockRpcServer({
       socketPath,
       handler: (req) => {
+        if (req.method === 'get-runtime-status')
+          return {
+            kind: 'result',
+            result: {
+              app: 'neosql',
+              profile: 'prod',
+              renderer: 'responsive',
+              project: { state: 'ready', projectId: 'A' },
+            },
+          };
         received.push(req);
         return { kind: 'result', result: { tables: [] } };
       },
@@ -59,6 +69,16 @@ describe('desktop lifecycle integration', () => {
     const mock = await startMockRpcServer({
       socketPath,
       handler: (req) => {
+        if (req.method === 'get-runtime-status')
+          return {
+            kind: 'result',
+            result: {
+              app: 'neosql',
+              profile: 'prod',
+              renderer: 'responsive',
+              project: { state: 'ready', projectId: 'A' },
+            },
+          };
         received.push(req);
         return {
           kind: 'rpc-error',
@@ -98,7 +118,7 @@ describe('desktop lifecycle integration', () => {
     expect(activationCalls).toEqual(['prod']);
   });
 
-  it('requests activation and skips the original tool request when the socket is absent', async () => {
+  it('reports a confirmed activation failure without sending the operation', async () => {
     const socketPath = makeTestSocketPath();
     const activationCalls: string[] = [];
     const client = await setupClient(socketPath, {
@@ -112,7 +132,7 @@ describe('desktop lifecycle integration', () => {
       requestAppActivation: async ({ profile }) => {
         activationCalls.push(profile);
         return {
-          status: 'requested',
+          status: 'request_failed',
           target: activationTargetForProfile(profile),
         };
       },
@@ -127,13 +147,13 @@ describe('desktop lifecycle integration', () => {
       healthStatus?: string;
     };
     expect(payload).toMatchObject({
-      status: 'activation_requested',
-      healthStatus: 'not_running',
+      status: 'activation_failed',
+      requestSent: false,
     });
     expect(activationCalls).toEqual(['prod']);
   });
 
-  it('returns unresponsive and does not request activation when the health check times out', async () => {
+  it('returns status_check_failed without activation for an ungrounded status timeout', async () => {
     const socketPath = makeTestSocketPath();
     const openSockets = new Set<net.Socket>();
     const hangingServer = net.createServer((sock) => {
@@ -168,7 +188,55 @@ describe('desktop lifecycle integration', () => {
       status?: string;
       healthStatus?: string;
     };
-    expect(payload).toMatchObject({ status: 'unresponsive', healthStatus: 'timeout' });
+    expect(payload).toMatchObject({ status: 'status_check_failed', requestSent: false });
     expect(activationCalls).toEqual([]);
   });
+});
+
+describe('T18 SDK cancellation and HTTP observation lifetime', () => {
+  it.each(['cancel', 'disconnect'] as const)(
+    'closes a pending status HTTP request on %s',
+    async (mode) => {
+      const http = await import('node:http');
+      const socketPath = makeTestSocketPath();
+      let received!: () => void;
+      let closed!: () => void;
+      const requestReceived = new Promise<void>((resolve) => {
+        received = resolve;
+      });
+      const requestClosed = new Promise<void>((resolve) => {
+        closed = resolve;
+      });
+      let requests = 0;
+      const mock = http.createServer((_req, res) => {
+        requests++;
+        res.on('close', closed);
+        received();
+      });
+      await listen(mock, socketPath);
+      const server = createServer({ socketPath });
+      const [st, ct] = InMemoryTransport.createLinkedPair();
+      await server.connect(st);
+      const client = new Client({ name: 'cancel-test', version: '1' });
+      try {
+        await client.connect(ct);
+        const controller = new AbortController();
+        const work = client.callTool({ name: 'list-connections', arguments: {} }, undefined, {
+          signal: controller.signal,
+        });
+        const assertion = expect(work).rejects.toBeDefined();
+        await requestReceived;
+        if (mode === 'cancel') controller.abort();
+        else await client.close();
+        await assertion;
+        await requestClosed;
+        expect(requests).toBe(1);
+      } finally {
+        await client.close();
+        await server.close();
+        await closeServer(mock);
+        removeSocketFile(socketPath);
+      }
+    },
+  );
 });

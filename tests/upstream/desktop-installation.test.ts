@@ -9,7 +9,7 @@ import {
 
 describe('desktop installation detection', () => {
   const missingMcpConfigFile = async (): Promise<string> => {
-    throw new Error('mcp-config.json not found');
+    throw Object.assign(new Error('mcp-config.json not found'), { code: 'ENOENT' });
   };
 
   it('checks the macOS system and user Applications directories for the profile product', async () => {
@@ -150,7 +150,7 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
       profile: 'prod',
       platform: 'win32',
       registryQuery: async () => {
-        throw new Error('registry key not found');
+        return undefined;
       },
     });
 
@@ -312,5 +312,47 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
     expect(
       macDesktopExecutablePathFromAppPath('/Users/shock/Desktop/NeoSQLLocal.app', 'NeoSQLLocal'),
     ).toBe('/Users/shock/Desktop/NeoSQLLocal.app/Contents/MacOS/NeoSQLLocal');
+  });
+});
+
+describe('T02 installation query failures', () => {
+  it('preserves permission failures instead of claiming installation is absent', async () => {
+    await expect(
+      detectDesktopInstallation({
+        profile: 'prod',
+        platform: 'darwin',
+        readMcpConfigFile: async () => {
+          throw Object.assign(new Error('missing'), { code: 'ENOENT' });
+        },
+        pathExists: async () => {
+          throw Object.assign(new Error('denied'), { code: 'EACCES' });
+        },
+      }),
+    ).rejects.toThrow('denied');
+  });
+  it('uses a valid candidate even if another candidate or record cannot be read', async () => {
+    const result = await detectDesktopInstallation({
+      profile: 'prod',
+      platform: 'darwin',
+      readMcpConfigFile: async () => {
+        throw Object.assign(new Error('denied record'), { code: 'EACCES' });
+      },
+      pathExists: async (candidate) => {
+        if (candidate.startsWith('/Applications')) throw new Error('denied candidate');
+        return true;
+      },
+    });
+    expect(result.status).toBe('installed');
+  });
+  it('does not equate an unknown Windows registry command failure with a missing key', async () => {
+    await expect(
+      detectDesktopInstallation({
+        profile: 'prod',
+        platform: 'win32',
+        registryQuery: async () => {
+          throw Object.assign(new Error('query failed'), { code: 1 });
+        },
+      }),
+    ).rejects.toThrow('query failed');
   });
 });

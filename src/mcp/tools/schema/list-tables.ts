@@ -27,14 +27,14 @@ export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps):
         ...coordinateInputShape,
       },
     },
-    async (args) => {
+    async (args, request) => {
       validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
       return callUpstreamTool(
         deps,
         'list-tables',
         { ...args, ...(database === undefined ? {} : { database }) },
-        { timeoutMs: 30_000 },
+        { request, timeoutMs: 30_000 },
       );
     },
   );

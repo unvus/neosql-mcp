@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
-import { describe, expect, it } from 'vitest';
+import type { ChildProcess } from 'node:child_process';
+import { describe, expect, it, vi } from 'vitest';
 import {
   activationTargetForProfile,
   requestAppActivation,
@@ -8,7 +9,7 @@ import {
 
 describe('app activation', () => {
   const missingMcpConfigFile = async (): Promise<string> => {
-    throw new Error('mcp-config.json not found');
+    throw Object.assign(new Error('mcp-config.json not found'), { code: 'ENOENT' });
   };
 
   it('resolves product names and app ids from the MCP profile', () => {
@@ -47,7 +48,10 @@ describe('app activation', () => {
       launched.push({ command, args, detached: options.detached });
       const child = new EventEmitter() as ReturnType<ProcessLauncher>;
       child.unref = () => undefined;
-      queueMicrotask(() => child.emit('spawn'));
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
       return child;
     };
 
@@ -75,7 +79,10 @@ describe('app activation', () => {
       launched.push({ command, args });
       const child = new EventEmitter() as ReturnType<ProcessLauncher>;
       child.unref = () => undefined;
-      queueMicrotask(() => child.emit('spawn'));
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
       return child;
     };
 
@@ -103,7 +110,10 @@ describe('app activation', () => {
       launched.push({ command, args, detached: options.detached });
       const child = new EventEmitter() as ReturnType<ProcessLauncher>;
       child.unref = () => undefined;
-      queueMicrotask(() => child.emit('spawn'));
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
       return child;
     };
 
@@ -135,7 +145,10 @@ describe('app activation', () => {
       launched.push({ command, args });
       const child = new EventEmitter() as ReturnType<ProcessLauncher>;
       child.unref = () => undefined;
-      queueMicrotask(() => child.emit('spawn'));
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
       return child;
     };
 
@@ -163,7 +176,10 @@ describe('app activation', () => {
       launched.push({ command, args });
       const child = new EventEmitter() as ReturnType<ProcessLauncher>;
       child.unref = () => undefined;
-      queueMicrotask(() => child.emit('spawn'));
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
       return child;
     };
 
@@ -191,7 +207,10 @@ describe('app activation', () => {
       launched.push({ command, args });
       const child = new EventEmitter() as ReturnType<ProcessLauncher>;
       child.unref = () => undefined;
-      queueMicrotask(() => child.emit('spawn'));
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
       return child;
     };
 
@@ -229,5 +248,82 @@ describe('app activation', () => {
       target: { productName: 'NeoSQL' },
       error: 'spawn failed',
     });
+  });
+});
+
+describe('T05 activation command completion', () => {
+  it('observes a nonzero command exit after spawn', async () => {
+    const child = new EventEmitter() as ChildProcess;
+    child.unref = vi.fn();
+    const result = requestAppActivation({
+      profile: 'prod',
+      platform: 'win32',
+      launcher: () => {
+        queueMicrotask(() => {
+          child.emit('spawn');
+          child.emit('exit', 1, null);
+        });
+        return child;
+      },
+    });
+    expect((await result).status).toBe('request_failed');
+  });
+});
+
+describe('T18 activation observation cancellation', () => {
+  it('does not launch after a cancelled filesystem lookup completes late', async () => {
+    const controller = new AbortController();
+    let complete!: (found: boolean) => void;
+    let started!: () => void;
+    const lookup = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const launcher = vi.fn();
+    const work = requestAppActivation({
+      profile: 'prod',
+      platform: 'darwin',
+      signal: controller.signal,
+      launcher,
+      pathExists: () => {
+        started();
+        return new Promise((resolve) => {
+          complete = resolve;
+        });
+      },
+    });
+    const assertion = expect(work).rejects.toMatchObject({ name: 'AbortError' });
+    await lookup;
+    controller.abort();
+    await assertion;
+    complete(true);
+    await Promise.resolve();
+    expect(launcher).not.toHaveBeenCalled();
+  });
+  it('detaches observation listeners without killing an already launched app', async () => {
+    const controller = new AbortController();
+    const child = new EventEmitter() as ChildProcess;
+    child.unref = vi.fn();
+    child.kill = vi.fn();
+    let launched!: () => void;
+    const started = new Promise<void>((resolve) => {
+      launched = resolve;
+    });
+    const work = requestAppActivation({
+      profile: 'prod',
+      platform: 'win32',
+      signal: controller.signal,
+      launcher: () => {
+        queueMicrotask(launched);
+        return child;
+      },
+    });
+    const assertion = expect(work).rejects.toMatchObject({ name: 'AbortError' });
+    await started;
+    controller.abort();
+    await assertion;
+    expect(child.listenerCount('exit')).toBe(0);
+    expect(child.kill).not.toHaveBeenCalled();
+    child.emit('exit', 0, null);
+    child.emit('error', new Error('late spawn error'));
   });
 });

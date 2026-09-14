@@ -28,14 +28,14 @@ export const registerErdModifyTablesTool = (server: McpServer, deps: ErdModifyTa
         ...coordinateInputShape,
       },
     },
-    async (args) => {
+    async (args, request) => {
       validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
       return callUpstreamTool(
         deps,
         'erd-modify-tables',
         { ...args, ...(database === undefined ? {} : { database }) },
-        { timeoutMs: 60_000 },
+        { request, timeoutMs: 60_000 },
       );
     },
   );

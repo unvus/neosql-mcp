@@ -1,4 +1,5 @@
 import http from 'node:http';
+import type { RuntimeStatus } from '../../src/upstream/runtime-status.js';
 import { closeServer, listen } from './socket.js';
 
 export interface MockRpcRequest {
@@ -14,6 +15,7 @@ export type MockRpcResponse =
 
 export interface StartMockOpts {
   socketPath: string;
+  runtimeStatus?: RuntimeStatus;
   handler: (req: MockRpcRequest) => MockRpcResponse | Promise<MockRpcResponse>;
 }
 
@@ -43,11 +45,14 @@ export const startMockRpcServer = async (opts: StartMockOpts): Promise<StartedMo
           return;
         }
         const responseId = parsed.id ?? null;
-        const handlerResult = await opts.handler({
-          method: parsed.method,
-          params: parsed.params,
-          id: responseId,
-        });
+        const handlerResult: MockRpcResponse =
+          parsed.method === 'get-runtime-status' && opts.runtimeStatus
+            ? { kind: 'result', result: opts.runtimeStatus }
+            : await opts.handler({
+                method: parsed.method,
+                params: parsed.params,
+                id: responseId,
+              });
         switch (handlerResult.kind) {
           case 'result':
             res.writeHead(200, { 'Content-Type': 'application/json' });

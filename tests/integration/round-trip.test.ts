@@ -83,6 +83,16 @@ describe('round-trip integration', () => {
     const mock = await startMockRpcServer({
       socketPath,
       handler: (req) => {
+        if (req.method === 'get-runtime-status')
+          return {
+            kind: 'result',
+            result: {
+              app: 'neosql',
+              profile: 'prod',
+              renderer: 'responsive',
+              project: { state: 'ready', projectId: 'A' },
+            },
+          };
         received.push(req);
         return { kind: 'result', result: { ok: true, method: req.method } };
       },
@@ -115,7 +125,18 @@ describe('round-trip integration', () => {
     const socketPath = makeTestSocketPath();
     const mock = await startMockRpcServer({
       socketPath,
-      handler: () => ({ kind: 'http', status: 500, body: 'oops' }),
+      handler: (req) =>
+        req.method === 'get-runtime-status'
+          ? {
+              kind: 'result',
+              result: {
+                app: 'neosql',
+                profile: 'prod',
+                renderer: 'responsive',
+                project: { state: 'ready', projectId: 'A' },
+              },
+            }
+          : { kind: 'http', status: 500, body: 'oops' },
     });
     cleanups.push(async () => {
       await mock.close();
@@ -132,7 +153,7 @@ describe('round-trip integration', () => {
     expect(content[0]?.text).toMatch(/Server error/);
   });
 
-  it('returns a not_installed tool error with an install guide link when macOS app paths are absent', async () => {
+  it('returns an installation_not_found preparation result when macOS app paths are absent', async () => {
     const socketPath = makeTestSocketPath();
     const server = createServer({
       socketPath,
@@ -167,8 +188,79 @@ describe('round-trip integration', () => {
       installGuideUrl?: string;
     };
     expect(payload).toMatchObject({
-      status: 'not_installed',
-      installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+      status: 'installation_not_found',
+      requestSent: false,
     });
   });
+});
+
+describe('T19/T20 registered tool request context', () => {
+  it.each(RPC_TOOL_CASES)(
+    'passes progress context and preserves post-send rejection for $name',
+    async (c) => {
+      const socketPath = makeTestSocketPath();
+      let operations = 0;
+      const mock = await startMockRpcServer({
+        socketPath,
+        handler: (req) => {
+          if (req.method === 'get-runtime-status')
+            return {
+              kind: 'result',
+              result: {
+                app: 'neosql',
+                profile: 'prod',
+                renderer: 'responsive',
+                project: { state: 'ready', projectId: 'A' },
+              },
+            };
+          operations++;
+          return {
+            kind: 'rpc-error',
+            code: -32002,
+            rpcKind: 'unavailable',
+            message: 'Current project is loading.',
+          };
+        },
+      });
+      const server = createServer({ socketPath });
+      const [st, ct] = InMemoryTransport.createLinkedPair();
+      await server.connect(st);
+      const client = new Client({ name: 'test', version: '1' });
+      try {
+        await client.connect(ct);
+        const wire: Array<Record<string, unknown>> = [];
+        const receive = ct.onmessage!;
+        ct.onmessage = (message) => {
+          wire.push(message as Record<string, unknown>);
+          receive(message);
+        };
+        const result = await client.callTool({
+          name: c.name,
+          arguments: c.args,
+          _meta: { progressToken: 0 },
+        });
+        expect(wire.filter((message) => message.method === 'notifications/progress')).toEqual([
+          {
+            jsonrpc: '2.0',
+            method: 'notifications/progress',
+            params: {
+              progressToken: 0,
+              progress: 1,
+              message: 'The project is ready. Proceeding with the requested operation.',
+            },
+          },
+        ]);
+        expect(result.isError).toBe(true);
+        const payload = JSON.parse((result.content as Array<{ text: string }>)[0]!.text);
+        expect(payload).toMatchObject({ status: 'app_not_ready', reason: 'unavailable' });
+        expect(payload).not.toHaveProperty('requestSent');
+        expect(operations).toBe(1);
+      } finally {
+        await client.close();
+        await server.close();
+        await mock.close();
+        removeSocketFile(socketPath);
+      }
+    },
+  );
 });

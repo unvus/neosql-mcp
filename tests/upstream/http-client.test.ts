@@ -10,10 +10,7 @@ import {
   removeSocketFile,
   isWin32,
 } from '../helpers/socket.js';
-import {
-  startMockRpcServer,
-  type MockRpcRequest,
-} from '../helpers/mock-uds-server.js';
+import { startMockRpcServer, type MockRpcRequest } from '../helpers/mock-uds-server.js';
 
 describe('postRpc', () => {
   const cleanups: Array<() => Promise<void> | void> = [];
@@ -23,6 +20,100 @@ describe('postRpc', () => {
       const fn = cleanups.pop();
       if (fn) await fn();
     }
+  });
+
+  it.each([
+    'null',
+    '[]',
+    '{"jsonrpc":"1.0","id":77,"result":{}}',
+    '{"jsonrpc":"2.0","id":77,"error":null}',
+    '{"jsonrpc":"2.0","id":77,"result":{},"error":{"code":1,"message":"x"}}',
+  ])('T08 rejects invalid JSON-RPC envelopes: %s', async (body) => {
+    const socketPath = makeTestSocketPath();
+    const mock = await startMockRpcServer({
+      socketPath,
+      handler: () => ({ kind: 'http', status: 200, body }),
+    });
+    cleanups.push(async () => {
+      await mock.close();
+      removeSocketFile(socketPath);
+    });
+    await expect(
+      postRpc({ socketPath, method: 'get-runtime-status', id: 77 }),
+    ).rejects.toMatchObject({ kind: 'bad-response' });
+  });
+
+  it('T18 destroys a pending HTTP observation on cancellation', async () => {
+    const socketPath = makeTestSocketPath();
+    let observed!: () => void;
+    let closed!: () => void;
+    const received = new Promise<void>((resolve) => {
+      observed = resolve;
+    });
+    const disconnected = new Promise<void>((resolve) => {
+      closed = resolve;
+    });
+    const server = http.createServer((_req, res) => {
+      res.on('close', closed);
+      observed();
+    });
+    await listen(server, socketPath);
+    cleanups.push(async () => {
+      await closeServer(server);
+      removeSocketFile(socketPath);
+    });
+    const controller = new AbortController();
+    const work = postRpc({ socketPath, method: 'get-runtime-status', signal: controller.signal });
+    const assertion = expect(work).rejects.toMatchObject({ name: 'AbortError' });
+    await received;
+    controller.abort();
+    await assertion;
+    await disconnected;
+  });
+
+  it('T08 rejects a response whose connection closes before the body ends', async () => {
+    const socketPath = makeTestSocketPath();
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.write('{');
+      setTimeout(() => res.destroy(), 10);
+    });
+    await listen(server, socketPath);
+    cleanups.push(async () => {
+      await closeServer(server);
+      removeSocketFile(socketPath);
+    });
+    await expect(postRpc({ socketPath, method: 'get-runtime-status' })).rejects.toMatchObject({
+      kind: 'bad-response',
+    });
+  });
+
+  it('T09 caps the entire HTTP lifetime even while response bytes keep arriving', async () => {
+    const socketPath = makeTestSocketPath();
+    let closed!: () => void;
+    const disconnected = new Promise<void>((resolve) => {
+      closed = resolve;
+    });
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200);
+      res.write('{');
+      const timer = setInterval(() => res.write(' '), 5);
+      res.on('close', () => {
+        clearInterval(timer);
+        closed();
+      });
+    });
+    await listen(server, socketPath);
+    cleanups.push(async () => {
+      await closeServer(server);
+      removeSocketFile(socketPath);
+    });
+    const began = performance.now();
+    await expect(
+      postRpc({ socketPath, method: 'get-runtime-status', timeoutMs: 60 }),
+    ).rejects.toMatchObject({ kind: 'timeout' });
+    await disconnected;
+    expect(performance.now() - began).toBeLessThan(1000);
   });
 
   it('returns the JSON-RPC result on a successful response', async () => {
@@ -99,9 +190,7 @@ describe('postRpc', () => {
     });
     await listen(server, socketPath);
 
-    await expect(
-      postRpc({ socketPath, method: 'x', id: 'expected-id' }),
-    ).rejects.toMatchObject({
+    await expect(postRpc({ socketPath, method: 'x', id: 'expected-id' })).rejects.toMatchObject({
       kind: 'bad-response',
       message: 'Upstream JSON-RPC response id does not match the request id.',
     });
@@ -202,9 +291,9 @@ describe('postRpc', () => {
     });
     await listen(server, socketPath);
 
-    await expect(
-      postRpc({ socketPath, method: 'x', timeoutMs: 50 }),
-    ).rejects.toMatchObject({ kind: 'timeout' });
+    await expect(postRpc({ socketPath, method: 'x', timeoutMs: 50 })).rejects.toMatchObject({
+      kind: 'timeout',
+    });
   });
 
   it('throws HttpClientError(not-running) when socket path does not exist', async () => {
@@ -215,18 +304,31 @@ describe('postRpc', () => {
   });
 
   it.skipIf(isWin32)(
-    'throws HttpClientError(stale-socket) when leftover socket file has no listener',
+    'rejects a regular file as bad-response rather than a stale socket',
     async () => {
       const socketPath = makeTestSocketPath();
+      fs.writeFileSync(socketPath, '');
+      cleanups.push(() => removeSocketFile(socketPath));
+      await expect(postRpc({ socketPath, method: 'x' })).rejects.toMatchObject({
+        kind: 'bad-response',
+      });
+    },
+  );
+
+  it.skipIf(isWin32)(
+    'reports stale-socket for an actual socket inode without a listener',
+    async () => {
+      const socketPath = makeTestSocketPath();
+      const stalePath = makeTestSocketPath();
       const server = net.createServer();
       await listen(server, socketPath);
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-      if (!fs.existsSync(socketPath)) fs.writeFileSync(socketPath, '');
-      cleanups.push(() => removeSocketFile(socketPath));
-
-      await expect(
-        postRpc({ socketPath, method: 'x' }),
-      ).rejects.toMatchObject({ kind: 'stale-socket' });
+      fs.renameSync(socketPath, stalePath);
+      await closeServer(server);
+      cleanups.push(() => removeSocketFile(stalePath));
+      expect(fs.statSync(stalePath).isSocket()).toBe(true);
+      await expect(postRpc({ socketPath: stalePath, method: 'x' })).rejects.toMatchObject({
+        kind: 'stale-socket',
+      });
     },
   );
 

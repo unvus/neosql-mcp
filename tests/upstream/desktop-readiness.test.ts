@@ -1,189 +1,219 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ensureDesktopReady } from '../../src/upstream/desktop-readiness.js';
-import {
-  activationTargetForProfile,
-  type ActivationResult,
-} from '../../src/upstream/app-activation.js';
-import type { HealthResult } from '../../src/upstream/health-check.js';
+import { activationTargetForProfile } from '../../src/upstream/app-activation.js';
+import { HttpClientError } from '../../src/upstream/http-client.js';
 
-const activationResult: ActivationResult = {
-  status: 'requested',
-  target: {
-    profile: 'prod',
-    productName: 'NeoSQL',
-    appId: 'com.unvus.neosql',
-    activationUrl: 'neosql://mcp/activate',
-  },
+const status = (state: string, projectId: string | null = 'A', reason?: string) => ({
+  app: 'neosql',
+  profile: 'prod',
+  renderer: 'responsive',
+  project: { state, projectId, ...(reason ? { reason } : {}) },
+});
+const absent = () => new HttpClientError({ kind: 'not-running', message: 'absent' });
+const timeout = () => new HttpClientError({ kind: 'timeout', message: 'timeout' });
+const installed = {
+  status: 'installed' as const,
+  platform: 'darwin' as const,
+  target: activationTargetForProfile('prod'),
+  executablePath: '/test/NeoSQL',
+  checkedExecutablePaths: [],
+};
+const setup = (responses: unknown[]) => {
+  const queryStatus = vi.fn(async () => {
+    const value = responses.length > 1 ? responses.shift() : responses[0];
+    if (value instanceof Error) throw value;
+    return value;
+  });
+  const checkInstallation = vi.fn(async () => installed);
+  const requestActivation = vi.fn(async () => ({
+    status: 'requested' as const,
+    target: installed.target,
+  }));
+  const onState = vi.fn(async (_state: string) => {});
+  return {
+    socketPath: '/unused.sock',
+    profile: 'prod' as const,
+    queryStatus,
+    checkInstallation,
+    requestActivation,
+    onState,
+  };
+};
+const finish = async <T>(promise: Promise<T>) => {
+  await vi.runAllTimersAsync();
+  return promise;
 };
 
-describe('ensureDesktopReady', () => {
-  it('returns ready without activation when the upstream health check is running', async () => {
-    const activationCalls: string[] = [];
-
-    const result = await ensureDesktopReady({
-      socketPath: '/tmp/neosql-mcp.sock',
-      profile: 'prod',
-      checkHealth: async (): Promise<HealthResult> => ({ status: 'running' }),
-      requestActivation: async () => {
-        activationCalls.push('called');
-        return activationResult;
-      },
-    });
-
-    expect(result).toEqual({ status: 'ready', healthStatus: 'running' });
-    expect(activationCalls).toEqual([]);
+describe('Desktop preparation contract', () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] }));
+  afterEach(() => {
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
   });
 
-  it.each(['not_running', 'stale_socket'] as const)(
-    'requests activation and does not mark ready when health status is %s',
-    async (healthStatus) => {
-      const activationCalls: string[] = [];
-
-      const result = await ensureDesktopReady({
-        socketPath: '/tmp/neosql-mcp.sock',
-        profile: 'prod',
-        checkHealth: async () => ({ status: healthStatus }),
-        checkInstallation: async ({ profile }) => ({
-          status: 'installed',
-          platform: 'darwin',
-          target: activationTargetForProfile(profile),
-          executablePath: '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-          checkedExecutablePaths: ['/Applications/NeoSQL.app/Contents/MacOS/NeoSQL'],
+  it('T01 returns ready without activation', async () => {
+    const opts = setup([status('ready')]);
+    expect(await ensureDesktopReady(opts)).toMatchObject({ status: 'ready' });
+    expect(opts.requestActivation).not.toHaveBeenCalled();
+    expect(opts.queryStatus).toHaveBeenCalledOnce();
+  });
+  it('T03 skips activation if the pre-launch recheck connects', async () => {
+    const opts = setup([absent(), status('ready')]);
+    expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'ready' });
+    expect(opts.requestActivation).not.toHaveBeenCalled();
+  });
+  it('T04 activates once and follows renderer/project progress', async () => {
+    const opts = setup([
+      absent(),
+      absent(),
+      absent(),
+      { app: 'neosql', profile: 'prod', renderer: 'not_ready', project: null },
+      status('loading'),
+      status('loading'),
+      status('ready'),
+    ]);
+    expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'ready' });
+    expect(opts.requestActivation).toHaveBeenCalledOnce();
+    expect(opts.checkInstallation).toHaveBeenCalledOnce();
+    expect(opts.onState.mock.calls.flat()).toEqual([
+      'activation_requesting',
+      'activation_requested',
+      'renderer_loading',
+      'project_loading',
+      'ready',
+    ]);
+  });
+  it('T06 stops an ungrounded timeout without polling', async () => {
+    const opts = setup([timeout(), status('ready')]);
+    expect(await ensureDesktopReady(opts)).toMatchObject({ status: 'status_check_failed' });
+    expect(opts.queryStatus).toHaveBeenCalledOnce();
+    expect(opts.checkInstallation).not.toHaveBeenCalled();
+  });
+  it('T07 retries HTTP and IPC timeouts only after loading evidence', async () => {
+    const opts = setup([
+      status('loading'),
+      timeout(),
+      new HttpClientError({ kind: 'rpc-error', rpcKind: 'timeout', message: 'IPC' }),
+      status('ready'),
+    ]);
+    expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'ready' });
+    opts.queryStatus.mockRejectedValue(timeout());
+    expect(await ensureDesktopReady(opts)).toMatchObject({ status: 'status_check_failed' });
+    expect(opts.requestActivation).not.toHaveBeenCalled();
+  });
+  it.each([
+    null,
+    {},
+    { ...status('ready'), profile: 'dev' },
+    { ...status('ready'), app: 'other' },
+    status('ready', null),
+    status('failed'),
+    status('user_action_required', 'A', 'unknown'),
+    { app: 'neosql', profile: 'prod', renderer: 'not_ready', project: {} },
+    new HttpClientError({ kind: 'bad-response', message: 'ENOTSOCK' }),
+  ])('T08 rejects malformed status or clear errors even while loading: %j', async (invalid) => {
+    const opts = setup([status('loading'), invalid]);
+    expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'status_check_failed' });
+    expect(opts.queryStatus).toHaveBeenCalledTimes(2);
+  });
+  it('T09/T17 retains the original deadline while projects change', async () => {
+    const opts = setup([status('loading', 'A'), status('loading', 'B')]);
+    expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'readiness_timeout' });
+    expect(performance.now()).toBe(20_000);
+    expect(opts.requestActivation).not.toHaveBeenCalled();
+  });
+  it('T17 follows the current project to ready', async () => {
+    const opts = setup([status('loading', 'A'), status('loading', 'B'), status('ready', 'B')]);
+    expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'ready' });
+  });
+  it.each([
+    [status('not_selected', null), 'project_not_selected'],
+    [status('authentication_required'), 'authentication_required'],
+    ...[
+      'storage_unavailable',
+      'initial_sync_failed',
+      'initialization_failed',
+      'missing_project_config',
+    ].map((reason) => [status('failed', 'A', reason), 'project_load_failed']),
+    ...[
+      'unlock_project',
+      'cleanup_connections',
+      'cleanup_members',
+      'resolve_missing_driver',
+      'project_access_blocked',
+      'acknowledge_notice',
+    ].map((reason) => [status('user_action_required', 'A', reason), 'user_action_required']),
+  ])('T13/T16/T20 maps terminal state %j', async (response, expected) => {
+    const opts = setup([response]);
+    expect(await ensureDesktopReady(opts)).toMatchObject({ status: expected });
+    expect(opts.queryStatus).toHaveBeenCalledOnce();
+  });
+  it('T02 distinguishes missing installation from lookup errors', async () => {
+    const opts = setup([absent()]);
+    opts.checkInstallation.mockRejectedValueOnce(new Error('denied'));
+    expect(await ensureDesktopReady(opts)).toMatchObject({ status: 'installation_check_failed' });
+    const missing = {
+      ...installed,
+      status: 'not_installed' as const,
+      installGuideUrl: 'https://neosql.unvus.com/ko/docs/install' as const,
+    };
+    expect(
+      await ensureDesktopReady({ ...opts, checkInstallation: async () => missing }),
+    ).toMatchObject({ status: 'installation_not_found' });
+    expect(opts.requestActivation).not.toHaveBeenCalled();
+  });
+  it('T05 maps confirmed activation failure', async () => {
+    const opts = setup([absent()]);
+    const result = await finish(
+      ensureDesktopReady({
+        ...opts,
+        requestActivation: async () => ({
+          status: 'request_failed',
+          target: installed.target,
         }),
-        requestActivation: async () => {
-          activationCalls.push(healthStatus);
-          return activationResult;
-        },
-      });
-
-      expect(result).toEqual({
-        status: 'activation_requested',
-        healthStatus,
-        activation: activationResult,
-        installation: {
-          status: 'installed',
-          platform: 'darwin',
-          target: {
-            profile: 'prod',
-            productName: 'NeoSQL',
-            appId: 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
-          executablePath: '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-          checkedExecutablePaths: ['/Applications/NeoSQL.app/Contents/MacOS/NeoSQL'],
-        },
-      });
-      expect(activationCalls).toEqual([healthStatus]);
+      }),
+    );
+    expect(result).toMatchObject({ status: 'activation_failed' });
+  });
+  it.each(['queryStatus', 'checkInstallation', 'requestActivation', 'onState'] as const)(
+    'T18 cancels pending %s and ignores its late result',
+    async (boundary) => {
+      const opts = setup(boundary === 'onState' ? [status('loading')] : [absent()]);
+      let complete!: (value: never) => void;
+      const pending = vi.fn(
+        () =>
+          new Promise<never>((resolve) => {
+            complete = resolve;
+          }),
+      );
+      const controller = new AbortController();
+      const work = ensureDesktopReady({ ...opts, [boundary]: pending, signal: controller.signal });
+      const assertion = expect(work).rejects.toMatchObject({ name: 'AbortError' });
+      await vi.advanceTimersByTimeAsync(boundary === 'requestActivation' ? 500 : 0);
+      expect(pending).toHaveBeenCalledOnce();
+      controller.abort();
+      await assertion;
+      const calls = opts.queryStatus.mock.calls.length;
+      complete(status('ready') as never);
+      await vi.runAllTimersAsync();
+      expect(opts.queryStatus).toHaveBeenCalledTimes(calls);
     },
   );
-
-  it('returns not_installed without activation when macOS installation paths are empty', async () => {
-    const activationCalls: string[] = [];
-
-    const result = await ensureDesktopReady({
-      socketPath: '/tmp/neosql-mcp.sock',
-      profile: 'prod',
-      checkHealth: async (): Promise<HealthResult> => ({ status: 'not_running' }),
-      checkInstallation: async ({ profile }) => ({
-        status: 'not_installed',
-        platform: 'darwin',
-        target: {
-          profile,
-          productName: 'NeoSQL',
-          appId: 'com.unvus.neosql',
-          activationUrl: 'neosql://mcp/activate',
-        },
-        checkedExecutablePaths: [
-          '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-          '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-        ],
-        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
-      }),
-      requestActivation: async () => {
-        activationCalls.push('called');
-        return activationResult;
-      },
-    });
-
-    expect(result).toEqual({
-      status: 'not_installed',
-      healthStatus: 'not_running',
-      installation: {
-        status: 'not_installed',
-        platform: 'darwin',
-        target: {
-          profile: 'prod',
-          productName: 'NeoSQL',
-          appId: 'com.unvus.neosql',
-          activationUrl: 'neosql://mcp/activate',
-        },
-        checkedExecutablePaths: [
-          '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-          '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-        ],
-        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
-      },
-    });
-    expect(activationCalls).toEqual([]);
-  });
-
-  it('returns not_installed without activation when the Windows HKCU registry is missing', async () => {
-    const activationCalls: string[] = [];
-
-    const result = await ensureDesktopReady({
-      socketPath: '\\\\.\\pipe\\neosql-mcp',
-      profile: 'prod',
-      checkHealth: async (): Promise<HealthResult> => ({ status: 'not_running' }),
-      checkInstallation: async ({ profile }) => ({
-        status: 'not_installed',
-        platform: 'win32',
-        target: activationTargetForProfile(profile),
-        checkedRegistryKey:
-          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
-        reason: 'registry_missing',
-        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
-      }),
-      requestActivation: async () => {
-        activationCalls.push('called');
-        return activationResult;
-      },
-    });
-
-    expect(result).toEqual({
-      status: 'not_installed',
-      healthStatus: 'not_running',
-      installation: {
-        status: 'not_installed',
-        platform: 'win32',
-        target: {
-          profile: 'prod',
-          productName: 'NeoSQL',
-          appId: 'com.unvus.neosql',
-          activationUrl: 'neosql://mcp/activate',
-        },
-        checkedRegistryKey:
-          'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\45315cf5-be09-5107-ad81-bd3145331a04',
-        reason: 'registry_missing',
-        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
-      },
-    });
-    expect(activationCalls).toEqual([]);
-  });
-
-  it('returns unresponsive without activation when the health check times out', async () => {
-    const activationCalls: string[] = [];
-
-    const result = await ensureDesktopReady({
-      socketPath: '/tmp/neosql-mcp.sock',
-      profile: 'prod',
-      checkHealth: async (): Promise<HealthResult> => ({ status: 'timeout' }),
-      requestActivation: async () => {
-        activationCalls.push('called');
-        return activationResult;
-      },
-    });
-
-    expect(result).toEqual({ status: 'unresponsive', healthStatus: 'timeout' });
-    expect(activationCalls).toEqual([]);
+  it.each(['checkInstallation', 'requestActivation', 'onState'] as const)(
+    'T09 bounds an unresponsive %s by the overall deadline',
+    async (boundary) => {
+      const opts = setup(boundary === 'onState' ? [status('loading')] : [absent()]);
+      const result = await finish(
+        ensureDesktopReady({ ...opts, [boundary]: () => new Promise<never>(() => {}) }),
+      );
+      expect(result).toMatchObject({ status: 'readiness_timeout' });
+      expect(performance.now()).toBe(20_000);
+    },
+  );
+  it('T19 ignores failed notifications and suppresses repeated states', async () => {
+    const opts = setup([status('loading'), status('loading'), status('ready')]);
+    opts.onState.mockRejectedValue(new Error('notification unavailable'));
+    expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'ready' });
+    expect(opts.onState).toHaveBeenCalledTimes(2);
   });
 });

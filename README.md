@@ -90,6 +90,23 @@ args = [
 Use the `--key=value` form in MCP host config. Space-separated forms such as
 `--profile dev` are intentionally not supported. The default profile is `prod`.
 
+## Desktop Readiness
+
+Before an app-dependent tool runs, neosql-mcp checks the current Desktop and project
+state. On macOS and Windows, if Desktop is installed but disconnected, it requests
+app activation once and waits for readiness within a shared 20-second budget.
+When the current project becomes ready, the original operation runs once in the
+same tool call. Project selection, sign-in, and other required actions remain in
+the Desktop app; follow the returned guidance and call the tool again afterward.
+
+MCP hosts that provide a progress token receive English progress notifications.
+Without a token, readiness works the same way. Host display and overall timeouts
+are controlled by the host. Cancelling preparation stops further checks and
+operation submission while leaving an already launched Desktop app running.
+Preparation errors return `isError: true` with JSON text containing `status`,
+`message`, `nextAction`, and `requestSent: false`. Operations already submitted
+keep their existing result format and are never automatically resent.
+
 ## Context Resolution
 
 NeoSQL tools always use the project currently selected and fully loaded in NeoSQL

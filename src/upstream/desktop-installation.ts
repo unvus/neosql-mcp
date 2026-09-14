@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { access } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { observe } from './observation.js';
 import { promisify } from 'node:util';
 import { activationTargetForProfile, type ActivationPlatform } from './app-activation.js';
 import type { Profile } from './endpoint-resolver.js';
@@ -20,7 +21,10 @@ const WINDOWS_UNINSTALL_KEY_PREFIX =
 const execFileAsync = promisify(execFile);
 
 export type PathExists = (candidate: string) => Promise<boolean>;
-export type WindowsRegistryQuery = (key: string) => Promise<string>;
+export type WindowsRegistryQuery = (
+  key: string,
+  signal?: AbortSignal,
+) => Promise<string | undefined>;
 export type WindowsNotInstalledReason =
   | 'registry_missing'
   | 'display_icon_missing'
@@ -76,6 +80,7 @@ export type DesktopInstallationResult =
 
 export interface DetectDesktopInstallationOptions {
   profile: Profile;
+  signal?: AbortSignal;
   platform?: ActivationPlatform;
   homeDir?: string;
   pathExists?: PathExists;
@@ -91,6 +96,7 @@ export interface MacDesktopExecutableCandidateOptions {
 export const detectDesktopInstallation = async (
   opts: DetectDesktopInstallationOptions,
 ): Promise<DesktopInstallationResult> => {
+  opts.signal?.throwIfAborted();
   const target = activationTargetForProfile(opts.profile);
   const platform = opts.platform ?? process.platform;
 
@@ -98,8 +104,12 @@ export const detectDesktopInstallation = async (
     return detectWindowsDesktopInstallation({
       profile: opts.profile,
       target,
-      pathExists: opts.pathExists ?? defaultPathExists,
-      registryQuery: opts.registryQuery ?? defaultWindowsRegistryQuery,
+      pathExists: (candidate) =>
+        observe(opts.signal, () => (opts.pathExists ?? defaultPathExists)(candidate)),
+      registryQuery: (key) =>
+        observe(opts.signal, () =>
+          (opts.registryQuery ?? defaultWindowsRegistryQuery)(key, opts.signal),
+        ),
     });
   }
 
@@ -112,20 +122,36 @@ export const detectDesktopInstallation = async (
     };
   }
 
-  const pathExists = opts.pathExists ?? defaultPathExists;
+  const pathExists = (candidate: string) =>
+    observe(opts.signal, () => (opts.pathExists ?? defaultPathExists)(candidate));
   const homeDir = opts.homeDir ?? os.homedir();
-  const checkedExecutablePaths = await macDesktopExecutableCandidatesWithRecord({
-    profile: opts.profile,
-    productName: target.productName,
-    homeDir,
-    ...(opts.readMcpConfigFile === undefined ? {} : { readMcpConfigFile: opts.readMcpConfigFile }),
+  let lookupError: unknown;
+  const checkedExecutablePaths = await observe(opts.signal, () =>
+    macDesktopExecutableCandidatesWithRecord({
+      profile: opts.profile,
+      productName: target.productName,
+      homeDir,
+      ...(opts.readMcpConfigFile === undefined
+        ? {}
+        : { readMcpConfigFile: opts.readMcpConfigFile }),
+    }),
+  ).catch((error) => {
+    opts.signal?.throwIfAborted();
+    lookupError = error;
+    return macDesktopExecutableCandidates({ productName: target.productName, homeDir });
   });
 
   for (const executablePath of checkedExecutablePaths) {
-    if (await pathExists(executablePath)) {
-      return { status: 'installed', platform, target, executablePath, checkedExecutablePaths };
+    try {
+      if (await pathExists(executablePath)) {
+        return { status: 'installed', platform, target, executablePath, checkedExecutablePaths };
+      }
+    } catch (error) {
+      opts.signal?.throwIfAborted();
+      lookupError = error;
     }
   }
+  if (lookupError) throw lookupError;
 
   return {
     status: 'not_installed',
@@ -216,10 +242,8 @@ const detectWindowsDesktopInstallation = async (
 ): Promise<DesktopInstallationResult> => {
   const checkedRegistryKey = windowsNsisUninstallRegistryKey(opts.profile);
 
-  let registryValues: WindowsUninstallRegistryValues;
-  try {
-    registryValues = parseWindowsUninstallRegistry(await opts.registryQuery(checkedRegistryKey));
-  } catch {
+  const output = await opts.registryQuery(checkedRegistryKey);
+  if (output === undefined) {
     return {
       status: 'not_installed',
       platform: 'win32',
@@ -229,6 +253,7 @@ const detectWindowsDesktopInstallation = async (
       installGuideUrl: NEOSQL_INSTALL_GUIDE_URL,
     };
   }
+  const registryValues = parseWindowsUninstallRegistry(output);
 
   const executablePath = executablePathFromDisplayIcon(registryValues.displayIcon);
   if (!executablePath) {
@@ -328,16 +353,45 @@ const uuidV5 = (name: string, namespace: string): string => {
   ].join('-');
 };
 
-const defaultWindowsRegistryQuery: WindowsRegistryQuery = async (key) => {
-  const { stdout } = await execFileAsync('reg', ['query', key], { windowsHide: true });
-  return String(stdout);
+const defaultWindowsRegistryQuery: WindowsRegistryQuery = async (key, signal) => {
+  try {
+    const { stdout } = await execFileAsync('reg', ['query', key], {
+      windowsHide: true,
+      ...(signal ? { signal } : {}),
+    });
+    return String(stdout);
+  } catch (error) {
+    signal?.throwIfAborted();
+    // reg.exe exit 1 cannot distinguish absence from access errors. .NET OpenSubKey
+    // returns null only for an absent key; exceptions remain lookup failures.
+    const subkey = key.replace(/^HKCU\\/, '').replaceAll("'", "''");
+    const script =
+      "$ErrorActionPreference='Stop'; try { " +
+      "$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('" +
+      subkey +
+      "'); " +
+      "if ($null -eq $k) { Write-Output 'missing' } else { $k.Dispose(); Write-Output 'present' } " +
+      '} catch { exit 2 }';
+    const { stdout } = await execFileAsync(
+      'powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-Command', script],
+      {
+        windowsHide: true,
+        ...(signal ? { signal } : {}),
+      },
+    );
+    if (String(stdout).trim() === 'missing') return undefined;
+    throw error;
+  }
 };
 
 const defaultPathExists: PathExists = async (candidate) => {
   try {
     await access(candidate);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return false;
+    throw error;
   }
 };

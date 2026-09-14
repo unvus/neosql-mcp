@@ -47,50 +47,33 @@ export interface PostRpcOptions {
    */
   id?: string | number;
   timeoutMs?: number;
-}
-
-interface JsonRpcSuccess<T> {
-  jsonrpc?: '2.0';
-  id?: string | number | null;
-  result: T;
-}
-
-interface JsonRpcFailure {
-  jsonrpc?: '2.0';
-  id?: string | number | null;
-  error: {
-    code: number;
-    message: string;
-    data?: {
-      kind?: string;
-    };
-  };
+  signal?: AbortSignal;
 }
 
 let nextId = 1;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
 
 export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => {
+  opts.signal?.throwIfAborted();
   const id = opts.id ?? nextId++;
-  const body = JSON.stringify({
-    jsonrpc: '2.0',
-    id,
-    method: opts.method,
-    params: opts.params,
-  });
-
+  const body = JSON.stringify({ jsonrpc: '2.0', id, method: opts.method, params: opts.params });
   return new Promise<T>((resolve, reject) => {
     let settled = false;
-    const settleReject = (err: unknown): void => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cleanup = () => {
+      clearTimeout(timer);
+      opts.signal?.removeEventListener('abort', onAbort);
+    };
+    const fail = (error: unknown) => {
       if (settled) return;
       settled = true;
-      reject(err);
+      cleanup();
+      req.destroy();
+      reject(error);
     };
-    const settleResolve = (value: T): void => {
-      if (settled) return;
-      settled = true;
-      resolve(value);
-    };
-
+    const bad = (message: string) => fail(new HttpClientError({ kind: 'bad-response', message }));
+    const onAbort = () => fail(opts.signal?.reason);
     const req = http.request(
       {
         socketPath: opts.socketPath,
@@ -103,145 +86,113 @@ export const postRpc = async <T = unknown>(opts: PostRpcOptions): Promise<T> => 
         },
       },
       (res) => {
+        if (settled) {
+          res.destroy();
+          return;
+        }
         const chunks: Buffer[] = [];
         res.on('data', (chunk: Buffer) => {
-          chunks.push(chunk);
+          if (!settled) chunks.push(chunk);
         });
+        res.on('error', () => bad('Upstream response stream failed.'));
+        res.on('aborted', () => bad('Upstream response ended prematurely.'));
         res.on('end', () => {
-          logger.info(
-            { component: 'McpRpc', status: res.statusCode },
-            'POST response received',
-          );
-          const responseBody = Buffer.concat(chunks).toString('utf8');
+          if (settled) return;
           const status = res.statusCode ?? 0;
-
-          if (status >= 400 && status < 500) {
-            settleReject(
-              new HttpClientError({
-                kind: 'http-4xx',
-                status,
-                message: responseBody || `HTTP ${status}`,
-              }),
-            );
-            return;
-          }
-          if (status >= 500) {
-            settleReject(
-              new HttpClientError({
-                kind: 'http-5xx',
-                status,
-                message: responseBody || `HTTP ${status}`,
-              }),
-            );
-            return;
-          }
+          const responseBody = Buffer.concat(chunks).toString('utf8');
           if (status < 200 || status >= 300) {
-            settleReject(
+            fail(
               new HttpClientError({
-                kind: 'bad-response',
+                kind: status >= 500 ? 'http-5xx' : status >= 400 ? 'http-4xx' : 'bad-response',
                 status,
-                message: `Unexpected HTTP status ${status}`,
+                message: responseBody || `HTTP ${status}`,
               }),
             );
             return;
           }
-
-          let parsed: JsonRpcSuccess<T> | JsonRpcFailure;
+          let parsed: unknown;
           try {
-            parsed = JSON.parse(responseBody) as JsonRpcSuccess<T> | JsonRpcFailure;
-          } catch (cause) {
-            settleReject(
-              new HttpClientError({
-                kind: 'bad-response',
-                message: 'Upstream response body is not valid JSON.',
-                cause,
-              }),
-            );
+            parsed = JSON.parse(responseBody);
+          } catch {
+            bad('Upstream response body is not valid JSON.');
             return;
           }
-
-          if (parsed.id !== id) {
-            settleReject(
-              new HttpClientError({
-                kind: 'bad-response',
-                message: 'Upstream JSON-RPC response id does not match the request id.',
-              }),
-            );
+          if (isRecord(parsed) && parsed.id !== id) {
+            bad('Upstream JSON-RPC response id does not match the request id.');
             return;
           }
-
+          if (
+            !isRecord(parsed) ||
+            parsed.jsonrpc !== '2.0' ||
+            'result' in parsed === 'error' in parsed
+          ) {
+            bad('Upstream JSON-RPC response envelope or id is invalid.');
+            return;
+          }
           if ('error' in parsed) {
-            settleReject(
+            const error = parsed.error;
+            if (
+              !isRecord(error) ||
+              !Number.isInteger(error.code) ||
+              typeof error.message !== 'string' ||
+              (error.data !== undefined &&
+                (!isRecord(error.data) ||
+                  (error.data.kind !== undefined && typeof error.data.kind !== 'string')))
+            ) {
+              bad('Upstream JSON-RPC error is invalid.');
+              return;
+            }
+            const rpcKind = isRecord(error.data)
+              ? (error.data.kind as string | undefined)
+              : undefined;
+            fail(
               new HttpClientError({
                 kind: 'rpc-error',
-                rpcCode: parsed.error.code,
-                ...(parsed.error.data?.kind === undefined
-                  ? {}
-                  : { rpcKind: parsed.error.data.kind }),
-                message: parsed.error.message,
+                rpcCode: error.code as number,
+                message: error.message,
+                ...(rpcKind === undefined ? {} : { rpcKind }),
               }),
             );
             return;
           }
-
-          if (!('result' in parsed)) {
-            settleReject(
-              new HttpClientError({
-                kind: 'bad-response',
-                message: 'Upstream JSON-RPC response is missing result.',
-              }),
-            );
-            return;
-          }
-
-          settleResolve(parsed.result);
+          settled = true;
+          cleanup();
+          resolve(parsed.result as T);
         });
       },
     );
-
     req.on('error', (cause: NodeJS.ErrnoException) => {
+      if (settled) return;
       logger.error({ component: 'McpRpc', error: cause.message }, 'POST request failed');
-      if (cause instanceof HttpClientError) {
-        settleReject(cause);
-        return;
-      }
-
-      settleReject(mapRequestError(cause));
-    });
-
-    req.setTimeout(opts.timeoutMs ?? 30_000, () => {
-      req.destroy(
+      fail(
         new HttpClientError({
-          kind: 'timeout',
-          message: 'Upstream request timed out.',
+          kind:
+            cause.code === 'ENOENT'
+              ? 'not-running'
+              : cause.code === 'ECONNREFUSED'
+                ? 'stale-socket'
+                : 'bad-response',
+          message: cause.message,
+          cause,
         }),
       );
     });
-
+    // Absolute lifetime, not socket inactivity: trickling responses cannot extend it.
+    timer = setTimeout(
+      () =>
+        fail(
+          new HttpClientError({
+            kind: 'timeout',
+            message: 'Upstream request timed out.',
+          }),
+        ),
+      opts.timeoutMs ?? 30_000,
+    );
+    opts.signal?.addEventListener('abort', onAbort, { once: true });
+    if (opts.signal?.aborted) {
+      onAbort();
+      return;
+    }
     req.end(body);
-  });
-};
-
-const mapRequestError = (cause: NodeJS.ErrnoException): HttpClientError => {
-  if (cause.code === 'ENOENT') {
-    return new HttpClientError({
-      kind: 'not-running',
-      message: cause.message,
-      cause,
-    });
-  }
-
-  if (cause.code === 'ECONNREFUSED' || cause.code === 'ENOTSOCK') {
-    return new HttpClientError({
-      kind: 'stale-socket',
-      message: cause.message,
-      cause,
-    });
-  }
-
-  return new HttpClientError({
-    kind: 'bad-response',
-    message: cause.message,
-    cause,
   });
 };

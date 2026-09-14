@@ -27,14 +27,14 @@ export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDet
         ...coordinateInputShape,
       },
     },
-    async (args) => {
+    async (args, request) => {
       validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
       return callUpstreamTool(
         deps,
         'get-table-details',
         { ...args, ...(database === undefined ? {} : { database }) },
-        { timeoutMs: 30_000 },
+        { request, timeoutMs: 30_000 },
       );
     },
   );

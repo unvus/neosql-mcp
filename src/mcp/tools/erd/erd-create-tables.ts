@@ -28,14 +28,14 @@ export const registerErdCreateTablesTool = (server: McpServer, deps: ErdCreateTa
         ...coordinateInputShape,
       },
     },
-    async (args) => {
+    async (args, request) => {
       validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
       return callUpstreamTool(
         deps,
         'erd-create-tables',
         { ...args, ...(database === undefined ? {} : { database }) },
-        { timeoutMs: 60_000 },
+        { request, timeoutMs: 60_000 },
       );
     },
   );

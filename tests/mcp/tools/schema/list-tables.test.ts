@@ -20,6 +20,12 @@ describe('list-tables tool', () => {
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
       socketPath,
+      runtimeStatus: {
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: 'ready', projectId: 'A' },
+      },
       handler: (req) => {
         received.push(req);
         return { kind: 'result', result: { tables: [{ name: 'users', type: 'TABLE' }] } };

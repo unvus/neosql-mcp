@@ -89,3 +89,102 @@ describe('built CLI via stdio spawn', () => {
     expect(secondContent[0]?.text).toBe(firstContent[0]?.text);
   });
 });
+
+// Windows pipes ignore TMPDIR: only run on a dedicated runner without NeoSQL.
+describe.skipIf(
+  process.platform === 'win32' && process.env.NEOSQL_MCP_DEDICATED_WINDOWS_RUNNER !== '1',
+)('T21 isolated built CLI preparation', () => {
+  it.each([undefined, 0, 'startup-token'])(
+    'delivers progress and one final response for token %s',
+    async (progressToken) => {
+      const { startMockRpcServer } = await import('../helpers/mock-uds-server.js');
+      const runtimeDir = mkdtempSync(path.join(os.tmpdir(), 'mp-'));
+      const socketPath =
+        process.platform === 'win32'
+          ? '\\\\.\\pipe\\neosql-mcp-local'
+          : path.join(runtimeDir, 'neosql-mcp-local.sock');
+      let queries = 0;
+      let operations = 0;
+      const wire: Array<Record<string, unknown>> = [];
+      let client: Client | undefined;
+      const mock = await startMockRpcServer({
+        socketPath,
+        handler: (req) => {
+          if (req.method === 'get-runtime-status') {
+            expect(req.params).toEqual({});
+            queries++;
+            return {
+              kind: 'result',
+              result: {
+                app: 'neosql',
+                profile: 'local',
+                renderer: 'responsive',
+                project: { state: queries < 3 ? 'loading' : 'ready', projectId: 'B' },
+              },
+            };
+          }
+          operations++;
+          expect(req.method).toBe('list-connections');
+          return { kind: 'result', result: { connections: [{ name: 'B-reference' }] } };
+        },
+      });
+      try {
+        // Bind must succeed before the CLI is allowed to start.
+        const transport = new StdioClientTransport({
+          command: process.execPath,
+          args: [CLI_PATH, '--profile=local'],
+          env: {
+            TMPDIR: runtimeDir,
+            TMP: runtimeDir,
+            TEMP: runtimeDir,
+            NEOSQL_MCP_LOG_PARENT_DIR: runtimeDir,
+          },
+        });
+        client = new Client({ name: 'preparation-stdio-test', version: '1' });
+        await client.connect(transport);
+        const receive = transport.onmessage!;
+        transport.onmessage = (message) => {
+          wire.push(message as Record<string, unknown>);
+          receive(message);
+        };
+        const result = await client.callTool({
+          name: 'list-connections',
+          arguments: {},
+          ...(progressToken === undefined ? {} : { _meta: { progressToken } }),
+        });
+        expect(result.isError).not.toBe(true);
+        expect(JSON.parse((result.content as Array<{ text: string }>)[0]!.text)).toEqual({
+          connections: [{ name: 'B-reference' }],
+        });
+        const notifications = wire.filter((message) => message.method === 'notifications/progress');
+        expect(notifications).toEqual(
+          progressToken === undefined
+            ? []
+            : [
+                {
+                  jsonrpc: '2.0',
+                  method: 'notifications/progress',
+                  params: { progressToken, progress: 1, message: 'Loading the selected project.' },
+                },
+                {
+                  jsonrpc: '2.0',
+                  method: 'notifications/progress',
+                  params: {
+                    progressToken,
+                    progress: 2,
+                    message: 'The project is ready. Proceeding with the requested operation.',
+                  },
+                },
+              ],
+        );
+        expect(wire.filter((message) => 'result' in message || 'error' in message)).toHaveLength(1);
+        expect(queries).toBe(3);
+        expect(operations).toBe(1);
+      } finally {
+        await client?.close();
+        await mock.close();
+        rmSync(runtimeDir, { recursive: true, force: true });
+      }
+    },
+  );
+});

@@ -6,6 +6,7 @@ import { ensureDesktopReady as defaultEnsureDesktopReady } from '../upstream/des
 import type {
   AppActivationRequester,
   DesktopInstallationChecker,
+  PreparationContext,
 } from '../upstream/desktop-readiness.js';
 import { requestAppActivation as defaultRequestAppActivation } from '../upstream/app-activation.js';
 import { registerGenerateCodeTool } from './tools/code-generation/generate-code.js';
@@ -64,8 +65,10 @@ const createPostRpc =
     });
 
 const createDesktopReadyChecker =
-  (opts: CreateServerOptions, profile: Profile, socketPath: string) => () =>
+  (opts: CreateServerOptions, profile: Profile, socketPath: string) =>
+  (context?: PreparationContext) =>
     defaultEnsureDesktopReady({
+      ...context,
       socketPath,
       profile,
       ...(opts.desktopHealthTimeoutMs === undefined

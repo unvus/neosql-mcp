@@ -21,7 +21,7 @@ export const registerListConnectionsTool = (server: McpServer, deps: ListConnect
         'when NeoSQL exposes a database hierarchy.',
       inputSchema: {},
     },
-    async () =>
-      callUpstreamTool(deps, 'list-connections', {}, { timeoutMs: 30_000 }),
+    async (_args, request) =>
+      callUpstreamTool(deps, 'list-connections', {}, { request, timeoutMs: 30_000 }),
   );
 };

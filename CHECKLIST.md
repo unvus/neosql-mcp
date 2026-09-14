@@ -196,6 +196,19 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
   `not_installed` 반환하도록 검증
 - [x] Windows HKCU registry 또는 registry 실행 파일이 없으면 activation 없이 `not_installed` 반환하도록 검증
 
+### 앱 준비 대기·진행 알림 (2026-09-15)
+
+위 Phase 3-1/3-2 항목은 최초 완료 이력이다. activation 직후 반환, GET health 준비 판정,
+미설치 공개 JSON 형식은 아래 변경으로 대체된다.
+
+- [x] 본체 W1·W2 검토 통과본 `2ffef514d` 계약 확인
+- [x] W3: 상태 RPC 검증·20초 준비 기한·근거별 polling·설치/실행 오류 구분·취소
+- [x] W4: 공통 경로의 요청 토큰/신호 전달·영어 진행 알림·준비 결과 네 필드
+- [ ] W5: macOS/Windows 실제 Desktop·MCP host의 M01~M11 및 변형별 검증
+- [ ] 원래 대화 Codex의 외부 MCP 구현 검토 통과
+
+검증 명령·자동 테스트 결과·미검증 환경은 `docs/mcp-startup-progress-completion.md`를 따른다.
+
 ## Phase 4 이상
 
 - [ ] multi-instance 처리 정책 검토

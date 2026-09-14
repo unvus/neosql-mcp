@@ -16,7 +16,8 @@ src/                            (프로덕션 코드만)
 │   ├── server.ts               createServer 팩토리
 │   └── tools/                  MCP 도구 등록
 │       ├── ping.ts
-│       ├── shared.ts           tool 응답/forward 공통 헬퍼
+│       ├── shared.ts           tool 응답/forward·준비 결과·SDK 요청 컨텍스트 공통 헬퍼
+│       ├── preparation-messages.ts  준비 상태 영어 메시지·최종 JSON 매핑
 │       ├── code-generation/
 │       ├── context/
 │       ├── erd/                 ERD 전용 가상 테이블 생성·수정
@@ -24,7 +25,9 @@ src/                            (프로덕션 코드만)
 │       └── sql/
 ├── upstream/    electron-main HTTP 채널 (UDS / Named Pipe)
 │   ├── app-activation.ts       OS-level NeoSQL Desktop activation request
-│   ├── desktop-readiness.ts    tool 호출 전 Desktop health/activation 공통 흐름
+│   ├── desktop-readiness.ts    tool 호출 전 상태 RPC·준비 deadline·activation·polling
+│   ├── runtime-status.ts       내부 상태 RPC 타입·앱/profile/상태 조합 검증
+│   ├── observation.ts          upstream I/O 관찰 취소와 대기 정리
 │   ├── endpoint-resolver.ts    profile → socket path 산출, /mcp/rpc 상수
 │   ├── health-check.ts         socket path connect 시도
 │   ├── http-client.ts          JSON-RPC over HTTP POST 클라이언트

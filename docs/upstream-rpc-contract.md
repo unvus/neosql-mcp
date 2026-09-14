@@ -136,10 +136,53 @@ Electron responsibility:
 `success: false`를 반환하면 `handler-error` / `-32000`으로 감싼다. Node는 code보다
 `error.data.kind`를 기준으로 lifecycle/access error를 분기한다.
 
+## Internal runtime status and preparation
+
+본체 검토 기준은 `2ffef514d`다. `get-runtime-status`는 공개 MCP tool이 아닌
+내부 `POST /mcp/rpc` method이며 params는 `{}`다. Node가 요청별 JSON-RPC ID를
+보내고 Main이 같은 ID와 자신의 앱 식별·profile을 반환한다.
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"get-runtime-status","params":{}}
+{"jsonrpc":"2.0","id":1,"result":{"app":"neosql","profile":"local","renderer":"responsive","project":{"state":"loading","projectId":"A"}}}
+```
+
+- `app`: `neosql`; `profile`: 요청 MCP의 `prod/dev/local/stage`와 일치해야 한다.
+- `renderer: not_ready`이면 `project: null`.
+- `renderer: responsive`이면 project는 다음 중 하나다.
+  - `not_selected`: projectId null
+  - `loading/ready/authentication_required`: projectId 문자열
+  - `failed`: projectId 문자열, reason은 `storage_unavailable/initial_sync_failed/initialization_failed/missing_project_config`
+  - `user_action_required`: projectId 문자열, reason은 `unlock_project/cleanup_connections/cleanup_members/resolve_missing_driver/project_access_blocked/acknowledge_notice`
+
+조회는 메모리 상태만 읽는다. 인증·프로젝트 선택·초기화·모달·DB 연결을 시작하지 않는다.
+Renderer 미준비는 정상 결과이며 Main의 1초 IPC timeout은 `error.data.kind: timeout`이다.
+HTTP 연결 종료는 Main의 상태 관찰 pending을 정리하며 늦은 응답을 폐기한다.
+Node는 JSON-RPC envelope/ID 및 앱/profile/상태 조합을 검증한다.
+
+준비는 최초 확인부터 전체 20초를 공유하고 상태 조회는 최대 1초, 조회 종료 후 간격은
+0.5초다. 설치 조회·OS 실행 명령·HTTP·알림에 취소/기한을 적용한다. 연결 부재 시 설치를
+확인하고 짧은 재확인 뒤 OS 실행을 1회 요청한다. 실행 명령 exit 0 또는 실제 loading
+응답을 이번 호출에서 관찰한 경우만 연결 부재·조회 timeout을 재시도한다. 명확한 오류는
+`status_check_failed`, 전체 기한은 `readiness_timeout`으로 종료한다. 프로젝트 전환도
+기한을 초기화하지 않는다. ready 뒤 원 작업을 1회 보내며 작업 실행 timeout은 별도다.
+
+준비 실패는 `isError: true`의 content text JSON에 `status/message/nextAction/requestSent`
+네 필드만 포함한다. status는 `installation_not_found`, `installation_check_failed`,
+`activation_failed`, `project_not_selected`, `project_load_failed`, `authentication_required`,
+`readiness_timeout`, `user_action_required`, `status_check_failed`; requestSent는 false다.
+토큰이 있으면 상태 전이 시 `notifications/progress`를 보낸다. 0도 유효한 토큰이며
+progress는 증가하는 단계 번호이고 total은 없다. 알림 거절 자체로 작업을 실패시키지 않는다.
+
+원 작업 수신 시 본체가 현재 프로젝트를 다시 검사한다. ready 조회 직후 프로젝트가 바뀌어
+`unavailable` 등으로 거부되더라도 이미 전송한 작업의 기존 오류 경로를 유지한다.
+이를 requestSent=false 준비 결과로 바꾸거나 재전송하지 않는다.
+
 ## Methods
 
 | MCP tool             | RPC method           | Electron 호출 | Timeout |
 | -------------------- | -------------------- | ------------- | ------: |
+| (internal only)     | `get-runtime-status` | yes           |      1s |
 | `list-connections`   | `list-connections`   | yes           |     30s |
 | `list-tables`        | `list-tables`        | yes           |     30s |
 | `get-table-details`  | `get-table-details`  | yes           |     30s |

@@ -26,11 +26,13 @@ export const readRecordedAppPath = async (
 
   try {
     const parsed = JSON.parse(await reader(configPath)) as { appPath?: unknown };
-    return typeof parsed.appPath === 'string' && parsed.appPath.length > 0
+    return parsed !== null && typeof parsed.appPath === 'string' && parsed.appPath.length > 0
       ? parsed.appPath
       : undefined;
-  } catch {
-    return undefined;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (error instanceof SyntaxError || code === 'ENOENT' || code === 'ENOTDIR') return undefined;
+    throw error;
   }
 };
 

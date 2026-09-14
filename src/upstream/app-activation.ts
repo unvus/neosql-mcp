@@ -8,6 +8,7 @@ import {
   type McpConfigFileReader,
   type ReadRecordedAppPathOptions,
 } from './mcp-config-record.js';
+import { observe } from './observation.js';
 import { protocolSchemeForProfile } from './profile-names.js';
 
 export interface ActivationTarget {
@@ -37,6 +38,7 @@ export type ActivationPathExists = (candidate: string) => Promise<boolean>;
 
 export interface RequestAppActivationOptions {
   profile: Profile;
+  signal?: AbortSignal;
   platform?: ActivationPlatform;
   homeDir?: string;
   readMcpConfigFile?: McpConfigFileReader;
@@ -81,9 +83,12 @@ export const requestAppActivation = async (
   const target = activationTargetForProfile(opts.profile);
   const platform = opts.platform ?? process.platform;
   const launcher = opts.launcher ?? spawn;
-  const activationCommand = await commandForPlatform(platform, target, opts);
-
+  opts.signal?.throwIfAborted();
   try {
+    const activationCommand = await observe(opts.signal, () =>
+      commandForPlatform(platform, target, opts),
+    );
+    opts.signal?.throwIfAborted();
     const child = launcher(activationCommand.command, activationCommand.args, {
       detached: true,
       stdio: 'ignore',
@@ -91,24 +96,47 @@ export const requestAppActivation = async (
     });
     child.unref();
 
-    return await new Promise<ActivationResult>((resolve) => {
+    return await new Promise<ActivationResult>((resolve, reject) => {
       let settled = false;
       const settle = (result: ActivationResult): void => {
         if (settled) return;
         settled = true;
+        cleanup();
         resolve(result);
       };
 
-      child.once('spawn', () => settle({ status: 'requested', target }));
-      child.once('error', (err) =>
-        settle({
-          status: 'request_failed',
-          target,
-          error: err instanceof Error ? err.message : String(err),
-        }),
-      );
+      const onExit = (code: number | null) =>
+        settle(
+          code === 0
+            ? { status: 'requested', target }
+            : {
+                status: 'request_failed',
+                target,
+                error: 'Activation command did not exit successfully.',
+              },
+        );
+      const onError = (err: Error) =>
+        settle({ status: 'request_failed', target, error: err.message });
+      const onAbort = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        // Keep the detached app alive. A late launcher error still needs a listener.
+        child.once('error', () => {});
+        reject(opts.signal?.reason);
+      };
+      const cleanup = () => {
+        child.removeListener('exit', onExit);
+        child.removeListener('error', onError);
+        opts.signal?.removeEventListener('abort', onAbort);
+      };
+      child.once('exit', onExit);
+      child.once('error', onError);
+      opts.signal?.addEventListener('abort', onAbort, { once: true });
+      if (opts.signal?.aborted) onAbort();
     });
   } catch (err) {
+    opts.signal?.throwIfAborted();
     return {
       status: 'request_failed',
       target,
@@ -121,6 +149,7 @@ const commandForPlatform = async (
   platform: ActivationPlatform,
   target: ActivationTarget,
   opts: {
+    signal?: AbortSignal;
     homeDir?: string;
     readMcpConfigFile?: McpConfigFileReader;
     pathExists?: ActivationPathExists;
@@ -150,6 +179,7 @@ const commandForPlatform = async (
 const recordedAppPathOptions = (
   profile: Profile,
   opts: {
+    signal?: AbortSignal;
     homeDir?: string;
     readMcpConfigFile?: McpConfigFileReader;
     pathExists?: ActivationPathExists;
@@ -164,12 +194,14 @@ const recordedAppPathOptions = (
 const macActivationAppSpecifier = async (
   target: ActivationTarget,
   opts: {
+    signal?: AbortSignal;
     homeDir?: string;
     readMcpConfigFile?: McpConfigFileReader;
     pathExists?: ActivationPathExists;
   },
 ): Promise<string> => {
-  const pathExists = opts.pathExists ?? defaultPathExists;
+  const pathExists = (candidate: string) =>
+    observe(opts.signal, () => (opts.pathExists ?? defaultPathExists)(candidate));
   const homeDir = opts.homeDir ?? os.homedir();
 
   for (const appPath of macDesktopAppBundleCandidates({
@@ -179,7 +211,9 @@ const macActivationAppSpecifier = async (
     if (await pathExists(appPath)) return target.productName;
   }
 
-  const recordedAppPath = await readRecordedAppPath(recordedAppPathOptions(target.profile, opts));
+  const recordedAppPath = await observe(opts.signal, () =>
+    readRecordedAppPath(recordedAppPathOptions(target.profile, opts)),
+  );
   if (recordedAppPath === undefined) return target.productName;
 
   return (await pathExists(recordedAppPath)) ? recordedAppPath : target.productName;

@@ -20,6 +20,12 @@ describe('execute-query tool', () => {
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
       socketPath,
+      runtimeStatus: {
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: 'ready', projectId: 'A' },
+      },
       handler: (req) => {
         received.push(req);
         return {
@@ -97,6 +103,12 @@ describe('execute-query tool', () => {
     const socketPath = makeTestSocketPath();
     const mock = await startMockRpcServer({
       socketPath,
+      runtimeStatus: {
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: 'ready', projectId: 'A' },
+      },
       handler: () => ({
         kind: 'result',
         result: {
@@ -143,6 +155,12 @@ describe('execute-query tool', () => {
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
       socketPath,
+      runtimeStatus: {
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: 'ready', projectId: 'A' },
+      },
       handler: (req) => {
         received.push(req);
         return { kind: 'result', result: {} };
@@ -193,7 +211,7 @@ describe('execute-query tool', () => {
       name: 'syntax error',
       sql: 'SELEC 1',
       upstreamMessage:
-        "(conn=57) You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version",
+        '(conn=57) You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version',
       expectedMessage:
         'Failed to execute query: (conn=57) You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version',
     },
@@ -208,6 +226,12 @@ describe('execute-query tool', () => {
     const socketPath = makeTestSocketPath();
     const mock = await startMockRpcServer({
       socketPath,
+      runtimeStatus: {
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: 'ready', projectId: 'A' },
+      },
       handler: () => ({
         kind: 'rpc-error',
         code: -32000,
@@ -244,6 +268,12 @@ describe('execute-query tool', () => {
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
       socketPath,
+      runtimeStatus: {
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: 'ready', projectId: 'A' },
+      },
       handler: (req) => {
         received.push(req);
         return { kind: 'result', result: { type: 'DDL' } };
@@ -273,5 +303,4 @@ describe('execute-query tool', () => {
       'CREATE TABLE users (id int)',
     );
   });
-
 });

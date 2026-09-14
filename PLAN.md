@@ -244,41 +244,39 @@ Node와 Electron의 정확한 wire shape는 `docs/upstream-rpc-contract.md`, leg
 **목표**: `neosql-mcp` 사용자가 NeoSQL Desktop 실행 여부 때문에 막히는 상황을
 MCP tool 흐름 안에서 진단하고, Desktop 이 꺼져 있으면 실행을 요청할 수 있게 한다.
 `neosql-mcp` 는 Electron app 을 직접 소유하지 않고, 요청 시점 실행 상태 확인·미실행 시
-OS-level app activation request·설치 안내까지만 담당한다.
+OS-level app activation request·설치 안내·프로젝트 준비 대기와 진행 알림을 담당한다.
 
-### Phase 3 진행 원칙
+### Phase 3 진행 원칙 (2026-09-15 갱신)
 
-- upstream 의존 tool 호출 전 공통 `ensureDesktopReady()` 흐름을 거친다. 단,
-  `ensureDesktopReady()` 는 미실행 상태에서 app activation request 를 보낸 뒤 ready 까지
-  기다리지 않는다. 이 경우 원 요청은 실행하지 않고 activation 요청 결과를 반환한다.
-- 미실행 감지는 deterministic socket health check 로 수행한다. process scan,
-  config file, environment variable override 는 도입하지 않는다.
-- NeoSQL Desktop 은 single-instance Electron app 이다. 여러 `neosql-mcp` 프로세스가
-  activation request 를 보내도 최종 대상은 동일한 Electron app instance 이며,
-  `neosql-mcp` 는 Electron app 을 자식 프로세스로 소유하지 않는다.
-- 기본 흐름:
+앱 준비 대기·진행 알림 설계로 기존 activation 직후 반환 정책을 대체한다.
+사용자 상태/메시지의 SSOT는 본체 `docs/plan/mcp-startup-progress.html`,
+기술 계약은 같은 디렉터리의 `mcp-startup-progress-implementation.md` §4다.
+본체 W1·W2 검토 통과본은 `2ffef514d`이며 외부 MCP의 구현/검증 기록은
+`docs/mcp-startup-progress-completion.md`를 따른다. 실제 Desktop W5는 별도 검증이다.
 
-```text
-tool 호출
-  → ensureDesktopReady()
-    → healthcheck
-    → running이면 바로 통과
-    → not_running / stale_socket이면 설치 위치 확인 후 OS-level app activation request
-    → activation 요청 결과 반환
-  → running인 경우에만 원 tool 요청 실행
-```
+- `callUpstreamTool()` → `ensureDesktopReady()`에서 내부 `get-runtime-status`를 조회한다.
+  GET health의 HTTP 응답만으로 준비 완료를 판단하지 않는다.
+- 최초 확인부터 전체 20초, 조회마다 최대 1초, 조회 종료 후 0.5초 간격을 사용한다.
+  설치 조회·OS 실행 명령·HTTP·진행 알림도 같은 기한과 취소 신호를 따른다.
+- 연결 부재이면 설치 검사 후 0.5초 뒤 재확인한다. 여전히 연결 부재일 때만 OS 실행을
+  호출당 1회 요청한다. macOS `open`, Windows `cmd /c start`의 exit 0을 관찰한다.
+- 이번 호출에서 실행 전달 완료 또는 Renderer/project loading을 관찰했을 때만
+  연결 부재·HTTP/IPC timeout을 재조회한다. 근거 없는 timeout이나 명확한 통신 오류는
+  `status_check_failed`, 전체 기한 소진은 `readiness_timeout`이다.
+- 매 조회의 현재 프로젝트를 따른다. 프로젝트 변경으로 기한을 갱신하거나 처음 프로젝트에
+  작업을 고정하지 않는다. ready 뒤 취소·기한을 다시 검사하고 원 작업을 최대 1회 보낸다.
+- 설치 미발견과 조회 오류를 구분한다. Windows `reg query` 실패만으로 키 부재를
+  확정하지 않고 .NET registry 조회의 null 결과로 확인한다. 미지원 OS는 기존
+  `not_checked`를 유지하고 공통 경로에서 설치 확인 실패로 안내한다.
+- 토큰이 있으면 상태 전이 시 영어 progress를 전송한다. 토큰 0을 보존하고 total을
+  보내지 않는다. 알림 실패는 원 작업을 실패시키지 않으며 취소 뒤 새 작업을 시작하지 않는다.
+- 준비 종료만 `status/message/nextAction/requestSent=false` 네 필드로 반환한다.
+  전송 후 오류·method별 실행 timeout은 기존 처리대로 유지하고 자동 재전송하지 않는다.
+- deterministic UDS/Named Pipe endpoint와 Electron singleton은 유지한다.
+  자동 설치·프로젝트 선택·로그인·공유 실행 제어·TCP·전송 후 취소 확장은 범위 밖이다.
 
-- `timeout` 은 `not_running` 으로 판단하지 않는다. 실행 중이지만 응답 불가, startup 중,
-  main process hang, endpoint bug 일 수 있으므로 `unresponsive` 계열 UX 로 다룬다.
-- 자동 activation 대상은 `not_running` 과 `stale_socket` 으로 제한한다. `timeout` 에서는
-  activation request 를 보내지 않고 명확한 timeout/unresponsive 응답을 반환한다.
-- 원 tool 요청은 `ensureDesktopReady()` 가 `running` 으로 통과한 경우에만 1회 실행한다.
-  `not_running` / `stale_socket` 에서 activation request 를 보낸 경우에는 원 요청을
-  보관하거나 이어서 실행하지 않는다. 사용자는 Desktop 이 뜬 뒤 같은 tool 을 다시 호출한다.
-- 이미 upstream 에 전달된 요청의 timeout 은 자동 재시도하지 않는다.
-- Phase 3-1 은 앱이 설치되어 있다는 전제에서 "꺼져 있으면 띄운다"는 흐름을 다룬다.
-  activation 대상 앱을 찾지 못하는 최소 상태는 둘 수 있지만, OS 별 정밀 설치 감지와
-  안내는 Phase 3-2 로 분리한다.
+아래 Phase 3-1/3-2는 최초 구현 이력이다. 준비 결과 형식·재조회·설치 조회 오류에 관한
+이전 설명과 충돌하면 위 갱신 정책 및 현재 RPC 계약을 우선한다.
 
 ### Phase 3-1 · 미실행 감지와 app activation request
 

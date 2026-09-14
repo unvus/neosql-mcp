@@ -3,49 +3,6 @@ import { HttpClientError } from '../../../src/upstream/http-client.js';
 import { callUpstreamTool, type UpstreamToolDeps } from '../../../src/mcp/tools/shared.js';
 
 describe('callUpstreamTool desktop lifecycle handling', () => {
-  it('does not call upstream RPC when desktop activation was requested', async () => {
-    const rpcCalls: string[] = [];
-    const deps: UpstreamToolDeps = {
-      postRpc: async (method) => {
-        rpcCalls.push(method);
-        return { ok: true } as never;
-      },
-      sessionId: 'session-1',
-      ensureDesktopReady: async () => ({
-        status: 'activation_requested',
-        healthStatus: 'not_running',
-        activation: {
-          status: 'requested',
-          target: {
-            profile: 'prod',
-            productName: 'NeoSQL',
-            appId: 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
-        },
-        installation: {
-          status: 'installed',
-          platform: 'darwin',
-          target: {
-            profile: 'prod',
-            productName: 'NeoSQL',
-            appId: 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
-          executablePath: '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-          checkedExecutablePaths: ['/Applications/NeoSQL.app/Contents/MacOS/NeoSQL'],
-        },
-      }),
-    };
-
-    const result = await callUpstreamTool(deps, 'list-tables', {});
-
-    expect(result.isError).toBe(true);
-    const payload = JSON.parse(result.content[0]?.text ?? '{}') as { status?: string };
-    expect(payload.status).toBe('activation_requested');
-    expect(rpcCalls).toEqual([]);
-  });
-
   it('does not request activation again when an already-sent upstream request times out', async () => {
     const rpcCalls: string[] = [];
     const deps: UpstreamToolDeps = {
@@ -54,7 +11,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         throw new HttpClientError({ kind: 'timeout', message: 'Upstream request timed out.' });
       },
       sessionId: 'session-1',
-      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      ensureDesktopReady: async () => ({ status: 'ready' }),
     };
 
     const result = await callUpstreamTool(deps, 'list-tables', {});
@@ -68,52 +25,6 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
     expect(rpcCalls).toEqual(['list-tables']);
   });
 
-  it('does not call upstream RPC when desktop is not installed', async () => {
-    const rpcCalls: string[] = [];
-    const deps: UpstreamToolDeps = {
-      postRpc: async (method) => {
-        rpcCalls.push(method);
-        return { ok: true } as never;
-      },
-      sessionId: 'session-1',
-      ensureDesktopReady: async () => ({
-        status: 'not_installed',
-        healthStatus: 'not_running',
-        installation: {
-          status: 'not_installed',
-          platform: 'darwin',
-          target: {
-            profile: 'prod',
-            productName: 'NeoSQL',
-            appId: 'com.unvus.neosql',
-            activationUrl: 'neosql://mcp/activate',
-          },
-          checkedExecutablePaths: [
-            '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-            '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-          ],
-          installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
-        },
-      }),
-    };
-
-    const result = await callUpstreamTool(deps, 'list-tables', {});
-
-    expect(result.isError).toBe(true);
-    const payload = JSON.parse(result.content[0]?.text ?? '{}') as {
-      status?: string;
-      installGuideUrl?: string;
-      installation?: { checkedExecutablePaths?: string[] };
-    };
-    expect(payload.status).toBe('not_installed');
-    expect(payload.installGuideUrl).toBe('https://neosql.unvus.com/ko/docs/install');
-    expect(payload.installation?.checkedExecutablePaths).toEqual([
-      '/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-      '/Users/shock/Applications/NeoSQL.app/Contents/MacOS/NeoSQL',
-    ]);
-    expect(rpcCalls).toEqual([]);
-  });
-
   it('maps app-not-ready JSON-RPC errors to the shared desktop lifecycle result', async () => {
     const deps: UpstreamToolDeps = {
       postRpc: async () => {
@@ -125,7 +36,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         });
       },
       sessionId: 'session-1',
-      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      ensureDesktopReady: async () => ({ status: 'ready' }),
     };
 
     const result = await callUpstreamTool(deps, 'list-tables', {});
@@ -146,7 +57,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         });
       },
       sessionId: 'session-1',
-      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      ensureDesktopReady: async () => ({ status: 'ready' }),
     };
 
     const result = await callUpstreamTool(deps, 'list-tables', {});
@@ -171,7 +82,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         });
       },
       sessionId: 'session-1',
-      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      ensureDesktopReady: async () => ({ status: 'ready' }),
       requestDesktopFocus,
     };
 
@@ -206,7 +117,7 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         });
       },
       sessionId: 'session-1',
-      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      ensureDesktopReady: async () => ({ status: 'ready' }),
       requestDesktopFocus,
     };
 
@@ -240,14 +151,19 @@ describe('callUpstreamTool desktop lifecycle handling', () => {
         });
       },
       sessionId: 'session-1',
-      ensureDesktopReady: async () => ({ status: 'ready', healthStatus: 'running' }),
+      ensureDesktopReady: async () => ({ status: 'ready' }),
     };
 
-    const result = await callUpstreamTool(deps, 'execute-query', { sql: 'SELECT 1' }, {
-      mapErrorResult: () => ({
-        content: [{ type: 'text', text: 'tool-specific wrapper' }],
-      }),
-    });
+    const result = await callUpstreamTool(
+      deps,
+      'execute-query',
+      { sql: 'SELECT 1' },
+      {
+        mapErrorResult: () => ({
+          content: [{ type: 'text', text: 'tool-specific wrapper' }],
+        }),
+      },
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content[0]?.text).toBe(message);
@@ -290,5 +206,131 @@ describe('callUpstreamTool input forwarding', () => {
       sessionId: 'session-1',
       input: { connectionId: '88', database: 'analytics', schema: 'public' },
     });
+  });
+});
+
+describe('T19/T20 preparation results and request context', () => {
+  it.each([
+    'installation_not_found',
+    'installation_check_failed',
+    'activation_failed',
+    'project_not_selected',
+    'project_load_failed',
+    'authentication_required',
+    'readiness_timeout',
+    'user_action_required',
+    'status_check_failed',
+  ] as const)(
+    'returns exactly four public fields for %s before sending any action',
+    async (status) => {
+      const postRpc = vi.fn();
+      const result = await callUpstreamTool(
+        {
+          postRpc,
+          sessionId: 's',
+          ensureDesktopReady: async () => ({ status, reason: 'unlock_project' }),
+        },
+        'list-connections',
+        {},
+      );
+      expect(result.isError).toBe(true);
+      const payload = JSON.parse(result.content[0]!.text);
+      expect(Object.keys(payload).sort()).toEqual([
+        'message',
+        'nextAction',
+        'requestSent',
+        'status',
+      ]);
+      expect(payload).toMatchObject({
+        status,
+        requestSent: false,
+        message: expect.any(String),
+        nextAction: expect.any(String),
+      });
+      expect(postRpc).not.toHaveBeenCalled();
+    },
+  );
+  it.each([undefined, 0, 'progress-1'])('preserves progressToken %s', async (progressToken) => {
+    const signal = new AbortController().signal;
+    const sendNotification = vi.fn(async () => {});
+    const postRpc = vi.fn(async () => ({ ok: true }) as never);
+    const result = await callUpstreamTool(
+      {
+        postRpc,
+        sessionId: 's',
+        ensureDesktopReady: async (context) => {
+          expect(context?.signal).toBe(signal);
+          await context?.onState?.('project_loading');
+          await context?.onState?.('ready');
+          return { status: 'ready' };
+        },
+      },
+      'list-connections',
+      {},
+      {
+        request: {
+          signal,
+          sendNotification,
+          ...(progressToken === undefined ? {} : { _meta: { progressToken } }),
+        },
+      },
+    );
+    expect(result.isError).toBeUndefined();
+    expect(postRpc).toHaveBeenCalledOnce();
+    expect(sendNotification).toHaveBeenCalledTimes(progressToken === undefined ? 0 : 2);
+    if (progressToken !== undefined) {
+      expect(sendNotification.mock.calls).toEqual([
+        [
+          {
+            method: 'notifications/progress',
+            params: { progressToken, progress: 1, message: 'Loading the selected project.' },
+          },
+        ],
+        [
+          {
+            method: 'notifications/progress',
+            params: {
+              progressToken,
+              progress: 2,
+              message: 'The project is ready. Proceeding with the requested operation.',
+            },
+          },
+        ],
+      ]);
+    }
+  });
+  it('T09 does not send the operation if ready returns after the deadline', async () => {
+    const postRpc = vi.fn();
+    const result = await callUpstreamTool(
+      {
+        postRpc,
+        sessionId: 's',
+        ensureDesktopReady: async () => ({ status: 'ready', deadline: performance.now() - 1 }),
+      },
+      'list-connections',
+      {},
+    );
+    expect(JSON.parse(result.content[0]!.text).status).toBe('readiness_timeout');
+    expect(postRpc).not.toHaveBeenCalled();
+  });
+  it('T18 propagates cancellation after ready without starting the operation', async () => {
+    const controller = new AbortController();
+    const postRpc = vi.fn();
+    await expect(
+      callUpstreamTool(
+        {
+          postRpc,
+          sessionId: 's',
+          ensureDesktopReady: async () => {
+            controller.abort();
+            return { status: 'ready' };
+          },
+        },
+        'list-connections',
+        {},
+        { request: { signal: controller.signal, sendNotification: async () => {} } },
+      ),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(postRpc).not.toHaveBeenCalled();
   });
 });

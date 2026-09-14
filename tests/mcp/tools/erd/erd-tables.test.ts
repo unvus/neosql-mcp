@@ -120,6 +120,12 @@ describe('ERD table tools', () => {
     const received: MockRpcRequest[] = [];
     const mock = await startMockRpcServer({
       socketPath,
+      runtimeStatus: {
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: 'ready', projectId: 'A' },
+      },
       handler: (request) => {
         received.push(request);
         return { kind: 'result', result: { ok: true } };

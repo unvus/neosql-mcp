@@ -41,11 +41,13 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
       inputSchema: {
         sql: z
           .string()
-          .describe('The SQL statement to execute. DDL is allowed but passes the NeoSQL approval gate.'),
+          .describe(
+            'The SQL statement to execute. DDL is allowed but passes the NeoSQL approval gate.',
+          ),
         ...coordinateInputShape,
       },
     },
-    async (args) => {
+    async (args, request) => {
       validateCoordinateInput(args);
       const database = normalizeOptionalNullableString(args.database);
       return callUpstreamTool(
@@ -53,6 +55,7 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'execute-query',
         { ...args, ...(database === undefined ? {} : { database }) },
         {
+          request,
           timeoutMs: 60_000,
           stringifyResult: jacksonPrettyJsonStringify,
           mapErrorResult: mapExecuteQueryErrorResult,
