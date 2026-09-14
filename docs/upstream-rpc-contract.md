@@ -189,6 +189,8 @@ progress는 증가하는 단계 번호이고 total은 없다. 알림 거절 자�
 | `erd-create-tables`  | `erd-create-tables`  | yes           |     60s |
 | `erd-modify-tables`  | `erd-modify-tables`  | yes           |     60s |
 | `execute-query`      | `execute-query`      | yes           |     60s |
+| (internal only) | `get-code-generation-policy` | yes (main only) | 1s |
+| `generate-code` | `generate-code` | yes | policy + 5s (65s) |
 | `get-context-help`   | N/A                  | no            |     N/A |
 
 `erd-create-tables`와 `erd-modify-tables`는 NeoSQL ERD 모델만 저장한다. SQL을 생성하거나
@@ -197,9 +199,8 @@ progress는 증가하는 단계 번호이고 total은 없다. 알림 거절 자�
 실제 DDL 실행은 `execute-query`를 사용한다.
 
 이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
-다룬다. `ping`, `get-mcp-session-id`, `get-context-help`, `generate-code`는 Node-local
-tool이므로 Electron RPC method를 만들지 않는다. `generate-code`는 현재 개발중
-placeholder로 `개발중입니다`를 반환한다.
+다룬다. `ping`, `get-mcp-session-id`, `get-context-help`는 Node-local tool이다.
+`generate-code`는 준비 확인 후 내부 정책 조회와 생성 RPC를 순서대로 호출한다.
 
 ## Database Coordinate Contract
 
@@ -618,28 +619,74 @@ interface ErdModifyTablesResult {
 
 ## `generate-code`
 
-`generate-code` is currently a Node-local under-development placeholder. It does not call
-an upstream RPC method and returns the text response `개발중입니다`.
-- Current Electron handler ignores `payload.templatePackId` and loads
-  `projectConfig.templatePack.id`.
+Input: `{ tableNames: string[], connectionId?, database?, schema? }`. The table array
+must be nonempty with nonblank names; there is no table-count cap. Coordinates follow
+the existing all-or-none rule. Packs come from project settings; no pack selector or
+preview-only option is exposed.
 
-Result:
+After Desktop readiness, Node calls `get-code-generation-policy` with `{}` and a 1s
+request timeout. Main responds without consulting Renderer:
+
+```json
+{"version":1,"executionTimeoutMs":60000,"responseGraceMs":5000}
+```
+
+Node validates version and timer bounds, then calls `generate-code` once:
+
+```json
+{"sessionId":"<stdio-session>","expectedTimeoutMs":60000,"input":{"tableNames":["users","orders"]}}
+```
+
+The request timeout is executionTimeoutMs + responseGraceMs. Main rejects a missing or
+mismatched expectedTimeoutMs before dispatch. There is no cached/fallback 60s constant in
+Node and no automatic operation retry. Older Desktop versions without the policy RPC
+return `policy-unavailable` with no generation started.
+
+Renderer prepares metadata and entities, applies project packs and uses the shared GUI
+installer. Anonymous local projects use the same pack-consumption policy as GUI. The
+`paid` template value is `sessionStore.account?.paid ?? false`.
+
+Completed execution returns JSON in MCP text content:
 
 ```ts
 interface GenerateCodeResult {
-  success: true;
+  status: 'completed' | 'partial' | 'failed' | 'skipped' | 'needs-configuration';
   message: string;
-  files: string[];
-  notFound?: string[];
+  files: Array<{ tableName: string; packKey: string; templateId?: number; path: string }>;
+  skipped: Array<Target & { reason: string; message: string }>;
+  failures: Array<Target & { stage: 'metadata' | 'entity' | 'pack' | 'render' | 'install'; reason: string; message: string }>;
+  configurationRequired?: Array<{ key: string; message: string; settingsPath: string }>;
 }
+interface Target { tableName?: string; packKey?: string; templateId?: number; path?: string; }
 ```
+
+`files` reports actual absolute paths, including alternate paths. Render failures are
+not installed. Disabled installs, disabled overwrites, empty packs/results and missing
+needle markers are skips. A write followed by chmod/gitAdd failure appears in both
+files and failures. Possible remaining work continues after ordinary failures.
+
+Success + failure is `partial`; failures without writes are `failed`; only skips are
+`skipped`. Only `failed` sets MCP isError among these execution statuses. Missing root,
+packs or declared required global variables returns `needs-configuration` before
+rendering/writing, with empty outcome arrays and instructions. Internal handler success
+means the result was delivered, while the nested status describes generation outcome.
+Input/access/lifecycle errors continue to use existing RPC errors.
+
+Main assigns an internal UUID and a monotonic deadline to every generation request.
+Timeout, HTTP disconnect or Renderer closure deactivates it. Renderer checks cancellation
+between awaits; the dedicated MCP installation IPC verifies the sender and active UUID
+before each filesystem mutation. GUI entry points keep their existing template rules.
+An OS operation already started may finish after expiry; existing changes are not rolled
+back. Late results do not reactivate the request.
+
+Electron timeout maps to `timed-out`; Node timeout, unreliable HTTP response, invalid
+result, or app-not-ready/unavailable/handler-error after the operation request maps to
+`outcome-unknown`. Both set isError and resultsComplete:false, omit an
+unverified files list, and instruct the caller to inspect IDE/Git changes before retrying.
+They never claim zero files changed. Full progress persistence/resume is outside this MVP.
 
 ## Open Items
 
-- `templatePackId`는 Node MCP tool schema에서 required이고 Node가 upstream으로
-  전달하지만, 현재 Electron handler는 `projectConfig.templatePack.id`를 사용한다.
-  공개 API로 template pack 선택을 지원할지, 아니면 Node surface에서 제거할지 별도 결정이
-  필요하다.
 - 현재 Electron은 project session 초기화 실패를 `unavailable`로 반환하고 renderer 준비
   실패를 `app-not-ready`로 반환한다. Node lifecycle mapper는 두 kind를 같은 사용자
   경험으로 처리한다. 장기적으로 두 kind를 그대로 둘지, 하나의 lifecycle kind로 통일할지

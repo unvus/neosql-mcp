@@ -92,7 +92,7 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 - [x] `sql/execute-query` — DDL guard + `execute-query` contract 기반 forward 구현
 - [x] `ddl/create-tables` — `create-tables` forward 구현
 - [x] `ddl/modify-tables` — `modify-tables` forward 구현
-- [x] `code-generation/generate-code` — 개발중 placeholder 응답(`개발중입니다`) 구현
+- [x] `code-generation/generate-code` — 프로젝트 팩 기반 실제 생성·저장 RPC 및 결과 매핑 구현
 
 ### Phase 2-4 · Real Electron MCP tool migration
 
@@ -129,8 +129,9 @@ Phase별 세부 작업 상태. Phase마다 섹션을 추가·갱신한다.
 #### CodeGenerationTools
 
 - [x] (본체 source 확인) 기존 code generation dispatcher/renderer handler 연결 확인
-- [x] `generate-code`는 개발중 placeholder로 유지
-- [ ] 실제 code generation contract 재정의
+- [x] `generate-code` 정책 조회·배열 입력·실제 생성·저장 결과 계약 연결
+- [x] 실제 code generation contract 재정의 (D1~D11·P1~P3)
+- [ ] 검증용 프로젝트·임시 출력 폴더로 실제 Desktop smoke
 
 - [x] `docs/e2e-manual.md`에 as-is/to-be 비교 검증 절차와 결과 기록 슬롯 추가
 - [x] contract 불일치 발견 시 Phase 2-2 contract / Phase 2-3 Node / Electron 코드 동시 보정

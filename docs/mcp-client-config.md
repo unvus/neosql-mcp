@@ -78,8 +78,10 @@ Tools that accept the complete coordinate tuple are:
 - `execute-query`
 
 `list-connections` is an optional discovery tool for finding another MCP-enabled tuple
-or for projects without a Default. `generate-code` remains an under-development local
-placeholder and returns `개발중입니다`.
+or for projects without a Default. `generate-code` accepts a nonempty `tableNames` array
+and the same optional coordinate tuple. Configure project template packs, required global
+variables, and Location first. It saves files using template install settings without an
+additional NeoSQL confirmation dialog; inspect the actual result in your IDE or Git diff.
 
 ## Upstream Params
 

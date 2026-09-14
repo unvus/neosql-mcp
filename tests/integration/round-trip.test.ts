@@ -53,7 +53,6 @@ const RPC_TOOL_CASES: ToolCase[] = [
 ];
 
 const CONTEXT_TOOL_CASES: ToolCase[] = [
-  { name: 'generate-code', args: {} },
   { name: 'get-context-help', args: {} },
 ];
 
@@ -76,6 +75,28 @@ describe('round-trip integration', () => {
     cleanups.push(() => client.close());
     return client;
   };
+
+  it('roundtrips code generation policy and preserves partial installation results', async () => {
+    const socketPath = makeTestSocketPath();
+    const received: MockRpcRequest[] = [];
+    const expected = { status: 'partial', files: [{ tableName: 'users', path: '/tmp/User.ts' }], skipped: [], failures: [{ tableName: 'orders', stage: 'metadata', reason: 'table-not-found', message: 'missing' }] };
+    const mock = await startMockRpcServer({
+      socketPath,
+      runtimeStatus: { app: 'neosql', profile: 'prod', renderer: 'responsive', project: { state: 'ready', projectId: 'A' } },
+      handler: req => {
+        received.push(req);
+        return { kind: 'result', result: req.method === 'get-code-generation-policy'
+          ? { version: 1, executionTimeoutMs: 60000, responseGraceMs: 5000 } : expected };
+      },
+    });
+    cleanups.push(async () => { await mock.close(); removeSocketFile(socketPath); });
+    const client = await setupClientServer(socketPath);
+    const response = await client.callTool({ name: 'generate-code', arguments: { tableNames: ['users', 'orders'] } });
+    expect(response.isError).not.toBe(true);
+    expect(JSON.parse((response.content as { text: string }[])[0]!.text)).toEqual(expected);
+    expect(received.map(r => r.method)).toEqual(['get-code-generation-policy', 'generate-code']);
+    expect(received[1]?.params).toMatchObject({ expectedTimeoutMs: 60000, input: { tableNames: ['users', 'orders'] } });
+  });
 
   it('roundtrips upstream-backed tools with contract method names and params envelopes', async () => {
     const socketPath = makeTestSocketPath();

@@ -214,8 +214,10 @@ describe('createServer', () => {
     const result = await client!.listTools();
 
     const generateCodeSchema = inputSchemaFor(result.tools, 'generate-code');
-    expect(requiredFields(generateCodeSchema)).toEqual([]);
-    expect(generateCodeSchema.properties).toEqual({});
+    expect(requiredFields(generateCodeSchema)).toEqual(['tableNames']);
+    expect(propertySchema(generateCodeSchema, 'tableNames').minItems).toBe(1);
+    expect(propertySchema(generateCodeSchema, 'tableNames')).not.toHaveProperty('maxItems');
+    expect(generateCodeSchema.properties).not.toHaveProperty('templatePackId');
 
     const getTableDetailsSchema = inputSchemaFor(result.tools, 'get-table-details');
     expect(propertySchema(getTableDetailsSchema, 'tableNames').minItems).toBeUndefined();

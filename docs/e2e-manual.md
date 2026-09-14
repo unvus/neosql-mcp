@@ -99,21 +99,28 @@ schema, template pack 이 필요하므로 이 절차는 수동 e2e로 유지한�
 | `erd-create-tables` | `tableDefinitions` + 전체 명시 좌표 또는 좌표 전체 생략                    | ERD 가상 테이블 생성, DB 무변경                      | 재검증 필요                       |
 | `erd-modify-tables` | `alterations` + 전체 명시 좌표 또는 좌표 전체 생략                         | ERD 모델 수정, DB 무변경                             | 재검증 필요                       |
 | `execute-query`    | `sql` + 전체 명시 좌표 또는 좌표 전체 생략                                | SELECT/DML result                                    | 재검증 필요                       |
-| `generate-code`    | `{}`                                                                         | `개발중입니다`                                      | 개발중 placeholder                |
+| `generate-code` | `tableNames` + 전체 명시 좌표 또는 좌표 전체 생략 | 실제 저장 경로·건너뜀·실패 JSON | 실제 Desktop 검증 필요 |
 
 ### generate-code 추가 조건
 
-`generate-code`는 현재 개발중 placeholder로 유지한다. 호출 시 upstream RPC를 호출하지 않고
-`개발중입니다`를 반환한다.
+검증용 프로젝트와 임시 출력 폴더를 사용한다. 실제 사용자 프로젝트에 smoke 파일을 쓰지 않는다.
 
-실제 code generation contract는 기능 재개 시 별도 phase에서 다시 정의한다.
+1. 익명 local 프로젝트에서 팩·필수 변수·Location을 설정하고 MCP 접근을 허용한다.
+2. GUI에서 펼치지 않은 테이블을 `tableNames`로 요청하고 컬럼이 포함된 파일과 반환 절대 경로를 비교한다.
+3. 덮어쓰기 OFF·대체 경로·needle 일치/불일치를 각각 설정해 파일 내용과 skipped 결과를 확인한다.
+4. 없는 테이블·렌더 오류 템플릿을 정상 대상과 섞어 partial 및 가능한 나머지 처리를 확인한다.
+5. Location 또는 필수 변수를 비워 needs-configuration과 미실행을 확인한다.
+6. 지연 렌더/설치로 만료시켜 후속 파일 변경 차단과 timed-out 안내를 확인한다. 연결 유실은 outcome-unknown이어야 한다.
+7. GUI 생성·설치와 로그인 계정의 paid 전달도 회귀 확인한다.
+
+자동 검증은 정책 조회 → 생성의 mock UDS 왕복, main HTTP↔IPC 요청 격리, 임시 파일 저장을 포함한다. 실제 Desktop smoke 완료 여부는 아래 표에 별도로 기록한다.
 
 ### 결과 기록
 
 | Date       | Host               | Profile                   | Tool             | Input 요약                 | Result  | 비고                                    |
 | ---------- | ------------------ | ------------------------- | ---------------- | -------------------------- | ------- | --------------------------------------- |
 | 2026-05-11 | automated mock UDS | profile path independent  | 9개 Node handler | contract fixtures          | pass    | `npm test` 기준, real Desktop 비교 아님 |
-| TBD        | real Desktop       | prod 또는 dev             | `generate-code`  | 없음                       | pending | placeholder 응답 확인                   |
+| 2026-09-15 | running Desktop | prod | get-code-generation-policy | 읽기 전용 | unsupported | method-not-found; 새 앱 실행 후 검증용 프로젝트에서 생성 smoke 필요 |
 
 ## Active project runtime context
 
@@ -203,3 +210,11 @@ ENOTSOCK는 상태 확인 실패이며 stale socket(ECONNREFUSED)과 다르다.
 | `initialize` 실패                         | SDK 버전 불일치 가능성. `package.json` 의 `@modelcontextprotocol/sdk` 버전과 클라이언트 SDK 버전 점검                                                                                                                     |
 | upstream 호출이 `ENOENT` / `ECONNREFUSED` | electron-main 미기동 또는 socket path 불일치. 동일 profile의 deterministic socket 파일/Named Pipe 존재 여부 확인. macOS 는 `ls -la <socketPath>`, Windows 는 `Get-ChildItem \\.\pipe\` 로 확인                  |
 | upstream socket 직접 호출 디버깅          | macOS: `curl --unix-socket <socketPath> http://localhost/<path>`. Windows: `Invoke-WebRequest` 가 Named Pipe 미지원 → PowerShell 별도 도구 (e.g. `npipe-curl`) 사용                                                      |
+
+
+### Code generation reconnection verification (2026-09-15)
+
+- `npm test`: 24 files, 236 tests passed; includes build, stdio spawn and policy → generate-code mock UDS round-trip.
+- `npm run typecheck`: passed.
+- Companion app focused tests: 39 passed, including real temporary-file installation and HTTP↔IPC expiry/identity checks.
+- The running Desktop rejected the read-only policy RPC with method-not-found. No generation was sent to the user's active project. Live generation smoke remains pending on an updated app with a disposable project/output folder.

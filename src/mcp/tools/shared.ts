@@ -55,6 +55,11 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     timeoutMs?: number;
     stringifyResult?: JsonStringifier;
     mapErrorResult?: ErrorResultMapper;
+    /** Run after Desktop preparation, before the single operation request. */
+    prepareRpc?: () => Promise<{ timeoutMs: number; params?: Record<string, unknown> }>;
+    mapResult?: (result: TResult) => ToolTextResult;
+    /** Opt-in override for operation-specific errors, before lifecycle defaults. */
+    mapOperationErrorResult?: ErrorResultMapper;
   } = {},
 ): Promise<ToolTextResult> => {
   const request = opts.request;
@@ -85,14 +90,20 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
   }
   request?.signal.throwIfAborted();
   try {
+    const prepared = await opts.prepareRpc?.();
+    request?.signal.throwIfAborted();
     const params: UpstreamToolParams<TInput> = {
       sessionId: deps.sessionId,
       input,
+      ...prepared?.params,
     };
-    const rpcOpts = opts.timeoutMs === undefined ? undefined : { timeoutMs: opts.timeoutMs };
+    const timeoutMs = prepared?.timeoutMs ?? opts.timeoutMs;
+    const rpcOpts = timeoutMs === undefined ? undefined : { timeoutMs };
     const result = await deps.postRpc<TResult>(method, params, rpcOpts);
-    return jsonTextResult(result, opts.stringifyResult);
+    return opts.mapResult ? opts.mapResult(result) : jsonTextResult(result, opts.stringifyResult);
   } catch (err) {
+    const operationError = opts.mapOperationErrorResult?.(err);
+    if (operationError !== undefined) return operationError;
     const desktopLifecycleError = desktopLifecycleErrorResult(err, deps);
     if (desktopLifecycleError !== undefined) return desktopLifecycleError;
 

@@ -55,6 +55,23 @@ npx -y neosql-mcp
 The process is a stdio MCP server, so running the command directly in a terminal may
 look like it is waiting for input. That is expected.
 
+## Generate code
+
+Ask for source files with `generate-code`, for example `{"tableNames":["users","orders"]}`.
+Use the project's Default connection/schema, or provide connectionId, database and schema
+together. In NeoSQL Project Settings, configure your template packs, required variables
+and output root folder (Location), and allow MCP access to the target connection/schema.
+
+The tool generates and saves files immediately using the template installation settings;
+there is no additional NeoSQL confirmation dialog. Existing files can be overwritten or
+marker text replaced. Results distinguish saved paths, skips and failures. Missing settings
+return `needs-configuration` without generating files. Review output in your IDE or Git diff.
+
+NeoSQL owns the 60s execution budget; the MCP request adds 5s for the response. There is no
+table-count cap or automatic generation retry. On timeout or connection loss, some files may
+already have changed; inspect them before retrying. Use compatible Desktop and MCP versions
+that support the code generation policy RPC.
+
 ## MCP Host Configuration
 
 ### Claude Code `.mcp.json`
