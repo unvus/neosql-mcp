@@ -144,8 +144,8 @@ git diff --check
 
 | M ID | macOS 실제 환경 | Windows 실제 환경 | 남은 변형/전제 |
 | --- | --- | --- | --- |
-| M01 | 미검증 | 미검증 | 종료 앱·자동 복원 없음, 첫 미선택/선택 후 새 호출 |
-| M02 | 미검증 | 미검증 | 실제 loading 최초 관찰 → 동일 호출 ready, 지원되는 자동 복원은 별도 |
+| M01 | 핵심 동작 확인, 일부 증거 미확인 | 미검증 | 첫 호출 작업 0회·프로젝트 선택 후 새 호출 작업 1회 확인. OS 실행 횟수·host wire·MCP revision 미확인 |
+| M02 | 미검증 | 미검증 | 실제 loading 최초 관찰 → 동일 호출 ready |
 | M03 | 미검증 | 미검증 | 명령 실패 및 느린 기동을 재현할 격리 환경 |
 | M04 | 미검증 | 미검증 | 잠금·연결/멤버 정리·드라이버 모달, 해결/Skip 및 자동 잠금 |
 | M05 | 미검증 | 미검증 | 실제 host의 토큰 유무/0/문자열·진행 UI·취소 전달/서버 관찰, 앱 유지 |
@@ -163,6 +163,130 @@ git diff --check
 ## 남은 검토 및 다른 저장소 조치
 
 - 원래 대화 Codex: diff·공통 호출 경로·deadline/취소 수명·T ID 근거 검토 필요.
+### 2026-09-15 08:53~08:54 KST 후속 실제 실행 — I07·I08 기동 지연과 복구
+
+사용자가 설치된 NeoSQLDev를 완전히 종료한 뒤 main 프로세스 부재와 설치 버전
+3.3.1을 확인했다. macOS/dev에서 별도 MCP SDK로 실제 Desktop을 호출했다.
+사용자가 승인한 새 앱 프로세스의 일시 정지·재개 방식으로 지연을 재현했다.
+
+- CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`, SHA-256
+  `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+  제품 소스·dist·준비 제한 시간은 변경하지 않았다. spawn/http 관찰은 실제 함수에
+  그대로 위임하며 실행 결과를 mock하지 않았다.
+- 08:53:43.980 KST `list-connections` tools/call 1회, request ID 1,
+  progressToken `i07-dev-once`. 실제 `open -a NeoSQLDev neosql-dev://mcp/activate`
+  1회, 08:53:44.664 exit 0. 별도 자동 재개 감시 프로세스 준비 후 새 main PID 3217을
+  08:53:44.821 SIGSTOP했으며 프로세스 상태 T를 확인했다.
+- 준비 조회 시도 39회, 원래 작업 RPC 전송 0회. 약 20,020ms 후 최종 응답 1개:
+  `isError: true`, `readiness_timeout`, `requestSent: false`. 앱 확인 후 재시도 안내이며
+  crash라고 단정하지 않았다. progress 1·2를 동일 토큰으로 수신했다.
+- SDK 종료 후 08:54:04.575 감시 프로세스가 동일 실행 신원을 확인하고 SIGCONT했다.
+  감시 프로세스에는 테스트 중단 시에도 35초 후 재개하는 안전 기한을 두었다.
+  08:54:06.741 직접 runtime 조회에서 `renderer: responsive`,
+  `projectState: not_selected`를 확인했다. 같은 PID 3217이 유지됐다.
+  복구 조회는 별도 내부 상태 관찰이며 두 번째 MCP 도구 호출이 아니다.
+- 횟수·실제 open 성공·timeout 결과·작업 미전송·정지 상태·동일 PID 재개·응답 회복
+  assertion 통과. **I07·I08 일시 정지 변형 완료.** 자연적으로 느린 머신의 기동,
+  Windows 및 ChatGPT host UI 표시는 이번 결과에 포함하지 않는다.
+- 증거 디렉터리:
+  `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-i07-5G7Skd`
+  (`evidence.json`, `trace.jsonl`, `pause-resume.json`, `resume-result.json`).
+  실행기 `/tmp/neosql-i07-driver.mjs`, `/tmp/neosql-i07-client.mjs`,
+  `/tmp/neosql-i07-observer.cjs`, `/tmp/neosql-i07-guardian.cjs`.
+
+
+### 2026-09-15 08:44 KST 후속 실제 실행 — I06 실행 명령 시작 실패
+
+사용자가 NeoSQLDev를 Cmd+Q로 종료한 뒤 main 프로세스 부재를 재확인했다.
+실제 설치 진단은 `/Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev`에서
+`installed`를 반환했다. 앱 버전 3.3.1, macOS/dev 환경이다.
+
+- I05 관찰용 SDK 실행기를 별도 임시 파일로 복사하고, MCP 자식 프로세스의 PATH만
+  빈 임시 디렉터리로 설정했다. Node는 절대 경로로 실행했다. 전역 PATH·앱·설정 파일·
+  제품 소스는 변경하지 않았다. 실제 spawn을 호출하며 오류를 mock하지 않았다.
+- CLI SHA-256은 I05와 동일한
+  `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`다.
+- 08:44:27.056 KST `list-connections` tools/call 1회, wire request ID 1,
+  progressToken `i06-dev-once`. 준비 조회 시도 2회 후 실제 `spawn open` 1회에서
+  `ENOENT` 발생. 이것은 프로세스 시작 실패이며 open 프로세스가 실행 후 nonzero로
+  종료한 경우가 아니다.
+- 약 520ms 후 최종 응답 1개: `isError: true`, `activation_failed`,
+  `requestSent: false`, 수동 앱 실행 후 재시도 안내. 원래 작업 RPC 전송 0회.
+  테스트 후에도 Dev 앱 프로세스가 없음을 확인했다.
+- 실제 spawn 오류·시도 횟수·최종 응답·작업 미전송 assertion 통과.
+  **I06 프로세스 시작 실패 변형 완료.** 명령 시작 후 비정상 종료 변형과 Windows는
+  미검증이다. SDK 수신 결과이며 ChatGPT host UI 검증으로 해석하지 않는다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-i06-7gyQLQ/evidence.json`, `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-i06-7gyQLQ/trace.jsonl`.
+  실행기: `/tmp/neosql-i06-client.mjs`, `/tmp/neosql-i06-observer.cjs`.
+  제한된 PATH는 종료된 테스트 프로세스에만 적용되어 별도 전역 복구가 필요하지 않았다.
+
+
+### 2026-09-15 08:26 KST 후속 실제 실행 — I05 자동 실행 명령 1회
+
+사용자가 NeoSQLDev를 다시 설치하고 종료한 후 수행했다. 설치 버전 3.3.1과 호출 전
+앱 main 프로세스 부재를 확인했다. macOS/dev, Node v22.22.2, 실제 Desktop과 SDK
+StdioClientTransport를 사용했으며 기존 ChatGPT host 세션 호출과 구분한다.
+
+- CLI: `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`. checkout HEAD
+  `e48f525a2156a3ae116aeac8386a5820783a408b`, source map의 src 파일 30개가 현재 작업 트리와 일치했다.
+  CLI SHA-256: `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+  package version 1.6.0, handshake serverInfo.version 0.0.1을 구분한다.
+- 관찰 방식: 임시 Node preload에서 `child_process.spawn`과 `http.request`를 감싸
+  실제 함수에 동일 인자를 그대로 전달했다. 제품 소스·dist를 수정하거나 응답/시간/실행을
+  mock하지 않았다. 앱과 같은 TMPDIR을 SDK에 전달했다.
+- 08:26:32.117 KST `list-connections` tools/call **1회**. wire request ID 1,
+  progressToken `i05-dev-once`. 약 5,339ms 후 최종 결과 **1개**:
+  `project_not_selected`, `requestSent: false`.
+- 실제 `open -a NeoSQLDev neosql-dev://mcp/activate` 호출은 08:26:32.636 KST
+  **1회**, 08:26:32.893 종료 코드 **0**. 준비 상태 조회 시도는 총 **11회**이며
+  앱 실행 이후에도 반복했지만 open 재호출은 없었다. 앱 연결 전 실패한 조회 시도도
+  이 수에 포함되므로 앱이 11회 수신했다고 해석하지 않는다.
+- 상태 응답에서 Renderer `not_ready` → `responsive`/project `not_selected`를 확인했다.
+  원래 list-connections RPC 전송 **0회**. 종료 후 PID 96242의 실제 Dev 앱이 유지됐다.
+- SDK wire에 progress 1·2·3을 수신했다. 이 부수 관찰을 ChatGPT host UI의
+  진행 알림 표시 또는 다른 N 분기 전체 통과로 계산하지 않는다.
+- 판정: **I05 완료**. 별도 SDK 실행이며 과거 M01 host 호출의 명령 횟수를
+  소급 확정하지 않는다. Windows는 미검증이다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-i05-We9UaV/evidence.json`, 같은 디렉터리의 `trace.jsonl`.
+  일회성 실행기: `/tmp/neosql-i05-client.mjs`, `/tmp/neosql-i05-observer.cjs`.
+  횟수·실제 명령 인자·exit 0·반복 조회·최종 응답 1개 assertion이 모두 통과했다.
+
+
+### 2026-09-15 08:16 KST 후속 실제 실행 — I03 설치 정보 조회 오류
+
+사용자가 Dev 앱 종료·기본 설치 경로 부재를 준비하고 권한 오류 준비를 요청했다.
+현재 사용자 계정(uid 501)의 실제 파일 권한으로 수행했으며 별도 VM이나 깨끗한 OS는 아니다.
+
+- 사전 확인: `/Applications/NeoSQLDev.app`, 사용자 Applications의 Dev 앱 및 dev 소켓이 없었다. 기존 설치 기록의 appPath도 존재하지 않는 `/Applications/NeoSQLDev.app`이었다.
+- 기존 `~/.neosql-dev/mcp-config.json`은 소유자 uid 501, 일반 파일, 권한 644였다. 내용은 변경하지 않고 08:16:24.257 KST에 권한을 000으로 일시 변경했다. 같은 일반 사용자 계정의 실제 읽기가 `EACCES`로 실패함을 확인했다.
+- 45초 자동 복구와 호출 직후 복구를 준비했다. 08:16:30.034 KST에 실제 host에서 `list-connections` 1회 호출, 약 4,495ms 후 `isError: true`, `installation_check_failed`, `requestSent: false` 및 수동 앱 실행 후 재시도 안내를 수신했다.
+- 08:16:34.719 KST에 원래 권한 644로 복구했다. 파일 내용의 SHA-256이 변경 전과 같음을 확인했다. 복구 후 추가 MCP 호출은 하지 않았다.
+- 판정: I03 설치 조회 권한 오류 안내 분기 확인 완료. OS 실행 명령·원래 작업 횟수는 직접 계측하지 않았으며 `requestSent: false`는 도구의 보고값이다. M07 전체나 Windows 검증 완료를 뜻하지 않는다.
+- 증거: `/tmp/neosql-i03-permission-evidence.json`, `/tmp/neosql-i03-call-result.json`. 파일 내용·자격 증명은 증거에 보관하지 않았다.
+
+
+### 2026-09-15 06:52~06:54 KST 후속 실제 실행 — M01
+
+macOS 26.5.2, NeoSQLDev 3.3.1 (`com.unvus.neosql.dev`), ChatGPT Desktop
+26.908.40834 (8881), `npx -y neosql-mcp --profile=dev`로 사용자와 함께 수행했다.
+사용자가 이번 dev 빌드를 설치했고, 호출 전 해당 앱 프로세스 부재를 확인했다.
+
+- 첫 `list-connections` 1회: 약 7,707ms 후 `project_not_selected`,
+  `requestSent: false`. 새 앱 프로세스와 activation deep link 수신·Renderer 준비를
+  확인했으며 앱 로그의 원래 작업 dispatch는 0회였다.
+- 사용자의 프로젝트 접속 완료 후 새 `list-connections` 1회: 약 3,599ms 후
+  `{"connections":[]}` 정상 응답. 앱 로그에서 원래 작업 dispatch 1회·성공을 확인했다
+  (upstream requestId 19; host tools/call ID와 구분).
+- 핵심 동작은 확인했으나 OS 실행 명령 정확한 횟수, host wire ID/progressToken·진행 UI,
+  실제 host MCP 패키지 revision은 미확인이다. 빈 연결 목록은 도구 처리 성공이며
+  A/B 연결 기준 결과 확보나 DB 작업 성공을 의미하지 않는다. M01 전체 증거 충족 및
+  W5 전체 완료로 계산하지 않는다. Windows는 미검증이다.
+- 상세: [본체 실행 기록](/Users/shock/workspace/neosql/docs/plan/mcp-startup-progress/work-instructions/w5-preflight-20260915.md).
+  로그 발췌: `/tmp/neosql-m01-first-call-20260915.log`,
+  `/tmp/neosql-m01-second-call-20260915.log`.
+
+아래 환경 미확인 설명은 최초 인계 시점 기록이다. M01의 최신 관찰은 위 후속 결과를 따른다.
+
 - Windows OS 명령/레지스트리/Named Pipe 및 실제 host 진행 UI는 환경 검증 필요.
 - 본체 제품 코드의 추가 결함은 이번 조사/외부 자동 검증에서 확인하지 않았다.
 - 본체 `docs/mcp/architecture.html`의 외부 준비 대기 미완료 설명은 이제 외부 W3·W4
