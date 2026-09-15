@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import http from 'node:http';
+import { createInterface } from 'node:readline';
+import { closeServer, listen } from '../helpers/socket.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI_PATH = resolve(__dirname, '../../dist/cli.js');
@@ -94,6 +98,148 @@ describe('built CLI via stdio spawn', () => {
 describe.skipIf(
   process.platform === 'win32' && process.env.NEOSQL_MCP_DEDICATED_WINDOWS_RUNNER !== '1',
 )('T21 isolated built CLI preparation', () => {
+  it.each(['loading', 'pending HTTP'] as const)(
+    'cancels preparation and exits naturally when stdin ends during %s',
+    async (phase) => {
+      const runtimeDir = mkdtempSync(path.join(os.tmpdir(), 'mp-'));
+      const socketPath =
+        process.platform === 'win32'
+          ? '\\\\.\\pipe\\neosql-mcp-local'
+          : path.join(runtimeDir, 'neosql-mcp-local.sock');
+      let child: ChildProcessWithoutNullStreams | undefined;
+      let queries = 0;
+      let operations = 0;
+      let inputEndedAt: number | undefined;
+      let httpClosedAt: number | undefined;
+      const wire: Array<Record<string, unknown>> = [];
+      let stderr = '';
+      const endInput = () => {
+        inputEndedAt = performance.now();
+        child!.stdin.end();
+      };
+      const mock = http.createServer((req, res) => {
+        let body = '';
+        req.on('data', (chunk: Buffer) => {
+          body += chunk.toString('utf8');
+        });
+        req.on('end', () => {
+          const rpc = JSON.parse(body) as { method: string; id: number };
+          if (rpc.method === 'get-runtime-status') {
+            queries++;
+            if (phase === 'pending HTTP') {
+              res.on('close', () => {
+                httpClosedAt = performance.now();
+              });
+              endInput();
+              return;
+            }
+          } else {
+            operations++;
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: rpc.id,
+              result:
+                rpc.method === 'get-runtime-status'
+                  ? {
+                      app: 'neosql',
+                      profile: 'local',
+                      renderer: 'responsive',
+                      project: { state: queries === 1 ? 'loading' : 'ready', projectId: 'A' },
+                    }
+                  : { connections: [] },
+            }),
+          );
+        });
+      });
+      let exitTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        // Bind before spawning; never use the real Desktop endpoint or SDK close/kill.
+        await listen(mock, socketPath);
+        child = spawn(process.execPath, [CLI_PATH, '--profile=local'], {
+          stdio: 'pipe',
+          env: {
+            ...process.env,
+            TMPDIR: runtimeDir,
+            TMP: runtimeDir,
+            TEMP: runtimeDir,
+            NEOSQL_MCP_LOG_PARENT_DIR: runtimeDir,
+          },
+        });
+        const exit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
+          (resolve, reject) => {
+            child!.once('error', reject);
+            child!.once('close', (code, signal) => resolve({ code, signal }));
+            exitTimer = setTimeout(
+              () => reject(new Error('CLI did not exit after stdin EOF')),
+              3000,
+            );
+          },
+        );
+        child.stderr.on('data', (chunk: Buffer) => {
+          stderr += chunk.toString('utf8');
+        });
+        const send = (message: unknown) => child!.stdin.write(`${JSON.stringify(message)}\n`);
+        createInterface({ input: child.stdout }).on('line', (line) => {
+          const message = JSON.parse(line) as Record<string, unknown>;
+          wire.push(message);
+          if (message.id === 1) {
+            send({ jsonrpc: '2.0', method: 'notifications/initialized' });
+            send({
+              jsonrpc: '2.0',
+              id: 2,
+              method: 'tools/call',
+              params: {
+                name: 'list-connections',
+                arguments: {},
+                _meta: { progressToken: 'eof-test' },
+              },
+            });
+          } else if (message.method === 'notifications/progress' && inputEndedAt === undefined) {
+            endInput();
+          }
+        });
+        send({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {},
+            clientInfo: { name: 'eof-test', version: '1' },
+          },
+        });
+
+        expect(await exit).toEqual({ code: 0, signal: null });
+        expect(stderr).toBe('');
+        expect(inputEndedAt).toBeDefined();
+        expect(queries).toBe(1);
+        expect(operations).toBe(0);
+        expect(wire.filter((message) => message.id === 2)).toEqual([]);
+        const progress = wire.filter((message) => message.method === 'notifications/progress');
+        expect(progress).toHaveLength(phase === 'loading' ? 1 : 0);
+        if (phase === 'loading') {
+          expect(progress[0]?.params).toMatchObject({ message: 'Loading the selected project.' });
+        } else {
+          expect(httpClosedAt).toBeDefined();
+          // Cancellation must close the request before its normal 1000ms query timeout.
+          expect(httpClosedAt! - inputEndedAt!).toBeLessThan(750);
+        }
+      } finally {
+        clearTimeout(exitTimer);
+        if (child && child.exitCode === null && child.signalCode === null) {
+          const closed = new Promise<void>((resolve) => child!.once('close', () => resolve()));
+          child.kill('SIGKILL');
+          await closed;
+        }
+        await closeServer(mock);
+        rmSync(runtimeDir, { recursive: true, force: true });
+      }
+    },
+  );
+
   it.each([undefined, 0, 'startup-token'])(
     'delivers progress and one final response for token %s',
     async (progressToken) => {

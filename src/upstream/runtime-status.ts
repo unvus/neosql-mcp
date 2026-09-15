@@ -31,6 +31,7 @@ export const isRuntimeStatus = (value: unknown, profile: Profile): value is Runt
   if (value.renderer === 'not_ready') return value.project === null;
   if (value.renderer !== 'responsive' || !record(value.project)) return false;
   const project = value.project;
+  if (typeof project.state !== 'string') return false;
   if (project.state === 'not_selected')
     return project.projectId === null && project.reason === undefined;
   if (typeof project.projectId !== 'string' || !project.projectId.length) return false;
@@ -38,7 +39,7 @@ export const isRuntimeStatus = (value: unknown, profile: Profile): value is Runt
   if (project.state === 'user_action_required')
     return actionReasons.some((reason) => reason === project.reason);
   return (
-    ['loading', 'ready', 'authentication_required'].includes(String(project.state)) &&
+    ['loading', 'ready', 'authentication_required'].includes(project.state) &&
     project.reason === undefined
   );
 };

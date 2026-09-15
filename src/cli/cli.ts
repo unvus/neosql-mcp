@@ -11,7 +11,28 @@ const main = async (): Promise<void> => {
 
   const server = createServer({ profile, socketPath });
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  let closing = false;
+  const closeOnInputEnd = (): void => {
+    if (closing) return;
+    closing = true;
+    process.stdin.off('end', closeOnInputEnd);
+    process.stdin.off('close', closeOnInputEnd);
+    // The SDK transport does not turn stdin EOF into onclose/request cancellation.
+    void server.close().catch((err: unknown) => {
+      logger.error({ component: 'McpServer', err }, 'neosql-mcp failed to close');
+      flushLogger();
+      process.exitCode = 1;
+    });
+  };
+  process.stdin.once('end', closeOnInputEnd);
+  process.stdin.once('close', closeOnInputEnd);
+  try {
+    await server.connect(transport);
+  } catch (err) {
+    process.stdin.off('end', closeOnInputEnd);
+    process.stdin.off('close', closeOnInputEnd);
+    throw err;
+  }
   logger.info(
     { component: 'McpServer', transport: 'stdio', profile, socketPath, httpPath: HTTP_PATH },
     'neosql-mcp ready',

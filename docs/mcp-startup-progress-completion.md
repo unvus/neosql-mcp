@@ -1,14 +1,45 @@
 # MCP W3·W4 구현 결과와 W5 검증 인계
 
-2026-09-15 (Asia/Seoul). **W3·W4 구현 및 자동 검증 완료, 원래 대화 Codex 검토 대기.**
+2026-09-15 (Asia/Seoul). **W3·W4 구현·자동 검증 및 리뷰 지적 2건 수정 완료.**
 실제 Desktop/host/Windows의 W5는 미검증이며 전체 기능 검증 완료나 검증 생략 승인으로
-표시하지 않는다. commit·push·merge·배포는 수행하지 않았다.
+표시하지 않는다. 초기 구현은 `7d81afd`로 커밋됐으며, 이번 후속 수정은 미커밋 상태다.
+이번 수정에서 push·merge·배포·버전 변경은 수행하지 않았다.
+
+## 리뷰 후속 수정과 재검토 (2026-09-15)
+
+검토 대상 `7d81afd`에서 확인한 P1·P2 두 건을 수정했다.
+
+- **P1 stdio EOF 취소 누락:** CLI가 stdin `end`·`close`를 중복 실행 방지 종료 함수에
+  연결해 SDK `server.close()`로 진행 중인 요청을 취소한다. 연결 전에 listener를
+  등록하며 종료 및 연결 실패 시 정리한다. SDK transport callback은 덮어쓰지 않는다.
+  정상 EOF는 자연 종료, 종료 처리 오류는 로그와 실패 exit code로 남긴다.
+- **P2 상태 형변환 검증:** `project.state`는 문자열 타입을 먼저 확인한 뒤 허용값과
+  비교한다. 배열·객체를 문자열로 변환해 통과시키거나 변환 예외를 발생시키지 않는다.
+- 재검토 결과 두 지적은 해결됐으며 이번 수정 diff에서 추가 결함은 발견하지 않았다.
+  이 대화의 Codex가 수행한 재검토이며 별도 리뷰어 또는 실제 W5 검증 결과가 아니다.
+
+회귀 검증은 승인된 계획대로 red → 수정 → green 순서로 수행했다.
+
+| 검증 | 근거와 결과 |
+| --- | --- |
+| 상태값 red | 기존 코드에서 배열 4종과 변환 불가 객체 1종, 총 5개 실패. `/tmp/mcp-review-fix-state-red.log` |
+| EOF red | 기존 built CLI에서 loading 중 추가 조회, HTTP pending 중 timeout 이후 최종 응답을 확인해 두 테스트 실패. `/tmp/mcp-review-fix-eof-red.log` |
+| 상태값 green | 배열·중첩 배열·객체·숫자·null 8종 모두 첫 조회에서 `status_check_failed`, `requestSent: false`, 조회 1회·작업 0회. 후속 ready 응답 소비·설치 확인·앱 실행 없음 |
+| EOF green | raw spawn의 stdin만 종료. loading 후 추가 조회·작업·알림 없음, pending HTTP는 1초 timeout 이전에 연결 종료(750ms 미만 assertion), CLI 정상 자연 종료. SDK client.close 및 성공 경로의 kill 미사용 |
+| 타입 검사·빌드 | `npm run typecheck`, `npm run build` 통과. 테스트 입력의 이종 타입 추론 오류는 명시적인 unknown 타입으로 수정 후 통과 |
+| spawn 통합 | `npm run test:integration`: 8/8 통과. `/tmp/mcp-review-fix-spawn-green.log` |
+| 전체 검증 | `npm test`: 24 suite, **221/221 통과**, 2026-09-15 04:08:01 KST 시작, 5.14초. `/tmp/mcp-review-fix-full-green.log` |
+| diff 확인 | `git diff --check` 통과 |
+
+새 회귀 테스트는 상태값 8개와 built CLI EOF 2개다. 임시 UDS 및 로그 디렉터리로 격리해
+실제 NeoSQL 앱·DB에 접근하지 않았다. Windows는 기존 전용 runner 조건을 유지했고
+이번 실행은 macOS 결과다. 아래 초기 검증 기록과 W5 미검증 목록은 이력으로 유지한다.
 
 ## 기준과 소유권
 
 - 외부 checkout: `/Users/shock/workspace/mcp`, 브랜치 `main`.
-- 시작/최종 HEAD: `8ad666e86780bc992f06a7dce73734dbb9ddcb04`, 패키지 `1.6.0`.
-  시작 작업 트리는 깨끗했다. 변경은 미커밋 상태다.
+- 초기 구현 시작 HEAD: `8ad666e86780bc992f06a7dce73734dbb9ddcb04`, 패키지 `1.6.0`.
+  시작 작업 트리는 깨끗했다. 초기 구현 커밋 및 후속 수정 기준 HEAD는 `7d81afd`다.
 - 본체 checkout: `/Users/shock/workspace/neosql`.
 - 본체 검토 통과본: `2ffef514dbc56911df40a7c253b15fbb423f3ce5`.
 - 착수 근거: 본체 `docs/plan/mcp-startup-progress/work-instructions/neosql-review.md`의
@@ -72,7 +103,7 @@ README의 사용자 동작, `docs/upstream-rpc-contract.md`, `docs/e2e-manual.md
 과거 Phase 항목은 이력임을 표시하고 최신 준비 정책을 연결했다. dist는 빌드만 했으며
 직접 편집하거나 추적 파일로 추가하지 않았다.
 
-## 자동 검증
+## 초기 구현 자동 검증 (후속 수정 전 기록)
 
 최종 명령 (cwd `/Users/shock/workspace/mcp`):
 
@@ -162,7 +193,7 @@ git diff --check
 
 ## 남은 검토 및 다른 저장소 조치
 
-- 원래 대화 Codex: diff·공통 호출 경로·deadline/취소 수명·T ID 근거 검토 필요.
+- 원래 대화 Codex 검토에서 확인한 두 지적은 위 후속 수정으로 해결하고 재검토했다.
 ### 2026-09-15 08:53~08:54 KST 후속 실제 실행 — I07·I08 기동 지연과 복구
 
 사용자가 설치된 NeoSQLDev를 완전히 종료한 뒤 main 프로세스 부재와 설치 버전

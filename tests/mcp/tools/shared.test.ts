@@ -1,8 +1,66 @@
 import { describe, expect, it, vi } from 'vitest';
 import { HttpClientError } from '../../../src/upstream/http-client.js';
 import { callUpstreamTool, type UpstreamToolDeps } from '../../../src/mcp/tools/shared.js';
+import { ensureDesktopReady } from '../../../src/upstream/desktop-readiness.js';
 
 describe('callUpstreamTool desktop lifecycle handling', () => {
+  it.each<{ label: string; state: unknown }>([
+    { label: 'ready array', state: ['ready'] },
+    { label: 'loading array', state: ['loading'] },
+    { label: 'authentication array', state: ['authentication_required'] },
+    { label: 'nested array', state: [['ready']] },
+    { label: 'object', state: {} },
+    { label: 'object with a non-callable toString', state: { toString: null } },
+    { label: 'number', state: 1 },
+    { label: 'null', state: null },
+  ])(
+    'rejects a $label project state before retrying or sending the operation',
+    async ({ state }) => {
+      const runtimeStatus = (projectState: unknown) => ({
+        app: 'neosql',
+        profile: 'prod',
+        renderer: 'responsive',
+        project: { state: projectState, projectId: 'A' },
+      });
+      const queryStatus = vi
+        .fn()
+        .mockResolvedValueOnce(runtimeStatus(state))
+        .mockResolvedValue(runtimeStatus('ready'));
+      const postRpc = vi.fn();
+      const requestActivation = vi.fn();
+      const checkInstallation = vi.fn();
+      const result = await callUpstreamTool(
+        {
+          sessionId: 'malformed-state-test',
+          postRpc,
+          ensureDesktopReady: (context) =>
+            ensureDesktopReady({
+              ...context,
+              socketPath: '/unused.sock',
+              profile: 'prod',
+              queryStatus,
+              requestActivation,
+              checkInstallation,
+            }),
+        },
+        'list-connections',
+        {},
+      );
+
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0]!.text)).toEqual({
+        status: 'status_check_failed',
+        requestSent: false,
+        message: expect.any(String),
+        nextAction: expect.any(String),
+      });
+      expect(queryStatus).toHaveBeenCalledOnce();
+      expect(postRpc).not.toHaveBeenCalled();
+      expect(requestActivation).not.toHaveBeenCalled();
+      expect(checkInstallation).not.toHaveBeenCalled();
+    },
+  );
+
   it('does not request activation again when an already-sent upstream request times out', async () => {
     const rpcCalls: string[] = [];
     const deps: UpstreamToolDeps = {
