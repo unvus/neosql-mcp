@@ -163,37 +163,6 @@ git diff --check
 
 ## W5 실제 Desktop/host 검증 상태
 
-사용자에게 격리 앱/테스트 프로젝트의 실행 위치·profile·A/B 이름 및 Windows 환경을
-요청했으며 보고 시점에는 제공받지 못했다. 본체 인계에서도 실제 Desktop 실행/빌드 성공을
-보증하지 않는다. 사용 중인 앱을 종료·이동·변경하거나 본체의 공유 설정으로 새 앱을
-임의 실행하지 않았다. ps 기반 프로세스 확인은 sandbox에서 차단됐으며, 실행 앱의
-검토 코드·profile·격리 프로젝트 일치 여부를 확정하지 않았다.
-
-아래 모든 행에서 실제 앱 commit/host 버전/요청 ID/준비·작업 실측/A·B 기준 데이터는
-미확인·미측정이다. **wire 수신과 host 표시도 둘 다 미검증**이다. SDK mock 수신 성공을
-실제 Desktop 또는 host UI 통과로 바꾸지 않는다.
-
-| M ID | macOS 실제 환경 | Windows 실제 환경 | 남은 변형/전제 |
-| --- | --- | --- | --- |
-| M01 | 핵심 동작 확인, 일부 증거 미확인 | 미검증 | 첫 호출 작업 0회·프로젝트 선택 후 새 호출 작업 1회 확인. OS 실행 횟수·host wire·MCP revision 미확인 |
-| M02 | 미검증 | 미검증 | 실제 loading 최초 관찰 → 동일 호출 ready |
-| M03 | 미검증 | 미검증 | 명령 실패 및 느린 기동을 재현할 격리 환경 |
-| M04 | 미검증 | 미검증 | 잠금·연결/멤버 정리·드라이버 모달, 해결/Skip 및 자동 잠금 |
-| M05 | 미검증 | 미검증 | 실제 host의 토큰 유무/0/문자열·진행 UI·취소 전달/서버 관찰, 앱 유지 |
-| M06 | 미검증 | 미검증 | 실제 준비·작업·host 전체 제한 별도 측정 |
-| M07 | 미검증 | 미검증 | 깨끗한 미설치 OS와 설치 조회 권한 오류 환경 |
-| M08 | 미검증 | 미검증 | 실제 초기화 중단 실패/복구, 저장소·동기화·설정 부재 변형 |
-| M09 | 미검증 | 미검증 | local 익명, account 로그인/기존 인증 만료 흐름 |
-| M10 | 미검증 | 미검증 | 구분 가능한 A/B 기준 결과, 직접 전환·대시보드 경유·A 늦은 결과 |
-| M11 | 미검증 | 미검증 | 근거 없는 최초 미응답과 근거 있는 기동/로딩 후 미응답·회복 |
-
-실행 절차는 `docs/e2e-manual.md`의 M01~M11을 따른다. 위 환경과 검토 코드의 앱을
-준비한 뒤 실제 결과를 추가해야 W5를 평가할 수 있다. 기본 읽기 도구는 list-connections이며
-실제 DDL/DML이 필요하면 NeoSQL MCP로만 수행한다.
-
-## 남은 검토 및 다른 저장소 조치
-
-- 원래 대화 Codex 검토에서 확인한 두 지적은 위 후속 수정으로 해결하고 재검토했다.
 ### 2026-09-15 08:53~08:54 KST 후속 실제 실행 — I07·I08 기동 지연과 복구
 
 사용자가 설치된 NeoSQLDev를 완전히 종료한 뒤 main 프로세스 부재와 설치 버전
@@ -298,26 +267,89 @@ StdioClientTransport를 사용했으며 기존 ChatGPT host 세션 호출과 구
 
 ### 2026-09-15 06:52~06:54 KST 후속 실제 실행 — M01
 
-macOS 26.5.2, NeoSQLDev 3.3.1 (`com.unvus.neosql.dev`), ChatGPT Desktop
-26.908.40834 (8881), `npx -y neosql-mcp --profile=dev`로 사용자와 함께 수행했다.
-사용자가 이번 dev 빌드를 설치했고, 호출 전 해당 앱 프로세스 부재를 확인했다.
+macOS 26.5.2에서 수행했다.
 
-- 첫 `list-connections` 1회: 약 7,707ms 후 `project_not_selected`,
-  `requestSent: false`. 새 앱 프로세스와 activation deep link 수신·Renderer 준비를
-  확인했으며 앱 로그의 원래 작업 dispatch는 0회였다.
-- 사용자의 프로젝트 접속 완료 후 새 `list-connections` 1회: 약 3,599ms 후
-  `{"connections":[]}` 정상 응답. 앱 로그에서 원래 작업 dispatch 1회·성공을 확인했다
-  (upstream requestId 19; host tools/call ID와 구분).
-- 핵심 동작은 확인했으나 OS 실행 명령 정확한 횟수, host wire ID/progressToken·진행 UI,
-  실제 host MCP 패키지 revision은 미확인이다. 빈 연결 목록은 도구 처리 성공이며
-  A/B 연결 기준 결과 확보나 DB 작업 성공을 의미하지 않는다. M01 전체 증거 충족 및
-  W5 전체 완료로 계산하지 않는다. Windows는 미검증이다.
-- 상세: [본체 실행 기록](/Users/shock/workspace/neosql/docs/plan/mcp-startup-progress/work-instructions/w5-preflight-20260915.md).
-  로그 발췌: `/tmp/neosql-m01-first-call-20260915.log`,
-  `/tmp/neosql-m01-second-call-20260915.log`.
+- 사용자가 새 Dev 빌드 설치를 완료했다고 알린 뒤 검사했다. `/Applications/NeoSQLDev.app`의 버전은 3.3.1, bundle ID는 `com.unvus.neosql.dev`다. 이전 빌드 작업에서 생성한 dev 패키지는 서명·공증 티켓·DMG 무결성 검증을 통과했다.
+- host: ChatGPT Desktop 26.908.40834 (8881). 프로젝트 `.codex/config.toml`은 `npx -y neosql-mcp --profile=dev`. 이 host가 실행한 npm 패키지의 정확한 revision은 미확인이다.
+- 호출 전 해당 설치 경로의 NeoSQLDev main 프로세스가 없음을 `pgrep`으로 확인했다. 앱 종료 조작은 하지 않았다.
+- 2026-09-15 06:52:22.494 KST에 host의 `list-connections`를 1회 호출했다. 추가 도구 호출 없이 약 7,707ms 후 최종 응답 1개: `isError: true`, `status: project_not_selected`, `requestSent: false`. message와 nextAction은 프로젝트 선택 후 재호출을 안내했다. 시간은 host 도구 호출 전체 관찰 시간이며 MCP 내부 준비 시간과 같다고 단정하지 않는다.
+- 호출 후 PID 73983이 `/Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev`로 실행 중임을 확인했다.
+- 앱 로그: 06:52:29.264 `neosql-dev://mcp/activate` 수신, 06:52:29.276 dev 소켓 listen, 06:52:30.000 Renderer handler ready. 06:52분 로그의 `list-connections` 원래 작업 dispatch는 0회다. 내부 상태 조회의 upstream JSON-RPC ID는 16·17이며 host tools/call ID와 구분한다.
+- 같은 deep link가 pending 처리 과정에서 다시 로그에 나타난다. 이를 OS 실행 명령 2회로 계산하지 않는다. OS 실행 명령 횟수는 직접 계측하지 않았다.
+- 원본 로그의 해당 구간에서 MCP 및 activation 관련 행만 `/tmp/neosql-m01-first-call-20260915.log`에 보관했다. host wire의 tools/call ID·progressToken·진행 알림 UI는 이번 도구 결과에서 노출되지 않아 미확인이다.
+- 사용자가 프로젝트 접속 완료를 알린 후 06:54:25.997 KST에 두 번째 `list-connections`를 1회 호출했다. 약 3,599ms 후 `{"connections":[]}` 정상 결과를 수신했다. 빈 목록은 MCP에 공개된 연결이 반환되지 않았다는 의미이며, 도구 실행 실패가 아니다. DB 연결 기준 결과 확보나 DB 작업 검증으로 계산하지 않는다.
+- 앱 로그에서 06:54:29.577 준비 조회 후 06:54:29.586 `list-connections` dispatch 1회, 06:54:29.587 성공 응답을 확인했다. 원래 작업 upstream requestId는 19다. 준비 상태 조회와 원래 작업을 별도로 집계했으며 두 번째 호출의 앱 로그 발췌는 `/tmp/neosql-m01-second-call-20260915.log`다.
+- 판정: **macOS/dev M01의 핵심 동작(종료 앱 기동 → 첫 호출 프로젝트 미선택·작업 0회 → 사용자의 프로젝트 선택 → 새 호출 정상 처리·작업 1회)은 확인했다.** OS 실행 명령 정확한 횟수, host wire ID·progressToken·진행 UI, host가 실제 사용한 MCP 패키지 revision은 미확인이다. 해당 증거까지 포함한 M01 전체 검증 및 W5 전체 완료는 선언하지 않는다. Windows는 미검증이다.
+
+### 2026-09-15 02:26 KST local 앱 사전 연결 점검
+
+아래 설정·revision·미확인 상태와 다음 단계는 사전 점검 당시 기록이다. 이후 dev 설치본 검증 결과와 구분한다.
+
+#### 환경과 판정 경계
+
+- macOS 26.5.2 (25F84), Node v22.22.2.
+- 본체 checkout HEAD: `9683668473a6d379fc5104685284e36ffead2c5f`. 미커밋 변경 있음. 실제 실행 앱이 이 checkout/build인지, 테스트 전용 환경인지는 아직 미확인.
+- MCP checkout HEAD: `7d81afd4dc4c48d19dab479fdcc4ad00eb742deb`, 작업 트리 깨끗함. 패키지 1.6.0. 기존 `dist/cli.js.map`의 src 파일 30개가 현재 소스와 일치함을 확인했다. 이번 점검에서 재빌드하지 않았다.
+- SDK `StdioClientTransport`에서 `node /Users/shock/workspace/mcp/dist/cli.js --profile=local`을 실행했다. MCP handshake의 serverInfo.version은 `0.0.1`로 응답했다. 패키지 버전과 구분한다.
+- Codex 저장 설정은 `npx -y neosql-mcp`이며 profile 지정이 없다. 현재 Codex 연결의 실제 패키지 revision은 확인하지 않았다. 설정은 변경하지 않았다.
+- 아래는 실제 local 앱과의 사전 연결 점검이다. M01~M11 전체 통과 또는 W5 완료로 계산하지 않는다. 실제 host UI·취소·OS 실행 횟수·앱 내부 작업 횟수는 미검증이다.
+
+#### 수행 결과
+
+1. built 설치 진단 CLI: local은 `not_installed`, dev는 `/Applications/NeoSQLDev.app/Contents/MacOS/NeoSQLDev`를 찾아 `installed`. 실행 중인 local 개발 앱의 존재와 패키징 앱 설치 판정은 별개다.
+2. local 내부 `get-runtime-status` 1회 조회: HTTP 200, 약 116ms. `renderer: responsive`, `project.state: not_selected`, `projectId: null`, `app: neosql`, `profile: local`을 확인했다. 요청 ID는 `w5-preflight-local-20260915`.
+3. 02:26:23 KST, 앱과 같은 `TMPDIR`을 전달한 SDK 클라이언트: `list-connections`를 1회 호출했다. 요청 ID 1, progressToken `w5-preflight-local`. 약 28ms 후 최종 도구 응답 1개, `isError: true`, `status: project_not_selected`, `requestSent: false`, 영어 message/nextAction을 수신했다. 진행 알림은 없었다. 즉시 종료 상태의 응답 계약과 일치한다. 원래 작업 미전송은 공개 결과의 보고값이며 앱 내부 횟수를 별도 계측하지 않았다.
+
+앱을 실행·종료하거나 프로젝트·DB를 변경하지 않았다. 초기 소켓 접근은 sandbox의 EPERM으로 차단됐고, 권한을 확장한 읽기 전용 조회로 확인했다. EPERM을 제품 오류로 판정하지 않았다.
+
+#### SDK 실행 환경 주의점
+
+첫 SDK 호출은 기본 `StdioClientTransport` 환경에 `TMPDIR`이 포함되지 않아 앱과 다른 소켓 경로를 계산했고, 약 10ms 후 `installation_not_found`를 반환했다. SDK 구현의 기본 상속 목록과 양측 `os.tmpdir()` 기반 endpoint 계산을 확인했다. 테스트 클라이언트에 실제 앱의 `TMPDIR`을 명시한 뒤 위 3번 결과를 얻었다. 두 실행은 별도 tools/call이며 동일 호출의 polling이 아니다.
+
+실제 host가 전달하는 환경과 해당 host의 성공 여부는 별도로 검증해야 한다. 이 결과를 M07의 깨끗한 미설치 OS 변형 통과로 계산하지 않는다. 제품 코드는 변경하지 않았다.
+
+#### 증거와 당시 남은 확인 사항
+
+- 수정 전 SDK wire: `/tmp/neosql-w5-preflight-without-tmpdir.json`.
+- TMPDIR 일치 후 SDK wire: `/tmp/neosql-w5-preflight-result.json`.
+- 일회성 클라이언트: `/tmp/neosql-w5-preflight.mjs`.
+- 실제 앱 checkout/build·profile·격리 여부와 테스트 프로젝트 A/B를 확인한다. 익명 local의 준비된 프로젝트에서 M09 및 A/B 기준 결과를 먼저 확보한다.
+- M01의 종료 앱 자동 실행은 OS에서 발견·실행 가능한 해당 profile 패키징 앱이 필요하다. 현재 local 설치 진단은 미발견이므로 개발 서버 실행만으로 이 변형의 준비 완료를 주장하지 않는다.
+- Windows와 장애 재현 환경은 미확인이다. 나머지 절차는 기존 `e2e-manual.md` M01~M11을 따른다.
 
 아래 환경 미확인 설명은 최초 인계 시점 기록이다. M01의 최신 관찰은 위 후속 결과를 따른다.
 
+사용자에게 격리 앱/테스트 프로젝트의 실행 위치·profile·A/B 이름 및 Windows 환경을
+요청했으며 보고 시점에는 제공받지 못했다. 본체 인계에서도 실제 Desktop 실행/빌드 성공을
+보증하지 않는다. 사용 중인 앱을 종료·이동·변경하거나 본체의 공유 설정으로 새 앱을
+임의 실행하지 않았다. ps 기반 프로세스 확인은 sandbox에서 차단됐으며, 실행 앱의
+검토 코드·profile·격리 프로젝트 일치 여부를 확정하지 않았다.
+
+아래 모든 행에서 실제 앱 commit/host 버전/요청 ID/준비·작업 실측/A·B 기준 데이터는
+미확인·미측정이다. **wire 수신과 host 표시도 둘 다 미검증**이다. SDK mock 수신 성공을
+실제 Desktop 또는 host UI 통과로 바꾸지 않는다.
+
+| M ID | macOS 실제 환경 | Windows 실제 환경 | 남은 변형/전제 |
+| --- | --- | --- | --- |
+| M01 | 핵심 동작 확인, 일부 증거 미확인 | 미검증 | 첫 호출 작업 0회·프로젝트 선택 후 새 호출 작업 1회 확인. OS 실행 횟수·host wire·MCP revision 미확인 |
+| M02 | 미검증 | 미검증 | 실제 loading 최초 관찰 → 동일 호출 ready |
+| M03 | 미검증 | 미검증 | 명령 실패 및 느린 기동을 재현할 격리 환경 |
+| M04 | 미검증 | 미검증 | 잠금·연결/멤버 정리·드라이버 모달, 해결/Skip 및 자동 잠금 |
+| M05 | 미검증 | 미검증 | 실제 host의 토큰 유무/0/문자열·진행 UI·취소 전달/서버 관찰, 앱 유지 |
+| M06 | 미검증 | 미검증 | 실제 준비·작업·host 전체 제한 별도 측정 |
+| M07 | 미검증 | 미검증 | 깨끗한 미설치 OS와 설치 조회 권한 오류 환경 |
+| M08 | 미검증 | 미검증 | 실제 초기화 중단 실패/복구, 저장소·동기화·설정 부재 변형 |
+| M09 | 미검증 | 미검증 | local 익명, account 로그인/기존 인증 만료 흐름 |
+| M10 | 미검증 | 미검증 | 구분 가능한 A/B 기준 결과, 직접 전환·대시보드 경유·A 늦은 결과 |
+| M11 | 미검증 | 미검증 | 근거 없는 최초 미응답과 근거 있는 기동/로딩 후 미응답·회복 |
+
+실행 절차는 `docs/e2e-manual.md`의 M01~M11을 따른다. 위 환경과 검토 코드의 앱을
+준비한 뒤 실제 결과를 추가해야 W5를 평가할 수 있다. 기본 읽기 도구는 list-connections이며
+실제 DDL/DML이 필요하면 NeoSQL MCP로만 수행한다.
+
+## 남은 검토 및 다른 저장소 조치
+
+- 원래 대화 Codex 검토에서 확인한 두 지적은 위 후속 수정으로 해결하고 재검토했다.
 - Windows OS 명령/레지스트리/Named Pipe 및 실제 host 진행 UI는 환경 검증 필요.
 - 본체 제품 코드의 추가 결함은 이번 조사/외부 자동 검증에서 확인하지 않았다.
 - 본체 `docs/mcp/architecture.html`의 외부 준비 대기 미완료 설명은 이제 외부 W3·W4

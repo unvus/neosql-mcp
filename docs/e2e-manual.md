@@ -272,8 +272,7 @@ ENOTSOCK는 상태 확인 실패이며 stale socket(ECONNREFUSED)과 다르다.
 - [ ] **Q05 이번 호출의 loading 확인 후 timeout → 미회복** — loading 확인 뒤 기한 내 회복하지 못하면 `readiness_timeout`, 원래 작업 0회다. (M11)
 
 체크 완료한 I01·I03·I04·I05·I06·I07·I08·P01·P02의 결과·미확인 증거는
-[W5 실행 결과](mcp-startup-progress-completion.md) 및
-[본체 실행 기록](/Users/shock/workspace/neosql/docs/plan/mcp-startup-progress/work-instructions/w5-preflight-20260915.md)을 참고한다.
+[W5 실행 결과](mcp-startup-progress-completion.md)를 참고한다.
 I01의 체크는 미설치 안내 동작 확인을 뜻한다. OS 실행 명령·원래 작업 횟수의 직접 계측이나 기존 M07의 깨끗한 OS 조건까지 확인한 것으로 해석하지 않는다.
 기존 실행의 OS 명령 횟수·host wire·실제 MCP revision 등 미확인 증거는 해당 결과 기록에 계속 남긴다. I05에서 새로 계측한 별도 SDK 호출의 결과로 이전 호출의 미확인 값을 소급 확정하지 않는다.
 
