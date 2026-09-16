@@ -103,6 +103,8 @@ schema, template pack 이 필요하므로 이 절차는 수동 e2e로 유지한�
 
 ### generate-code 추가 조건
 
+가져오기용 검증 팩, 로컬 stdio 클라이언트, C01~C12 실행 절차는 [NeoSQL 코드 생성 E2E 가이드](../../neosql/docs/manual-test/mcp-generate-code-e2e.md)를 따른다. 해당 경로는 sibling clone 기준이다.
+
 검증용 프로젝트와 임시 출력 폴더를 사용한다. 실제 사용자 프로젝트에 smoke 파일을 쓰지 않는다.
 
 1. 익명 local 프로젝트에서 팩·필수 변수·Location을 설정하고 MCP 접근을 허용한다.
