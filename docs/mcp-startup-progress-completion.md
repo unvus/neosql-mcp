@@ -163,6 +163,275 @@ git diff --check
 
 ## W5 실제 Desktop/host 검증 상태
 
+### 최종 판정 — 목적 중심 C01~C09 검증 완료
+
+2026-09-15 사용자와 합의한 범위에서 C01~C09를 모두 완료했다. 실제 실행 결과와
+기존 자동 검증·코드 확인 근거를 재사용하며 추가 수동 테스트는 필요하지 않다.
+C09는 T07의 loading → HTTP timeout → IPC timeout → ready 회복 통과와
+C02/T21의 준비 후 작업 1회·최종 응답 근거를 함께 사용했다.
+서버의 단계별 중간 알림 전송을 완료 기준으로 하며 host UI 표시·에이전트 입력 전달은
+필수 완료 조건에서 제외한다. 아래 시각별 미완료·다음 항목 기록은 진행 당시의 이력이다.
+
+
+### C07 기존 자동 검증 근거 재사용 — 완료
+
+사용자 요청에 따라 T18 및 built CLI EOF 회귀 결과로 체크했다. SDK 취소 알림과
+client.close에 따른 pending HTTP 종료, stdin EOF 후 추가 조회·알림·작업 없음과 CLI
+정상 자연 종료를 검증했다. 근거는 아래 리뷰 후속 수정 및 T18 기록이다.
+실제 Desktop 앱 유지와 실제 host 취소 버튼 전달을 이번에 재현한 것으로 간주하지 않는다.
+다음 항목은 C08 준비 시간과 작업 제한 분리다.
+
+
+### C06 기존 자동 검증 근거 재사용 — 완료
+
+사용자 합의로 실제 앱에서 동일 토큰 변형을 반복하지 않고 기존 T21 결과로 C06을 체크했다.
+`/tmp/neosql-progress-tests.log`의 2026-09-15 16:02 실행에서 토큰 없음/0/문자열이 각각 통과했다.
+built CLI와 실제 stdio를 사용하고 Desktop UDS는 mock이다. loading 조회 2회 → ready 조회 1회,
+원래 작업 1회·최종 응답 1개를 검증한다. 0/문자열은 loading/ready 알림, 없음은 알림 0개다.
+실제 Desktop 토큰 변형 E2E 통과로 확대 해석하지 않는다. 다음 항목은 C07이다.
+
+
+### 2026-09-15 17:28~17:29 KST 실제 host 앱 기동 대기 — C05 완료
+
+- 사용자 합의: 완료 조건은 MCP 서버의 중간 알림 전송까지다. host UI 표시와 에이전트 입력 전달은 필수 완료 조건에서 제외하며 성공으로 간주하지 않는다. 아래 이전 C05 미완료 판정은 당시 관찰 이력이다.
+- macOS/dev, 실제 host의 `list-connections` 1회. traceId `b6c7013f-7d04-4243-9815-bfe743f652dc`, 숫자 progressToken 있음.
+- 새 Dev main PID 83718을 실행 요청 성공 알림 직후 일시 정지했다. 17:28:57.496~17:29:05.665 KST 약 8.2초, `T` 상태와 자동 재개 후 `R` 상태를 확인했다. 독립 자동 복구 감시를 먼저 준비했다.
+- `activation_requesting`(progress 1), `activation_requested`(2), `renderer_loading`(3) 각각 SDK 전송 함수 정상 완료(`progress_send_completed`). 최종 준비 결과는 10,833ms 후 `project_not_selected`이며 사용자 캡처의 `requestSent: false`와 일치한다.
+- 완료 후 host 캡처에는 최종 도구 응답만 보인다. 서버 로그만으로 host 수신·UI 표시·모델 입력 전달을 추론하지 않는다.
+- 증거: `~/Library/Logs/NeoSqlMcpDev/neosql-mcp.log`, `/tmp/neosql-c05-startup-eSNUqI/evidence.json`, `resume-result.json`. 다음 항목은 C06 토큰 0/없음 호환성이다.
+
+
+### 2026-09-15 16:58~17:00 KST 실제 host 파일 진단 — ready 알림 전송 확인
+
+- 16:58:11 호출은 숫자형 progressToken 수신 후 50ms에 project_not_selected 종료했다.
+  새 debug 진단 코드와 파일 기록이 실제 호출 경로에서 동작함을 확인했다.
+- 16:59:48 traceId `6775609b-0c0c-44d1-80dc-5beab8e9fb27`: 숫자형 토큰,
+  ready progress=1 전송 시작/완료, 준비 25ms·작업 포함 전체 36ms, 작업 시작/완료 각 1회.
+- 17:00:12 traceId `592a5ec2-37ed-4db1-b880-f7a338469988`: 숫자형 토큰,
+  ready progress=1 전송 시작/완료, 준비 9ms·작업 포함 전체 11ms, 작업 시작/완료 각 1회.
+- 두 호출은 처음부터 ready여서 project_loading 알림이나 준비 대기는 없었다.
+  사용자 화면의 Worked 10s/8s는 Node 처리 시간과 다르다.
+  서버의 SDK 전송 함수 성공을 확인했지만 host 수신/UI 표시/모델 중간 전달은 확정하지 않는다.
+  C05는 계속 미완료이며 실제 대기 중 전송과 host 측 표시를 추가 확인한다.
+- 증거: `~/Library/Logs/NeoSqlMcpDev/neosql-mcp.log`의 위 traceId와 사용자 제공 결과 화면.
+
+
+### 2026-09-15 15:55 KST 실제 host 호출 — C05 중간 전달 확인 중
+
+- 사용자가 대시보드에서 프로젝트를 선택했다. 별도 읽기 전용 관찰기가 실제 loading을
+  감지한 뒤 이 대화의 `mcp__neosql__list_connections`를 1회 호출했다. 프로세스 정지는 하지 않았다.
+- host 도구 호출 15:55:24.139~15:55:31.680 KST, 7,541ms 후 연결 목록 2개 정상 반환.
+  이는 host 호출 전체 시간이며 준비/작업 구간을 나누어 계측한 값은 아니다.
+- 이번 모델 입력에는 MCP 서버의 `notifications/progress`가 별도 중간 메시지로 나타나지
+  않았으며 최종 도구 결과만 확인됐다. "C05: 실제 loading 감지, host MCP 호출 시작"은
+  관찰 코드가 직접 만든 notify이므로 서버 진행 알림 증거에서 제외한다.
+- 실제 host가 보낸 progressToken·서버의 알림 전송 여부·도구 최초 runtime 상태는
+  이번 host 호출에서 계측하지 못했다. 따라서 서버 미전송 또는 host 미지원으로 단정하지 않는다.
+  실제 host UI의 진행 표시 여부는 사용자 확인 대기다. **C05는 아직 체크하지 않는다.**
+- 기존 SDK의 단계 알림 수신 성공(C01/C02)과 이번 host 최종 결과 성공을 구분한다.
+
+
+### 목적 중심 검증 범위와 다음 실행
+
+사용자와 확인한 이번 변경의 중심은 준비 대기 중 단계별 progress 전송과 준비 후 동일 호출의
+작업 재개다. 상세 오류 사유별 수동 재현을 완료 조건으로 확장하지 않는다.
+실행 범위는 [E2E 목적 중심 체크리스트](e2e-manual.md)의 C01~C09를 따른다.
+기존 상세 결과와 M01~M11은 이력·참고로 보존한다.
+
+I05·P04의 저장된 evidence.json을 재검토해 최종 결과 이전 알림 수신, 동일 토큰,
+증가 progress, total 생략, 동일 단계 중복 없음이 확인됐다. P04는 준비 조회 21회 동안
+loading/ready 알림 각 1회, 이후 작업 1회다. 따라서 C01·C02는 SDK 층에서 확인됐다.
+C03은 I07/P05, C04는 A01~A04 기존 증거를 재사용한다.
+이는 실제 host가 에이전트에 중간 알림을 전달했다는 증거는 아니다.
+
+당시 남은 항목 C05~C09는 위 최종 판정에서 모두 완료 처리했다.
+드라이버 설치 여부 변경·플랜 한도 조정·저장소 장애 전종류 재현은 이 핵심 목록의
+선행 조건이 아니다. 자동 테스트·SDK wire·host UI·에이전트 입력 증거를 구분한다.
+
+
+### 2026-09-15 15:07 KST 후속 실제 실행 — A04 자동 잠금 해제 후 새 호출
+
+- A03 호출 종료 후 사용자가 자동 잠금 해제를 완료했다. 동일 Dev main PID 3217과
+  사전 responsive/ready 확인. 비밀 키는 수집하지 않았다.
+- macOS/dev, A03과 별도의 SDK MCP 프로세스에서 새 호출했다. 동일 transport의 연속
+  호출 검증과 구분한다. CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`,
+  SHA-256 `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 15:07:03.681 KST `list-connections` tools/call 1회(request ID 1,
+  progressToken `a04-dev-once`). 최초 준비 조회 ready, 원래 작업 RPC 1회(request ID 2),
+  약 26ms 후 최종 정상 응답 1개: `connections: []`. 이전 잠금 해제 안내 없이 처리됐다.
+- pass-through 계측: 도구 내부 준비 조회 1회·원래 작업 1회·OS 실행 명령 0회.
+  사전 상태 조회는 별도다. 정상 응답·빈 목록·ready·횟수 assertion 통과. **A04 완료**.
+  SDK 결과이며 host UI·Windows·DB 접속 검증은 별도다.
+  테스트용 자동 잠금 1분 설정은 A04 종료 후 사용자가 기존 값으로 복원·저장했다고 확인했다. 사용자 확인 근거이며 설정값을 직접 조회하지 않았다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-a04-PjmQVA/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. 실행기 `/tmp/neosql-a04-client.mjs`, `/tmp/neosql-a04-observer.cjs`.
+
+
+### 2026-09-15 15:05 KST 후속 실제 실행 — A03 로드된 프로젝트 자동 잠금
+
+- 자동 잠금 1분 설정·프로젝트 진입 후 대기 안내에 따라 사용자가 자동 잠금 해제 창
+  발생을 확인했다. 자동 발동 원인·경과 시간은 사용자 관찰이며 타이머를 직접 계측하지 않았다.
+- macOS/dev, Dev main PID 3217. 사전 내부 조회에서 responsive,
+  `user_action_required` 및 reason `unlock_project`를 확인했다.
+- 별도 SDK로 `/Users/shock/workspace/mcp/dist/cli.js --profile=dev` 실행.
+  CLI SHA-256 `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 15:05:21.598 KST `list-connections` tools/call 1회(request ID 1,
+  progressToken `a03-dev-once`). 약 16ms 후 최종 응답 1개:
+  `isError: true`, `user_action_required`, `requestSent: false`.
+  message/nextAction은 앱에서 프로젝트 잠금 해제 후 도구 재호출을 안내했다.
+  공개 결과의 안내와 사전 내부 reason은 구분한다.
+- pass-through 계측: 도구 내부 준비 조회 1회·원래 작업 0회·OS 실행 명령 0회.
+  사전 조회는 별도다. 상태·응답·횟수 assertion 통과. **A03 완료**.
+  잠금 해제는 하지 않았다. A04 검증 후 사용자가 자동 잠금 설정을 기존 값으로 복원할 예정이다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-a03-mnZpHM/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. SDK 결과이며 host UI·Windows는 별도다.
+  실행기 `/tmp/neosql-a03-client.mjs`, `/tmp/neosql-a03-observer.cjs`.
+
+
+### 2026-09-15 14:59 KST 후속 실제 실행 — A02 진입 잠금 해제 후 새 호출
+
+- A01 호출 종료 후 사용자가 앱에서 패스프레이즈를 입력해 잠금 해제 및 프로젝트 진입을
+  완료했다. 비밀 키는 수집하지 않았다. 동일 Dev main PID 3217과 사전 responsive/ready 확인.
+- macOS/dev, A01과 별도의 SDK MCP 프로세스에서 새 호출했다. 동일 transport의 연속
+  호출 검증으로 해석하지 않는다. CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`,
+  SHA-256 `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 14:59:46.499 KST `list-connections` tools/call 1회(request ID 1,
+  progressToken `a02-dev-once`). 최초 준비 조회 ready, 원래 작업 RPC 1회(request ID 2),
+  약 21ms 후 최종 정상 응답 1개: `connections: []`. 이전 잠금 해제 안내 없이 처리됐다.
+- pass-through 계측: 도구 내부 준비 조회 1회·원래 작업 1회·OS 실행 명령 0회.
+  사전 상태 조회는 별도다. 정상 응답·빈 목록·ready·횟수 assertion 통과. **A02 완료**.
+  SDK 결과이며 실제 host UI·Windows·DB 접속 검증은 별도다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-a02-lxVGwY/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. 실행기 `/tmp/neosql-a02-client.mjs`, `/tmp/neosql-a02-observer.cjs`.
+
+
+### 2026-09-15 14:54 KST 후속 실제 실행 — A01 프로젝트 진입 시 잠금
+
+- 사용자가 계정 프로젝트의 비밀 키 잠금을 설정하고 세션 잠금 → 취소로 대시보드 이동
+  → 동일 프로젝트 재진입 후 잠금 해제 창을 유지했다. 비밀 키는 수집하지 않았다.
+- macOS/dev, Dev main PID 3217. 사전 내부 조회에서 responsive,
+  `user_action_required` 및 reason `unlock_project`를 확인했다.
+- 별도 SDK로 `/Users/shock/workspace/mcp/dist/cli.js --profile=dev` 실행.
+  CLI SHA-256 `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 14:54:41.843 KST `list-connections` tools/call 1회(request ID 1,
+  progressToken `a01-dev-once`). 약 11ms 후 최종 응답 1개:
+  `isError: true`, `user_action_required`, `requestSent: false`.
+  message/nextAction은 앱에서 프로젝트 잠금 해제 후 도구 재호출을 안내했다.
+  공개 결과에는 reason 필드가 없으며 사전 내부 reason과 안내 내용을 구분한다.
+- pass-through 계측: 도구 내부 준비 조회 1회·원래 작업 전송 0회·OS 실행 명령 0회.
+  사전 상태 조회는 별도다. 상태·응답·횟수 assertion 통과. **A01 완료**.
+  잠금 해제는 수행하지 않았다. A02는 사용자 해제 후 새 호출로 별도 검증한다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-a01-alU2Zd/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. SDK 결과이며 실제 host UI·Windows는 별도다.
+  실행기 `/tmp/neosql-a01-client.mjs`, `/tmp/neosql-a01-observer.cjs`.
+
+
+### 2026-09-15 14:35 KST 후속 실제 실행 — P07 로그인 account 프로젝트 준비 완료
+
+- 사용자가 로그인 후 계정 프로젝트 진입 완료를 확인했다. authState/projectType은
+  사용자 확인에 근거하며 runtime 응답으로 직접 계측한 값은 아니다.
+  Dev main PID 3217과 사전 `responsive`/`ready` 응답을 확인했다.
+- macOS/dev, 별도 SDK StdioClientTransport로 built CLI를 실행했다.
+  CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`, SHA-256
+  `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 14:35:34.209 KST `list-connections` tools/call 1회, request ID 1,
+  progressToken `p07-dev-once`. 최초 준비 조회 ready, 원래 작업 RPC 1회(request ID 2),
+  약 24ms 후 최종 정상 응답 1개: 연결 목록 2개.
+- pass-through 계측: 호출 내 준비 조회 1회·원래 작업 1회·OS 실행 명령 0회.
+  ready 진행 알림 1개를 수신했다. 앱·프로젝트·DB는 변경하지 않았다.
+  사전 상태 조회는 도구 내부 조회와 구분한다.
+- 정상 응답·최초 ready·횟수 assertion 통과. **P07 완료**.
+  실제 host UI·Windows·연결 목록 항목별 기준 비교·DB 접속 성공은 별도다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-p07-dy3HxI/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. 연결 결과는 개수로 기록했다.
+  실행기 `/tmp/neosql-p07-client.mjs`, `/tmp/neosql-p07-observer.cjs`.
+
+
+### 2026-09-15 14:22 KST 후속 실제 실행 — P06 익명 local 프로젝트 준비 완료
+
+- 사용자가 로그아웃 상태로 로컬 프로젝트 진입 완료 및 연결 미등록을 확인했다.
+  authState/projectType은 사용자 확인에 근거하며 runtime 응답으로 직접 계측한 값은 아니다.
+  Dev main PID 3217과 사전 `responsive`/`ready` 응답을 확인했다.
+- macOS/dev, 별도 SDK StdioClientTransport로 built CLI를 실행했다.
+  CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`, SHA-256
+  `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 14:22:06.168 KST `list-connections` tools/call 1회, request ID 1,
+  progressToken `p06-dev-once`. 최초 준비 조회 ready, 원래 작업 RPC 1회(request ID 2),
+  약 37ms 후 최종 정상 응답 1개: `connections: []`. 사용자 확인의 빈 연결 목록과 일치한다.
+- pass-through 계측: 호출 내 준비 조회 1회·원래 작업 1회·OS 실행 명령 0회.
+  로그인 요구 응답 없이 성공했으며 ready 진행 알림 1개를 수신했다.
+  앱·프로젝트·DB는 변경하지 않았다. 사전 상태 조회는 도구 내부 조회와 구분한다.
+- 정상 응답·빈 목록·최초 ready·횟수 assertion 통과. **P06 완료**.
+  실제 host UI·Windows·DB 접속 성공까지 확인한 것으로 해석하지 않는다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-p06-plsdYj/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. 연결 결과는 개수로 기록했다.
+  실행기 `/tmp/neosql-p06-client.mjs`, `/tmp/neosql-p06-observer.cjs`.
+
+
+### 2026-09-15 14:09 KST 후속 실제 실행 — P05 loading 확인 후 준비 시간 초과
+
+- macOS/dev, 사용자가 대시보드에서 프로젝트를 직접 선택했다. SDK 관찰기로 loading을
+  감지한 뒤 `list-connections` tools/call 1회(request ID 1, token `p05-dev-once`).
+  도구의 최초 runtime 응답은 14:09:05.726 KST `loading`이었다.
+- CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`, SHA-256
+  `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 사용자 승인에 따라 별도 자동 재개 감시 프로세스를 준비하고, 14:09:05.828에 Dev
+  main PID 3217을 SIGSTOP했다. 실제 상태 T 확인. 제품 코드·준비 기한은 변경하지 않았다.
+  정지 이후 상태 조회는 응답하지 않는다. 실제 loading을 계속 응답하는 장시간 초기화와
+  구분하며, loading 근거를 얻은 뒤 미응답이 지속되는 변형이다.
+- 준비 조회 시도 15회, 원래 작업 전송 0회, OS 실행 명령 0회. 20,010ms 후
+  최종 응답 1개: `isError: true`, `readiness_timeout`, `requestSent: false`.
+  마지막 관찰 단계는 프로젝트 loading이며 앱 확인 후 재시도를 안내했다.
+- 14:09:26.322 감시 프로세스가 동일 실행 신원을 확인하고 SIGCONT했다. 감시 장치는
+  테스트 중단 시에도 35초 후 자동 재개한다. 직접 복구 상태 조회에서 loading을 거쳐
+  14:09:29.137 `ready` 확인. 동일 PID 3217 유지. 복구 조회는 추가 도구 호출이 아니다.
+- 최초 loading·정지 순서·timeout·호출/작업/실행 횟수·동일 PID 재개·ready 회복
+  assertion 통과. **P05 일시 정지 변형 완료.** 자연적인 장시간 초기화·Windows·host UI는
+  미검증이다. 앞선 클릭 대기 만료 시도는 도구 0회·정지 0회로 테스트 미실행이며 실패로 계산하지 않는다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-p05-zKdXee`
+  (`evidence.json`, `trace.jsonl`, `pause-resume.json`, `resume-result.json`).
+  실행기 `/tmp/neosql-p05-driver.mjs`, `/tmp/neosql-p05-client.mjs`,
+  `/tmp/neosql-p05-observer.cjs`, `/tmp/neosql-p05-guardian.cjs`.
+
+
+### 2026-09-15 13:15 KST 후속 실제 실행 — P04 실제 프로젝트 로딩 후 작업
+
+- macOS/dev의 실행 중인 앱에서 사용자가 대시보드의 프로젝트를 직접 선택했다.
+  준비된 SDK 관찰기가 내부 상태를 50ms 간격으로 조회하다 loading을 감지하면 관찰을
+  종료하고 도구를 1회 호출했다. 이 사전 관찰은 도구 내부 polling 횟수와 구분한다.
+  제품 코드·상태를 수정하거나 기동/로딩에 인위적인 지연을 넣지 않았다.
+- CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`, SHA-256
+  `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 13:15:22.350 KST `list-connections` tools/call 1회, request ID 1,
+  progressToken `p04-dev-once`. 도구의 최초 runtime 응답(13:15:22.364)이 loading이었다.
+  총 21회 준비 조회 후 13:15:32.527 ready, 13:15:32.528 원래 작업 RPC 1회 전송.
+- 총 10,280ms 후 정상 최종 결과 1개, 연결 목록 2개. OS 실행 명령 0회.
+  동일 토큰의 progress 1(loading)·2(ready)를 수신했다. 증거에는 연결 정보를 저장하지
+  않고 개수만 남겼다. 사전 기준 목록과 항목별 비교 및 DB 작업 검증은 하지 않았다.
+- 최초 loading·기한 내 ready·ready 이후 원래 작업 1회·정상 결과·OS 실행 0회
+  assertion 통과. **P04 로딩 대기 동작 완료**. SDK 결과이며 host UI와 Windows,
+  M02 전체의 기준 데이터 비교까지 확인한 것으로 해석하지 않는다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-p04-FtCimi/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. 실행기 `/tmp/neosql-p04-client.mjs`, `/tmp/neosql-p04-observer.cjs`.
+
+
+### 2026-09-15 13:04 KST 후속 실제 실행 — P03 실행 중·프로젝트 미선택
+
+- 사용자 실행 상태 확인 후 Dev main PID 3217과 내부 상태 `renderer: responsive`,
+  `project.state: not_selected`를 사전 확인했다. 사전 조회는 도구 호출과 별도다.
+- macOS/dev, 기존 설치 Dev 앱과 별도 SDK StdioClientTransport로 실행했다.
+  CLI `/Users/shock/workspace/mcp/dist/cli.js --profile=dev`, SHA-256
+  `cf15dfaea19b2c4d3e00b8cd3eb76053c779ff3a2d85d49de45e92ef14456df4`.
+- 13:04:33.440 KST `list-connections` tools/call 1회, request ID 1,
+  progressToken `p03-dev-once`. 14ms 후 최종 응답 1개:
+  `isError: true`, `project_not_selected`, `requestSent: false` 및 프로젝트 선택 후 재호출 안내.
+- pass-through spawn/http 관찰로 호출 내 준비 조회 1회, 원래 작업 전송 0회,
+  OS 실행 명령 0회를 확인했다. 진행 알림은 없었다. 제품 코드·앱 상태를 변경하지 않았다.
+- 결과·횟수 assertion 통과. **P03 완료**. SDK 결과이며 실제 host UI와 Windows는 별도다.
+- 증거: `/var/folders/nf/3jht63k9493byyz6v7vykcp80000gn/T/neosql-p03-djScVQ/evidence.json`,
+  같은 디렉터리 `trace.jsonl`. 실행기 `/tmp/neosql-p03-client.mjs`, `/tmp/neosql-p03-observer.cjs`.
+
+
 ### 2026-09-15 08:53~08:54 KST 후속 실제 실행 — I07·I08 기동 지연과 복구
 
 사용자가 설치된 NeoSQLDev를 완전히 종료한 뒤 main 프로세스 부재와 설치 버전
@@ -339,7 +608,7 @@ macOS 26.5.2에서 수행했다.
 | M06 | 미검증 | 미검증 | 실제 준비·작업·host 전체 제한 별도 측정 |
 | M07 | 미검증 | 미검증 | 깨끗한 미설치 OS와 설치 조회 권한 오류 환경 |
 | M08 | 미검증 | 미검증 | 실제 초기화 중단 실패/복구, 저장소·동기화·설정 부재 변형 |
-| M09 | 미검증 | 미검증 | local 익명, account 로그인/기존 인증 만료 흐름 |
+| M09 | 미검증 | 미검증 | local 익명, account 로그인 |
 | M10 | 미검증 | 미검증 | 구분 가능한 A/B 기준 결과, 직접 전환·대시보드 경유·A 늦은 결과 |
 | M11 | 미검증 | 미검증 | 근거 없는 최초 미응답과 근거 있는 기동/로딩 후 미응답·회복 |
 

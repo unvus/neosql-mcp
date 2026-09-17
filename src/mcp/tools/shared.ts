@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { toolErrorResult } from '../error-map.js';
 import { HttpClientError } from '../../upstream/http-client.js';
 import type { ProgressNotification } from '@modelcontextprotocol/sdk/types.js';
@@ -64,6 +65,18 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
 ): Promise<ToolTextResult> => {
   const request = opts.request;
   request?.signal.throwIfAborted();
+  const diagnostic = { component: 'McpProgress', traceId: randomUUID(), method, pid: process.pid };
+  const startedAt = performance.now();
+  const progressToken = request?._meta?.progressToken;
+  logger.debug(
+    {
+      ...diagnostic,
+      event: 'preparation_started',
+      progressTokenPresent: progressToken !== undefined,
+      progressTokenType: typeof progressToken,
+    },
+    'Preparation diagnostics',
+  );
   let progress = 0;
   if (deps.ensureDesktopReady !== undefined) {
     // Preparation has its own terminal results; operation errors below keep their existing mapping.
@@ -71,15 +84,38 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
       ...(request ? { signal: request.signal } : {}),
       onState: async (state) => {
         request?.signal.throwIfAborted();
-        const progressToken = request?._meta?.progressToken;
-        if (progressToken === undefined) return;
-        await request!.sendNotification({
+        if (progressToken === undefined) {
+          logger.debug(
+            { ...diagnostic, event: 'progress_skipped', state, reason: 'missing_progress_token' },
+            'Preparation diagnostics',
+          );
+          return;
+        }
+        const notification: ProgressNotification = {
           method: 'notifications/progress',
           params: { progressToken, progress: ++progress, message: progressMessages[state] },
-        });
+        };
+        const fields = { ...diagnostic, state, progress, message: progressMessages[state] };
+        logger.debug({ ...fields, event: 'progress_send_started' }, 'Preparation diagnostics');
+        try {
+          await request!.sendNotification(notification);
+          logger.debug({ ...fields, event: 'progress_send_completed' }, 'Preparation diagnostics');
+        } catch (error) {
+          logger.debug({ ...fields, event: 'progress_send_failed' }, 'Preparation diagnostics');
+          throw error;
+        }
       },
     });
     request?.signal.throwIfAborted();
+    logger.debug(
+      {
+        ...diagnostic,
+        event: 'preparation_finished',
+        status: desktopReady.status,
+        elapsedMs: Math.round(performance.now() - startedAt),
+      },
+      'Preparation diagnostics',
+    );
     if (desktopReady.status !== 'ready')
       return jsonToolErrorResult(preparationPayload(desktopReady));
     if (desktopReady.deadline !== undefined && performance.now() >= desktopReady.deadline) {
@@ -99,7 +135,16 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     };
     const timeoutMs = prepared?.timeoutMs ?? opts.timeoutMs;
     const rpcOpts = timeoutMs === undefined ? undefined : { timeoutMs };
+    logger.debug({ ...diagnostic, event: 'operation_started' }, 'Preparation diagnostics');
     const result = await deps.postRpc<TResult>(method, params, rpcOpts);
+    logger.debug(
+      {
+        ...diagnostic,
+        event: 'operation_completed',
+        elapsedMs: Math.round(performance.now() - startedAt),
+      },
+      'Preparation diagnostics',
+    );
     return opts.mapResult ? opts.mapResult(result) : jsonTextResult(result, opts.stringifyResult);
   } catch (err) {
     const operationError = opts.mapOperationErrorResult?.(err);

@@ -38,6 +38,12 @@ profile.
 If multiple valid `--profile=...` values are present, the last valid value wins. Invalid
 profile values are ignored and the previous valid profile is kept.
 
+The selected profile also sets the logger threshold: `local`/`dev` use `debug`,
+while `stage`/`prod` use `info`. Omitting the profile therefore uses `info`.
+`LOG_LEVEL` is ignored, including when set to `debug`, `trace`, or `silent`.
+The logger uses `info` before profile configuration. File destinations and the
+stderr fallback use the same threshold; stdout remains reserved for MCP.
+
 ## Legacy Context CLI Compatibility
 
 The following legacy equals-form options remain harmless inputs so existing MCP host

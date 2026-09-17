@@ -1,3 +1,4 @@
+import { logger } from '../../../src/infra/logger.js';
 import { describe, expect, it, vi } from 'vitest';
 import { HttpClientError } from '../../../src/upstream/http-client.js';
 import { callUpstreamTool, type UpstreamToolDeps } from '../../../src/mcp/tools/shared.js';
@@ -390,5 +391,89 @@ describe('T19/T20 preparation results and request context', () => {
       ),
     ).rejects.toMatchObject({ name: 'AbortError' });
     expect(postRpc).not.toHaveBeenCalled();
+  });
+});
+
+describe('preparation progress diagnostics', () => {
+  it.each([undefined, 0, 'host-token'])(
+    'records progress delivery for token %s without input data',
+    async (token) => {
+      const debug = vi.spyOn(logger, 'debug').mockImplementation(() => {});
+      try {
+        await callUpstreamTool(
+          {
+            sessionId: 'private-session',
+            postRpc: async () => ({}) as never,
+            ensureDesktopReady: async (context) => {
+              await context?.onState?.('project_loading');
+              return { status: 'ready' };
+            },
+          },
+          'list-connections',
+          { secret: 'private-input' },
+          {
+            request: {
+              signal: new AbortController().signal,
+              sendNotification: async () => {},
+              ...(token === undefined ? {} : { _meta: { progressToken: token } }),
+            },
+          },
+        );
+        const events = debug.mock.calls.map(
+          (call) => call[0] as unknown as Record<string, unknown>,
+        );
+        expect(events).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              event: 'preparation_started',
+              progressTokenPresent: token !== undefined,
+            }),
+            expect.objectContaining({
+              event: token === undefined ? 'progress_skipped' : 'progress_send_completed',
+              state: 'project_loading',
+            }),
+            expect.objectContaining({ event: 'operation_completed' }),
+          ]),
+        );
+        expect(new Set(events.map((event) => event.traceId)).size).toBe(1);
+        expect(JSON.stringify(events)).not.toMatch(/private-input|private-session|host-token/);
+      } finally {
+        debug.mockRestore();
+      }
+    },
+  );
+  it('records send failure and preserves the readiness error handling', async () => {
+    const debug = vi.spyOn(logger, 'debug').mockImplementation(() => {});
+    const failure = new Error('private-transport-error');
+    try {
+      await callUpstreamTool(
+        {
+          sessionId: 's',
+          postRpc: async () => ({}) as never,
+          ensureDesktopReady: async (context) => {
+            await expect(context?.onState?.('project_loading')).rejects.toBe(failure);
+            return { status: 'ready' };
+          },
+        },
+        'list-connections',
+        {},
+        {
+          request: {
+            signal: new AbortController().signal,
+            _meta: { progressToken: 0 },
+            sendNotification: async () => {
+              throw failure;
+            },
+          },
+        },
+      );
+      expect(debug).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'progress_send_failed', state: 'project_loading' }),
+        expect.any(String),
+      );
+      expect(JSON.stringify(debug.mock.calls)).not.toContain('private-transport-error');
+    } finally {
+      debug.mockRestore();
+    }
   });
 });

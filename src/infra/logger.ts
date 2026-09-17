@@ -8,10 +8,10 @@ import { resolveLogFilePath } from './log-path.js';
 const DEFAULT_COMPONENT = 'NeoSqlMcp';
 const LOG_RECORD_KEYS = new Set(['level', 'time', 'pid', 'hostname', 'name', 'component', 'msg']);
 
-const createLogger = (destination: pino.DestinationStream): Logger =>
+const createLogger = (destination: pino.DestinationStream, level: 'debug' | 'info' = 'info'): Logger =>
   pino(
     {
-      level: process.env['LOG_LEVEL'] ?? 'info',
+      level,
       base: { component: DEFAULT_COMPONENT },
     },
     createFormattedDestination(destination),
@@ -20,7 +20,8 @@ const createLogger = (destination: pino.DestinationStream): Logger =>
 export let logger = createLogger(pino.destination(2));
 
 export const configureLogger = (profile: Profile): void => {
-  logger = createLogger(createFileDestination(profile));
+  const level = profile === 'local' || profile === 'dev' ? 'debug' : 'info';
+  logger = createLogger(createFileDestination(profile), level);
 };
 
 const createFileDestination = (profile: Profile): pino.DestinationStream => {

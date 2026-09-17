@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { configureLogger, flushLogger, formatLogLine, logger } from '../../src/infra/logger.js';
+import { resolveLogFilePath } from '../../src/infra/log-path.js';
 
 describe('formatLogLine', () => {
   it('formats pino JSON records as NeoSQL text log lines', () => {
@@ -53,12 +54,38 @@ describe('configureLogger', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     if (previousLogParentDir === undefined) {
       delete process.env['NEOSQL_MCP_LOG_PARENT_DIR'];
     } else {
       process.env['NEOSQL_MCP_LOG_PARENT_DIR'] = previousLogParentDir;
     }
     rmSync(logParentDir, { recursive: true, force: true });
+  });
+
+  describe.each(['local', 'dev', 'stage', 'prod'] as const)('%s profile', (profile) => {
+    it.each([undefined, 'debug', 'trace', 'silent'])(
+      'filters file logs by profile even when LOG_LEVEL is %s',
+      (envLevel) => {
+        vi.stubEnv('LOG_LEVEL', envLevel);
+        configureLogger(profile);
+        logger.trace('profile trace marker');
+        logger.debug('profile debug marker');
+        logger.info('profile info marker');
+        logger.warn('profile warn marker');
+        logger.error('profile error marker');
+        flushLogger();
+
+        const contents = readFileSync(resolveLogFilePath(profile), 'utf8');
+        expect(contents.includes('profile debug marker')).toBe(
+          profile === 'local' || profile === 'dev',
+        );
+        expect(contents).not.toContain('profile trace marker');
+        expect(contents).toContain('profile info marker');
+        expect(contents).toContain('profile warn marker');
+        expect(contents).toContain('profile error marker');
+      },
+    );
   });
 
   it('writes prod logs to the NeoSqlMcp log file', () => {
