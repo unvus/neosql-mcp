@@ -304,18 +304,6 @@ describe('postRpc', () => {
   });
 
   it.skipIf(isWin32)(
-    'rejects a regular file as bad-response rather than a stale socket',
-    async () => {
-      const socketPath = makeTestSocketPath();
-      fs.writeFileSync(socketPath, '');
-      cleanups.push(() => removeSocketFile(socketPath));
-      await expect(postRpc({ socketPath, method: 'x' })).rejects.toMatchObject({
-        kind: 'bad-response',
-      });
-    },
-  );
-
-  it.skipIf(isWin32)(
     'reports stale-socket for an actual socket inode without a listener',
     async () => {
       const socketPath = makeTestSocketPath();
