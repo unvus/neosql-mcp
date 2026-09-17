@@ -98,19 +98,6 @@ args = [
 ]
 ```
 
-## CLI Options
-
-| Option                                     | Description                                      |
-| ------------------------------------------ | ------------------------------------------------ |
-| `--profile=<prod\|dev\|local\|stage>`     | Connects to the matching NeoSQL Desktop profile. |
-
-Use the `--key=value` form in MCP host config. Space-separated forms such as
-`--profile dev` are intentionally not supported. The default profile is `prod`.
-
-Logging follows the selected profile: `local` and `dev` record debug and higher
-levels; `stage` and `prod` record info and higher levels. `LOG_LEVEL` does not
-override this policy. Profiles also use separate log directories.
-
 ## Desktop Readiness
 
 Before an app-dependent tool runs, neosql-mcp checks the current Desktop and project
