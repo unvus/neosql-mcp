@@ -217,3 +217,16 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 - [ ] Windows Named Pipe ACL hardening
 - [ ] 구조화 로그와 진단 정보 확장
 - [ ] 실제 MCP host별 장기 e2e 시나리오 정리
+
+
+## Optional project targeting · 2026-09-20
+
+- [x] Strict optional `--project-id` parsing and configuration propagation.
+- [x] One navigation request + target polling within existing preparation budget.
+- [x] Expected-project guard, progress/failure mapping, post-preparation deadline check.
+- [x] 279 tests, typecheck, build; stdio→isolated HTTP, stdin EOF during navigation.
+- [x] macOS development Desktop, dedicated local projects: dashboard→A, A↔B, already selected, ping/list without navigation.
+- [ ] Real anonymous/account authorization scenarios, OS startup, host display, Windows.
+- [ ] End-user guide and configuration UI (explicitly deferred).
+
+Evidence: [cross-repo completion](../neosql/docs/plan/mcp-project-targeting-implementation.md).

@@ -477,3 +477,33 @@ describe('preparation progress diagnostics', () => {
     }
   });
 });
+
+
+describe('target operation dispatch boundary', () => {
+  it('keeps expected project separate from the public input', async () => {
+    const postRpc = vi.fn().mockResolvedValue({});
+    await callUpstreamTool({ sessionId: 's', projectId: 'B', postRpc,
+      ensureDesktopReady: async () => ({ status: 'ready' }) }, 'list-connections', {});
+    expect(postRpc).toHaveBeenCalledOnce();
+    expect(postRpc).toHaveBeenCalledWith('list-connections',
+      { sessionId: 's', input: {}, context: { expectedProjectId: 'B' } }, undefined);
+  });
+  it('does not send an operation when post-readiness preparation exhausts the deadline', async () => {
+    const postRpc = vi.fn();
+    const now = vi.spyOn(performance, 'now').mockReturnValue(10);
+    try {
+      const result = await callUpstreamTool({ sessionId: 's', postRpc,
+        ensureDesktopReady: async () => ({ status: 'ready', deadline: 20 }) }, 'generate-code', {}, {
+        prepareRpc: async () => { now.mockReturnValue(21); return { timeoutMs: 1000 }; },
+      });
+      expect(JSON.parse(result.content[0]!.text)).toMatchObject({ status: 'readiness_timeout', requestSent: false });
+      expect(postRpc).not.toHaveBeenCalled();
+    } finally { now.mockRestore(); }
+  });
+  it('reports a dispatched but rejected operation distinctly from navigation', async () => {
+    const postRpc = vi.fn().mockRejectedValue(new HttpClientError({ kind: 'rpc-error', rpcKind: 'project-mismatch', message: 'Changed project' }));
+    const result = await callUpstreamTool({ sessionId: 's', postRpc }, 'list-connections', {});
+    expect(JSON.parse(result.content[0]!.text)).toMatchObject({ status: 'project_mismatch', requestSent: true, operationStarted: false });
+    expect(postRpc).toHaveBeenCalledOnce();
+  });
+});

@@ -98,7 +98,7 @@ describe('built CLI via stdio spawn', () => {
 describe.skipIf(
   process.platform === 'win32' && process.env.NEOSQL_MCP_DEDICATED_WINDOWS_RUNNER !== '1',
 )('T21 isolated built CLI preparation', () => {
-  it.each(['loading', 'pending HTTP'] as const)(
+  it.each(['loading', 'pending HTTP', 'pending navigation'] as const)(
     'cancels preparation and exits naturally when stdin ends during %s',
     async (phase) => {
       const runtimeDir = mkdtempSync(path.join(os.tmpdir(), 'mp-'));
@@ -133,6 +133,10 @@ describe.skipIf(
               endInput();
               return;
             }
+          } else if (rpc.method === 'open-project') {
+            res.on('close', () => { httpClosedAt = performance.now(); });
+            endInput();
+            return;
           } else {
             operations++;
           }
@@ -158,7 +162,7 @@ describe.skipIf(
       try {
         // Bind before spawning; never use the real Desktop endpoint or SDK close/kill.
         await listen(mock, socketPath);
-        child = spawn(process.execPath, [CLI_PATH, '--profile=local'], {
+        child = spawn(process.execPath, [CLI_PATH, '--profile=local', ...(phase === 'pending navigation' ? ['--project-id=B'] : [])], {
           stdio: 'pipe',
           env: {
             ...process.env,
@@ -197,7 +201,7 @@ describe.skipIf(
                 _meta: { progressToken: 'eof-test' },
               },
             });
-          } else if (message.method === 'notifications/progress' && inputEndedAt === undefined) {
+          } else if (message.method === 'notifications/progress' && inputEndedAt === undefined && phase === 'loading') {
             endInput();
           }
         });
@@ -219,7 +223,7 @@ describe.skipIf(
         expect(operations).toBe(0);
         expect(wire.filter((message) => message.id === 2)).toEqual([]);
         const progress = wire.filter((message) => message.method === 'notifications/progress');
-        expect(progress).toHaveLength(phase === 'loading' ? 1 : 0);
+        expect(progress).toHaveLength(phase === 'pending HTTP' ? 0 : 1);
         if (phase === 'loading') {
           expect(progress[0]?.params).toMatchObject({ message: 'Loading the selected project.' });
         } else {

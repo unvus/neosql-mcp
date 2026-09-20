@@ -25,6 +25,7 @@ export const SERVER_NAME = 'neosql-mcp';
 export const SERVER_VERSION = '0.0.1';
 
 export interface CreateServerOptions {
+  projectId?: string;
   profile?: Profile;
   socketPath?: string;
   desktopHealthTimeoutMs?: number;
@@ -50,6 +51,7 @@ const createUpstreamToolDeps = (
 ): UpstreamToolDeps => ({
   postRpc: createPostRpc(socketPath),
   sessionId: mcpSessionId,
+  ...(opts.projectId === undefined ? {} : { projectId: opts.projectId }),
   ensureDesktopReady: createDesktopReadyChecker(opts, profile, socketPath),
   requestDesktopFocus: createDesktopFocusRequester(opts, profile),
 });
@@ -69,6 +71,7 @@ const createDesktopReadyChecker =
   (context?: PreparationContext) =>
     defaultEnsureDesktopReady({
       ...context,
+      ...(opts.projectId === undefined ? {} : { projectId: opts.projectId }),
       socketPath,
       profile,
       ...(opts.desktopHealthTimeoutMs === undefined

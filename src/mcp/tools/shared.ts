@@ -23,6 +23,7 @@ export type ErrorResultMapper = (err: unknown) => ToolTextResult | undefined;
 export type DesktopFocusRequester = () => Promise<void>;
 
 export interface UpstreamToolDeps {
+  projectId?: string;
   postRpc: PostRpc;
   sessionId: string;
   ensureDesktopReady?: (context?: PreparationContext) => Promise<DesktopReadyResult>;
@@ -36,6 +37,7 @@ export interface ToolRequestContext {
 }
 
 export interface UpstreamToolParams<TInput> {
+  context?: { expectedProjectId: string };
   sessionId: string;
   input: TInput;
 }
@@ -78,6 +80,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     'Preparation diagnostics',
   );
   let progress = 0;
+  let preparationDeadline: number | undefined;
   if (deps.ensureDesktopReady !== undefined) {
     // Preparation has its own terminal results; operation errors below keep their existing mapping.
     const desktopReady = await deps.ensureDesktopReady({
@@ -118,6 +121,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     );
     if (desktopReady.status !== 'ready')
       return jsonToolErrorResult(preparationPayload(desktopReady));
+    preparationDeadline = desktopReady.deadline;
     if (desktopReady.deadline !== undefined && performance.now() >= desktopReady.deadline) {
       return jsonToolErrorResult(
         preparationPayload({ status: 'readiness_timeout', lastState: 'ready' }),
@@ -128,10 +132,13 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
   try {
     const prepared = await opts.prepareRpc?.();
     request?.signal.throwIfAborted();
+    if (preparationDeadline !== undefined && performance.now() >= preparationDeadline)
+      return jsonToolErrorResult(preparationPayload({ status: 'readiness_timeout', lastState: 'ready' }));
     const params: UpstreamToolParams<TInput> = {
       sessionId: deps.sessionId,
       input,
       ...prepared?.params,
+      ...(deps.projectId === undefined ? {} : { context: { expectedProjectId: deps.projectId } }),
     };
     const timeoutMs = prepared?.timeoutMs ?? opts.timeoutMs;
     const rpcOpts = timeoutMs === undefined ? undefined : { timeoutMs };
@@ -179,6 +186,10 @@ const desktopLifecycleErrorResult = (
   deps: UpstreamToolDeps,
 ): ToolTextResult | undefined => {
   if (!(err instanceof HttpClientError)) return undefined;
+
+  if (err.kind === 'rpc-error' && err.rpcKind === 'project-mismatch') {
+    return jsonToolErrorResult({ status: 'project_mismatch', message: err.message, requestSent: true, operationStarted: false });
+  }
 
   if (err.kind === 'timeout') {
     return jsonToolErrorResult({

@@ -366,3 +366,16 @@ Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 
 - **Windows Named Pipe 보강** — POSIX `chmod 0600` 와 동등한 권한 격리를 위해 win32 native 호출로 ACL 적용 (본체 작업 시 진행).
 - **인증·권한** — JWT/OAuth 처리, projectId 별 권한 체크 위치.
 - **안정화·UX** — 구조화 로그 확장, CLI 옵션, lazy launch, E2E 시나리오 테스트.
+
+
+## Optional project targeting · 2026-09-20
+
+The active-project policy above remains the default when `--project-id` is absent.
+When present, project tools share startup's 20-second budget for one internal
+`open-project` RPC, target readiness polling, and the pre-dispatch check. Every
+operation carries `context.expectedProjectId`; Desktop rejects mismatches. No public
+tool arguments, automatic retry, UI, or initialization lifecycle changes are added.
+
+[Approved design](../neosql/docs/plan/mcp-project-targeting.html) and
+[implementation / verification](../neosql/docs/plan/mcp-project-targeting-implementation.md)
+record the cross-repo contract. CLI details: [internal configuration](docs/mcp-client-config.md).

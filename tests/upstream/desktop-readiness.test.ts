@@ -217,3 +217,46 @@ describe('Desktop preparation contract', () => {
     expect(opts.onState).toHaveBeenCalledTimes(2);
   });
 });
+
+
+describe('지정 프로젝트 준비', () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] }));
+  afterEach(() => { expect(vi.getTimerCount()).toBe(0); vi.useRealTimers(); });
+  it.each(['not_selected', 'loading', 'failed', 'ready'])('현재 %s이어도 B로 이동하고 준비까지 기다린다', async state => {
+    const opts = setup([status(state, state === 'not_selected' ? null : 'A', state === 'failed' ? 'initialization_failed' : undefined), status('loading', 'B'), status('ready', 'B')]);
+    const navigate = vi.fn(async (_args: unknown) => ({ status: 'navigated', projectId: 'B' }));
+    expect(await finish(ensureDesktopReady({ ...opts, projectId: 'B', openProject: navigate }))).toMatchObject({ status: 'ready' });
+    expect(navigate).toHaveBeenCalledOnce();
+    expect(navigate.mock.calls[0]?.[0]).toMatchObject({ method: 'open-project', params: { input: { projectId: 'B' } } });
+    expect(opts.onState.mock.calls.map(c => c[0])).toEqual(['project_navigation', 'target_loading', 'ready']);
+  });
+  it('이미 대상이면 이동하지 않는다', async () => {
+    const navigate = vi.fn();
+    expect(await ensureDesktopReady({ ...setup([status('ready', 'B')]), projectId: 'B', openProject: navigate })).toMatchObject({ status: 'ready' });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+  it('대상 로딩 중 다른 프로젝트로 이동하면 재이동하지 않는다', async () => {
+    const navigate = vi.fn();
+    expect(await finish(ensureDesktopReady({ ...setup([status('loading', 'B'), status('ready', 'A')]), projectId: 'B', openProject: navigate }))).toMatchObject({ status: 'project_mismatch' });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+  it('미저장 변경과 이동 실패는 원래 작업 전 종료한다', async () => {
+    for (const response of [{ status: 'user_action_required', projectId: 'B', reason: 'unsaved_changes' }, { status: 'lookup_failed', projectId: 'B' }]) {
+      const result = await ensureDesktopReady({ ...setup([status('ready')]), projectId: 'B', openProject: vi.fn(async () => response) });
+      expect(result).toMatchObject(response.status === 'lookup_failed' ? { status: 'project_lookup_failed' } : { status: 'user_action_required', reason: 'unsaved_changes' });
+    }
+  });
+  it('이동 응답 유실과 잘못된 ID는 재시도하지 않는다', async () => {
+    for (const reply of [new Error('lost'), { status: 'navigated', projectId: 'C' }]) {
+      const navigate = vi.fn(async () => { if (reply instanceof Error) throw reply; return reply; });
+      expect(await ensureDesktopReady({ ...setup([status('ready')]), projectId: 'B', openProject: navigate })).toMatchObject({ status: 'project_navigation_failed' });
+      expect(navigate).toHaveBeenCalledOnce();
+    }
+  });
+  it('이동 중에도 전체 20초를 넘기지 않고 HTTP signal을 취소한다', async () => {
+    let signal: AbortSignal | undefined;
+    const navigate = vi.fn(async (args: any) => { signal = args.signal; return new Promise(() => {}); });
+    expect(await finish(ensureDesktopReady({ ...setup([status('ready')]), projectId: 'B', openProject: navigate }))).toMatchObject({ status: 'readiness_timeout' });
+    expect(signal?.aborted).toBe(true);
+  });
+});

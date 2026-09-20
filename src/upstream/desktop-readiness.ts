@@ -17,6 +17,8 @@ export type PreparationState =
   | 'activation_requesting'
   | 'activation_requested'
   | 'renderer_loading'
+  | 'project_navigation'
+  | 'target_loading'
   | 'project_loading'
   | 'ready';
 export type PreparationFailureStatus =
@@ -28,12 +30,16 @@ export type PreparationFailureStatus =
   | 'authentication_required'
   | 'readiness_timeout'
   | 'user_action_required'
-  | 'status_check_failed';
+  | 'status_check_failed'
+  | 'target_unavailable'
+  | 'project_lookup_failed'
+  | 'project_navigation_failed'
+  | 'project_mismatch';
 export type DesktopReadyResult =
   | { status: 'ready'; deadline?: number }
   | {
       status: PreparationFailureStatus;
-      reason?: ProjectActionReason;
+      reason?: ProjectActionReason | 'unsaved_changes';
       lastState?: PreparationState;
     };
 export type AppActivationRequester = (
@@ -47,6 +53,8 @@ export interface PreparationContext {
   onState?: (state: PreparationState) => Promise<void> | void;
 }
 export interface EnsureDesktopReadyOptions extends PreparationContext {
+  projectId?: string;
+  openProject?: (opts: PostRpcOptions) => Promise<unknown>;
   socketPath: string;
   profile: Profile;
   /** Per-query cap; the overall preparation budget always remains 20 seconds. */
@@ -71,6 +79,8 @@ export const ensureDesktopReady = async (
   let waitingEvidence = false;
   let activationAttempted = false;
   let installationConfirmed = false;
+  let targetReached = false;
+  let navigationAttempted = false;
   const check = () => {
     opts.signal?.throwIfAborted();
     if (performance.now() >= deadline) controller.abort(expired);
@@ -172,10 +182,45 @@ export const ensureDesktopReady = async (
         continue;
       }
       const project = response.project;
+      if (opts.projectId !== undefined) {
+        if (project.projectId !== opts.projectId) {
+          if (targetReached || navigationAttempted) return { status: 'project_mismatch' };
+          await emit('project_navigation');
+          navigationAttempted = true;
+          let moved: unknown;
+          try {
+            const remaining = deadline - performance.now();
+            moved = await observe(signal, () => (opts.openProject ?? postRpc)({
+              socketPath: opts.socketPath, method: 'open-project', signal, timeoutMs: remaining,
+              params: { input: { projectId: opts.projectId }, preparationDeadlineAt: Date.now() + remaining },
+            }));
+            check();
+          } catch { check(); return { status: 'project_navigation_failed' }; }
+          if (!moved || typeof moved !== 'object' || Array.isArray(moved)) return { status: 'project_navigation_failed' };
+          const result = moved as Record<string, unknown>;
+          if (result.projectId !== opts.projectId) return { status: 'project_navigation_failed' };
+          switch (result.status) {
+            case 'navigated': break;
+            case 'authentication_required': return { status: 'authentication_required' };
+            case 'target_unavailable': return { status: 'target_unavailable' };
+            case 'lookup_failed': return { status: 'project_lookup_failed' };
+            case 'user_action_required':
+              return result.reason === 'unsaved_changes'
+                ? { status: 'user_action_required', reason: 'unsaved_changes' }
+                : { status: 'project_navigation_failed' };
+            default: return { status: 'project_navigation_failed' };
+          }
+          targetReached = true;
+          waitingEvidence = true;
+          await emit('target_loading');
+          continue;
+        }
+        targetReached = true;
+      }
       switch (project.state) {
         case 'loading':
           waitingEvidence = true;
-          await emit('project_loading');
+          await emit(opts.projectId === undefined ? 'project_loading' : 'target_loading');
           await wait();
           break;
         case 'ready':

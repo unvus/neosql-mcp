@@ -75,3 +75,17 @@ describe('parseCliArgs', () => {
     ).toEqual({ profile: 'prod' });
   });
 });
+
+
+describe('선택적 프로젝트 지정', () => {
+  it.each([['--project-id=A'], ['--project-id', 'A']])('두 형식으로 지정한다: %j', (...args) => {
+    expect(parseCliArgs(args)).toEqual({ profile: 'prod', projectId: 'A' });
+  });
+  it.each([
+    ['--project-id'], ['--project-id='], ['--project-id=   '],
+    ['--project-id', '--profile=dev'], ['--project-id=A', '--project-id=B'],
+    ['--projectId=A'], ['--projectId', 'A'],
+  ])('잘못된 지정은 시작 오류다: %j', (...args) => {
+    expect(() => parseCliArgs(args)).toThrow('--project-id');
+  });
+});

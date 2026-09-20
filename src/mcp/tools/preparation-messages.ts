@@ -10,10 +10,16 @@ export const progressMessages: Record<PreparationState, string> = {
   activation_requested: 'App activation was requested. Waiting for NeoSQL Desktop to become ready.',
   renderer_loading:
     'Connected to NeoSQL Desktop. Waiting for the app interface to finish initializing.',
+  project_navigation: 'Requesting navigation to the configured project.',
+  target_loading: 'Waiting for the configured project to become ready.',
   project_loading: 'Loading the selected project.',
   ready: 'The project is ready. Proceeding with the requested operation.',
 };
 const failureMessages: Record<PreparationFailureStatus, [string, string]> = {
+  target_unavailable: ['The configured project could not be opened.', 'Check the project ID and access permissions in NeoSQL Desktop.'],
+  project_lookup_failed: ['Could not look up the configured project.', 'Check NeoSQL Desktop and try again.'],
+  project_navigation_failed: ['Could not confirm navigation to the configured project. The operation was not sent.', 'Check NeoSQL Desktop before trying again.'],
+  project_mismatch: ['The active project differs from the configured project. The operation was not sent.', 'Check NeoSQL Desktop and run the tool again.'],
   installation_not_found: [
     'NeoSQL Desktop installation could not be found. Install NeoSQL Desktop and try again. If it is already installed, open it manually.',
     'Install NeoSQL Desktop or open the installed app manually, then run the tool again.',
@@ -51,7 +57,8 @@ const failureMessages: Record<PreparationFailureStatus, [string, string]> = {
     'Check NeoSQL Desktop, then run the tool again.',
   ],
 };
-const actionMessages: Record<ProjectActionReason, [string, string]> = {
+const actionMessages: Record<ProjectActionReason | 'unsaved_changes', [string, string]> = {
+  unsaved_changes: ['Unsaved changes prevent project navigation.', 'Save or discard the changes in NeoSQL Desktop, then run the tool again.'],
   unlock_project: [
     'The project needs to be unlocked. Unlock it in NeoSQL Desktop, then run the tool again.',
     'Unlock the project in NeoSQL Desktop, then run the tool again.',
@@ -78,6 +85,8 @@ const lastStage: Record<PreparationState, string> = {
   activation_requesting: 'requesting app activation',
   activation_requested: 'waiting for the app to connect',
   renderer_loading: 'waiting for the app interface to initialize',
+  project_navigation: 'requesting project navigation',
+  target_loading: 'waiting for the configured project',
   project_loading: 'loading the selected project',
   ready: 'confirming readiness before starting the operation',
 };

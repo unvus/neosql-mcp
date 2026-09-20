@@ -5,11 +5,11 @@ import { parseCliArgs } from './cli-args.js';
 import { resolveSocketPath, HTTP_PATH } from '../upstream/endpoint-resolver.js';
 
 const main = async (): Promise<void> => {
-  const { profile } = parseCliArgs(process.argv.slice(2));
+  const { profile, projectId } = parseCliArgs(process.argv.slice(2));
   configureLogger(profile);
   const socketPath = resolveSocketPath(profile);
 
-  const server = createServer({ profile, socketPath });
+  const server = createServer({ profile, socketPath, ...(projectId === undefined ? {} : { projectId }) });
   const transport = new StdioServerTransport();
   let closing = false;
   const closeOnInputEnd = (): void => {
