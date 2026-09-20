@@ -1,5 +1,12 @@
 # MCP W3·W4 구현 결과와 W5 검증 인계
 
+> **과거 완료 보고서 (2026-09-15 · 준비 기한 20초).** W3·W4 후속 검토 통과와
+> 사용자와 축소 합의한 C01~C09 완료 기록을 보존한다. 이후 프로젝트 지정·40초 준비 제한을
+> 이 본문의 당시 코드·실측에 소급 적용하지 않는다. 현행 계약은 [런타임 수명](../../neosql/docs/mcp/runtime-lifecycle.html),
+> 현재 검증 절차·남은 실환경 범위는 [통합 검증 문서](../../neosql/docs/manual-test/mcp-runtime-lifecycle.md)를 따른다.
+> Windows·host UI·현재 40초 실측의 전체 통과를 뜻하지 않는다. 아래 ‘다음 항목’ 등은 당시 진행 이력이다.
+
+
 2026-09-15 (Asia/Seoul). **W3·W4 구현·자동 검증 및 리뷰 지적 2건 수정 완료.**
 실제 Desktop/host/Windows의 W5는 미검증이며 전체 기능 검증 완료나 검증 생략 승인으로
 표시하지 않는다. 초기 구현은 `7d81afd`로 커밋됐으며, 이번 후속 수정은 미커밋 상태다.
@@ -42,8 +49,9 @@
   시작 작업 트리는 깨끗했다. 초기 구현 커밋 및 후속 수정 기준 HEAD는 `7d81afd`다.
 - 본체 checkout: `/Users/shock/workspace/neosql`.
 - 본체 검토 통과본: `2ffef514dbc56911df40a7c253b15fbb423f3ce5`.
-- 착수 근거: 본체 `docs/plan/mcp-startup-progress/work-instructions/neosql-review.md`의
-  최신 **W1·W2 검토 통과** 판정 및 `neosql-completion.md` 인계.
+- 착수 근거: 당시 본체 **W1·W2 검토 통과** 판정과 완료 인계. 삭제된 수행·검토 문서는
+  본체 커밋 `864f3ec628e4e5b7873fdeeba430a85410f42783`의 `docs/plan` 트리에서 확인할 수 있다.
+  조회 방법은 [통합 검증 문서](../../neosql/docs/manual-test/mcp-runtime-lifecycle.md)의 Git 이력 절을 따른다.
 - 작업 중 확인한 본체 HEAD는 `4e2ac93ef3a61a912d5e929d32918a7244b8f20c`였다.
   runtime-status/server/renderer-bridge/method-timeouts 네 계약 파일은 검토 통과본과
   diff가 없었다. 본체에는 다른 작업의 미커밋 변경이 있으며 읽기 참조만 했다.

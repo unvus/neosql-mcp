@@ -2,7 +2,9 @@
 
 `neosql-mcp` Node 패키지와 neosql Electron main/app 사이의 JSON-RPC over HTTP
 계약이다. Phase 2-3 Node handler와 Phase 2-4 이후 Electron HTTP dispatcher는 이
-문서를 기준으로 맞춘다.
+문서를 기준으로 맞춘다. 앱 준비·선택적 프로젝트 이동·상태 메시지의 교차 저장소 동작 기준은
+[런타임 수명](../../neosql/docs/mcp/runtime-lifecycle.html), 실행 컨텍스트는
+[아키텍처](../../neosql/docs/mcp/architecture.html#context)를 따른다.
 
 ## Transport
 
@@ -82,6 +84,7 @@ Error response:
 
 ```ts
 interface UpstreamToolParams<TInput> {
+  context?: { expectedProjectId: string }; // --project-id 지정 시에만
   sessionId: string;
   input: TInput;
 }
@@ -127,6 +130,7 @@ Electron responsibility:
 | -32001 | `unauthenticated`      | NeoSQL Desktop 로그인 필요                       |
 | -32001 | `timeout`              | renderer response timeout                        |
 | -32002 | `app-not-ready`        | renderer target 또는 renderer handler 준비 안 됨 |
+| -32002 | `project-mismatch`     | expectedProjectId와 화면·활성·저장소 ID 불일치      |
 | -32002 | `project-not-selected` | Desktop 활성 프로젝트 또는 준비된 session 없음  |
 | -32002 | `unavailable`          | project session 초기화 timeout 등 일시 처리 불가 |
 | -32003 | `forbidden`            | 현재 사용자에게 project 권한 없음                |
@@ -138,7 +142,7 @@ Electron responsibility:
 
 ## Internal runtime status and preparation
 
-본체 검토 기준은 `2ffef514d`다. `get-runtime-status`는 공개 MCP tool이 아닌
+`get-runtime-status`는 공개 MCP tool이 아닌
 내부 `POST /mcp/rpc` method이며 params는 `{}`다. Node가 요청별 JSON-RPC ID를
 보내고 Main이 같은 ID와 자신의 앱 식별·profile을 반환한다.
 
@@ -160,23 +164,63 @@ Renderer 미준비는 정상 결과이며 Main의 1초 IPC timeout은 `error.dat
 HTTP 연결 종료는 Main의 상태 관찰 pending을 정리하며 늦은 응답을 폐기한다.
 Node는 JSON-RPC envelope/ID 및 앱/profile/상태 조합을 검증한다.
 
-준비는 최초 확인부터 전체 20초를 공유하고 상태 조회는 최대 1초, 조회 종료 후 간격은
+준비는 최초 확인부터 전체 40초를 공유하고 상태 조회는 최대 1초, 조회 종료 후 간격은
 0.5초다. 설치 조회·OS 실행 명령·HTTP·알림에 취소/기한을 적용한다. 연결 부재 시 설치를
-확인하고 짧은 재확인 뒤 OS 실행을 1회 요청한다. 실행 명령 exit 0 또는 실제 loading
-응답을 이번 호출에서 관찰한 경우만 연결 부재·조회 timeout을 재시도한다. 명확한 오류는
+확인하고 짧은 재확인 뒤 OS 실행을 1회 요청한다. 실행 명령 exit 0, Renderer 미준비, 프로젝트 loading 또는 이동 완료를
+이번 호출에서 관찰한 경우만 연결 부재·조회 timeout을 재시도한다. 명확한 오류는
 `status_check_failed`, 전체 기한은 `readiness_timeout`으로 종료한다. 프로젝트 전환도
 기한을 초기화하지 않는다. ready 뒤 원 작업을 1회 보내며 작업 실행 timeout은 별도다.
 
 준비 실패는 `isError: true`의 content text JSON에 `status/message/nextAction/requestSent`
 네 필드만 포함한다. status는 `installation_not_found`, `installation_check_failed`,
 `activation_failed`, `project_not_selected`, `project_load_failed`, `authentication_required`,
-`readiness_timeout`, `user_action_required`, `status_check_failed`; requestSent는 false다.
+`readiness_timeout`, `user_action_required`, `status_check_failed`, `target_unavailable`,
+`project_lookup_failed`, `project_navigation_failed`, `project_mismatch`; requestSent는 false다.
 토큰이 있으면 상태 전이 시 `notifications/progress`를 보낸다. 0도 유효한 토큰이며
 progress는 증가하는 단계 번호이고 total은 없다. 알림 거절 자체로 작업을 실패시키지 않는다.
 
 원 작업 수신 시 본체가 현재 프로젝트를 다시 검사한다. ready 조회 직후 프로젝트가 바뀌어
 `unavailable` 등으로 거부되더라도 이미 전송한 작업의 기존 오류 경로를 유지한다.
 이를 requestSent=false 준비 결과로 바꾸거나 재전송하지 않는다.
+
+## Internal project navigation
+
+`open-project`는 공개 도구가 아니다. Renderer가 응답 가능하지만 대상 ID가 다를 때
+프로젝트 도구의 공통 준비 흐름에서 한 번만 보낸다. 같은 대상이면 이동 RPC 없이 상태를 판정한다.
+
+```ts
+// POST /mcp/rpc, method: 'open-project'
+type OpenProjectParams = {
+  input: { projectId: string };
+  preparationDeadlineAt: number; // Date.now() + remaining preparation milliseconds
+};
+type OpenProjectResult = {
+  projectId: string;
+  status: 'navigated' | 'authentication_required' | 'target_unavailable'
+    | 'user_action_required' | 'lookup_failed' | 'navigation_failed';
+  reason?: 'unsaved_changes'; // user_action_required일 때
+};
+```
+
+- Main과 Renderer는 절대 시각에서 남은 시간을 계산하며 상한은 40초다. Node HTTP에는
+  전체 준비의 남은 시간을 적용한다. 일반 도구 실행 기한과 코드 생성 권한은 별도다.
+- 앱의 일반 프로젝트 준비 게이트보다 먼저 처리한다. 로컬 우선 대상 조회·접근 확인 후
+  기존 router.push를 기다리고 실제 route ID 및 nextTick을 확인해 navigated를 반환한다.
+  데이터 로딩 완료는 이후 get-runtime-status로 확인한다.
+- 미저장 변경은 user_action_required/unsaved_changes. 자동 저장·폐기·확인창 대기 없음.
+- lookup_failed는 project_lookup_failed, navigation_failed·응답 유실/형식 오류는
+  project_navigation_failed로 종료한다. 전체 기한 소진은 readiness_timeout이다.
+  이동을 재전송하거나 다른 프로젝트에서 대신 실행하지 않는다.
+- HTTP 연결 종료·기한 만료·Renderer 종료는 요청 취소 IPC로 이어진다. 이동 초기 가드와
+  beforeResolve에서 취소·기한·dirty를 재검사하며 라우터 완료까지 취소 표식을 유지한다.
+- 실제 작업의 context.expectedProjectId는 화면·활성·store ID와 비교한다. 불일치는
+  JSON-RPC project-mismatch(-32002)이며 Node 결과는 requestSent:true, operationStarted:false다.
+  준비 과정에서 대상 이탈을 발견했으면 project_mismatch, requestSent:false다.
+- 이동 RPC 전송은 원래 작업의 requestSent로 계산하지 않는다. 원래 작업 직전에도
+  취소·기한을 확인하고 한 번만 전송한다.
+
+상태 메시지·사유 매핑·익명 local 및 배포 지원 범위는
+[런타임 수명 계약](../../neosql/docs/mcp/runtime-lifecycle.html#navigation)을 따른다.
 
 ## Methods
 
@@ -216,7 +260,8 @@ progress는 증가하는 단계 번호이고 total은 없다. 알림 거절 자�
 - 명시 좌표가 무효여도 프로젝트 Default로 fallback하지 않는다.
 
 Electron main은 이전 Node 패키지 호환을 위해 기존 `params.context` fallback을 당분간
-허용하지만, 새 Node 요청은 `context`를 보내지 않는다. Renderer는 어떤 경로로 들어온
+허용한다. 새 Node는 DB 좌표를 context에 넣지 않지만, --project-id 지정 시
+context.expectedProjectId를 별도로 보낸다. Renderer는 어떤 경로로 들어온
 요청이든 같은 전체 좌표/Default 및 MCP 정책 검증을 수행한다.
 
 ## `list-connections`

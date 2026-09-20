@@ -53,10 +53,11 @@ Omitting the option keeps active-project behavior. Legacy `--project=` remains i
 Project tool preparation checks Renderer readiness, then sends at most one internal
 `open-project` request when the selected ID differs. Connection, tools/list, ping,
 help, and session ID discovery never navigate. Navigation and target loading share
-the existing 20-second budget; status requests retain 1-second/500ms query/poll limits.
+the existing 40-second budget; status requests retain 1-second/500ms query/poll limits.
 The navigation RPC uses the remaining budget and carries
 `{ input: { projectId }, preparationDeadlineAt }` (epoch milliseconds).
-Only `navigated` followed by matching target readiness permits the operation.
+If navigation was requested, only `navigated` followed by matching target readiness permits
+the operation. An already selected target only needs its readiness check.
 A lost response, failed navigation, or target departure does not retry or fall back.
 
 The actual operation carries `context.expectedProjectId`; Desktop checks it against
@@ -65,8 +66,8 @@ screen, active project, and project store IDs. This is distinct from legacy
 Navigation-only failures report `requestSent: false`; a dispatched operation rejected
 with `project-mismatch` reports `requestSent: true, operationStarted: false`.
 
-User setup guides and configuration UI are deferred. The approved cross-repo design is
-[project targeting](../../neosql/docs/plan/mcp-project-targeting.html).
+User setup guides and configuration UI are deferred. The current cross-repo contract is
+[project targeting](../../neosql/docs/mcp/runtime-lifecycle.html#config).
 
 ## Legacy Context CLI Compatibility
 

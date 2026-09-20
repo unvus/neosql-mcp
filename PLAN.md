@@ -214,13 +214,13 @@ Node 측 핸들러를 일괄 구현(mock UDS 대상)한 뒤, Phase 2-4에서 본
 
 NeoSQL runtime context의 원본은 MCP client나 Node process가 아니라 NeoSQL Desktop의
 현재 활성 프로젝트다. 상위 cross-repo 계약은 NeoSQL 본체의
-`docs/plan/mcp-runtime-context.html`을 기준으로 하고, 이 저장소는 아래 Node 경계를
+[MCP 실행 컨텍스트](../neosql/docs/mcp/architecture.html#context)를 기준으로 하고, 이 저장소는 아래 Node 경계를
 소유한다.
 
 - 공개 MCP client config는 `npx -y neosql-mcp`만 포함하는 universal config다.
 - `--project`, `--default-connection`, `--default-database`, `--default-schema`는 기존
   설정 기동 호환을 위해 오류·경고 없이 무시한다.
-- Node는 project/default context store를 보유하거나 좌표를 병합하지 않는다.
+- Node는 선택적 설정 projectId만 보유하며 화면 상태·기본 DB 좌표를 복제하거나 좌표를 병합하지 않는다. 미지정은 현재 활성 프로젝트를 따른다.
 - DB 도구는 `connectionId`, `database`, `schema`를 모두 명시하거나 모두 생략한다.
   `database: null`은 database 계층이 없는 DBMS의 유효한 명시 값이다.
 - 좌표는 도구 입력의 존재 여부를 유지해 upstream `params.input`으로 전달한다.
@@ -249,21 +249,22 @@ OS-level app activation request·설치 안내·프로젝트 준비 대기와 �
 ### Phase 3 진행 원칙 (2026-09-15 갱신)
 
 앱 준비 대기·진행 알림 설계로 기존 activation 직후 반환 정책을 대체한다.
-사용자 상태/메시지의 SSOT는 본체 `docs/plan/mcp-startup-progress.html`,
-기술 계약은 같은 디렉터리의 `mcp-startup-progress-implementation.md` §4다.
-본체 W1·W2 검토 통과본은 `2ffef514d`이며 외부 MCP의 구현/검증 기록은
-`docs/mcp-startup-progress-completion.md`를 따른다. 실제 Desktop W5는 별도 검증이다.
+앱 준비·이동·상태 메시지의 현행 기준은 본체 [런타임 수명](../neosql/docs/mcp/runtime-lifecycle.html),
+wire 세부 계약은 [upstream-rpc-contract.md](docs/upstream-rpc-contract.md)다.
+[통합 검증 기록](../neosql/docs/manual-test/mcp-runtime-lifecycle.md)은 자동·실환경 범위와 남은 항목을 구분한다.
+[초기 완료 보고서](docs/mcp-startup-progress-completion.md)는 과거 W3·W4 검토와 20초 기준 C01~C09 완료 기록이다.
+이를 Windows·host UI·40초 실측까지 포함한 W5 전체 통과로 해석하지 않는다.
 
 - `callUpstreamTool()` → `ensureDesktopReady()`에서 내부 `get-runtime-status`를 조회한다.
   GET health의 HTTP 응답만으로 준비 완료를 판단하지 않는다.
-- 최초 확인부터 전체 20초, 조회마다 최대 1초, 조회 종료 후 0.5초 간격을 사용한다.
+- 최초 확인부터 전체 40초, 조회마다 최대 1초, 조회 종료 후 0.5초 간격을 사용한다.
   설치 조회·OS 실행 명령·HTTP·진행 알림도 같은 기한과 취소 신호를 따른다.
 - 연결 부재이면 설치 검사 후 0.5초 뒤 재확인한다. 여전히 연결 부재일 때만 OS 실행을
   호출당 1회 요청한다. macOS `open`, Windows `cmd /c start`의 exit 0을 관찰한다.
 - 이번 호출에서 실행 전달 완료 또는 Renderer/project loading을 관찰했을 때만
   연결 부재·HTTP/IPC timeout을 재조회한다. 근거 없는 timeout이나 명확한 통신 오류는
   `status_check_failed`, 전체 기한 소진은 `readiness_timeout`이다.
-- 매 조회의 현재 프로젝트를 따른다. 프로젝트 변경으로 기한을 갱신하거나 처음 프로젝트에
+- `--project-id` 미지정이면 매 조회의 현재 프로젝트를 따른다. 프로젝트 변경으로 기한을 갱신하거나 처음 프로젝트에
   작업을 고정하지 않는다. ready 뒤 취소·기한을 다시 검사하고 원 작업을 최대 1회 보낸다.
 - 설치 미발견과 조회 오류를 구분한다. Windows `reg query` 실패만으로 키 부재를
   확정하지 않고 .NET registry 조회의 null 결과로 확인한다. 미지원 OS는 기존
@@ -371,11 +372,11 @@ Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 
 ## Optional project targeting · 2026-09-20
 
 The active-project policy above remains the default when `--project-id` is absent.
-When present, project tools share startup's 20-second budget for one internal
+When present, project tools share startup's 40-second budget for one internal
 `open-project` RPC, target readiness polling, and the pre-dispatch check. Every
 operation carries `context.expectedProjectId`; Desktop rejects mismatches. No public
 tool arguments, automatic retry, UI, or initialization lifecycle changes are added.
 
-[Approved design](../neosql/docs/plan/mcp-project-targeting.html) and
-[implementation / verification](../neosql/docs/plan/mcp-project-targeting-implementation.md)
+[Runtime lifecycle](../neosql/docs/mcp/runtime-lifecycle.html) and
+[verification](../neosql/docs/manual-test/mcp-runtime-lifecycle.md)
 record the cross-repo contract. CLI details: [internal configuration](docs/mcp-client-config.md).

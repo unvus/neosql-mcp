@@ -203,12 +203,12 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 미설치 공개 JSON 형식은 아래 변경으로 대체된다.
 
 - [x] 본체 W1·W2 검토 통과본 `2ffef514d` 계약 확인
-- [x] W3: 상태 RPC 검증·20초 준비 기한·근거별 polling·설치/실행 오류 구분·취소
+- [x] W3: 상태 RPC 검증·40초 준비 기한·근거별 polling·설치/실행 오류 구분·취소
 - [x] W4: 공통 경로의 요청 토큰/신호 전달·영어 진행 알림·준비 결과 네 필드
 - [ ] W5: macOS/Windows 실제 Desktop·MCP host의 M01~M11 및 변형별 검증
 - [ ] 원래 대화 Codex의 외부 MCP 구현 검토 통과
 
-검증 명령·자동 테스트 결과·미검증 환경은 `docs/mcp-startup-progress-completion.md`를 따른다.
+현행 검증 절차·날짜별 결과·미검증 범위는 [통합 검증 문서](../neosql/docs/manual-test/mcp-runtime-lifecycle.md)를 따른다. `docs/mcp-startup-progress-completion.md`는 초기 W3·W4와 20초 기준 검증 이력으로 보존한다.
 
 ## Phase 4 이상
 
@@ -229,4 +229,4 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 - [ ] Real anonymous/account authorization scenarios, OS startup, host display, Windows.
 - [ ] End-user guide and configuration UI (explicitly deferred).
 
-Evidence: [cross-repo completion](../neosql/docs/plan/mcp-project-targeting-implementation.md).
+Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecycle.md).
