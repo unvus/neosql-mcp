@@ -57,7 +57,7 @@ export interface EnsureDesktopReadyOptions extends PreparationContext {
   openProject?: (opts: PostRpcOptions) => Promise<unknown>;
   socketPath: string;
   profile: Profile;
-  /** Per-query cap; the overall preparation budget always remains 20 seconds. */
+  /** Per-query cap; the overall preparation budget always remains 40 seconds. */
   timeoutMs?: number;
   queryStatus?: (opts: PostRpcOptions) => Promise<unknown>;
   requestActivation?: AppActivationRequester;
@@ -68,12 +68,12 @@ export const ensureDesktopReady = async (
   opts: EnsureDesktopReadyOptions,
 ): Promise<DesktopReadyResult> => {
   opts.signal?.throwIfAborted();
-  const deadline = performance.now() + 20_000;
+  const deadline = performance.now() + 40_000;
   const controller = new AbortController();
   const expired = new Error('Preparation deadline expired');
   const onAbort = () => controller.abort(opts.signal?.reason);
   opts.signal?.addEventListener('abort', onAbort, { once: true });
-  const timer = setTimeout(() => controller.abort(expired), 20_000);
+  const timer = setTimeout(() => controller.abort(expired), 40_000);
   const signal = controller.signal;
   let lastState: PreparationState | undefined;
   let waitingEvidence = false;

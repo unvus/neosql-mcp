@@ -102,7 +102,7 @@ args = [
 
 Before an app-dependent tool runs, neosql-mcp checks the current Desktop and project
 state. On macOS and Windows, if Desktop is installed but disconnected, it requests
-app activation once and waits for readiness within a shared 20-second budget.
+app activation once and waits for readiness within a shared 40-second budget.
 When the current project becomes ready, the original operation runs once in the
 same tool call. Project selection, sign-in, and other required actions remain in
 the Desktop app; follow the returned guidance and call the tool again afterward.

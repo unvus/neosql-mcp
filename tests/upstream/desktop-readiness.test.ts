@@ -119,8 +119,19 @@ describe('Desktop preparation contract', () => {
   it('T09/T17 retains the original deadline while projects change', async () => {
     const opts = setup([status('loading', 'A'), status('loading', 'B')]);
     expect(await finish(ensureDesktopReady(opts))).toMatchObject({ status: 'readiness_timeout' });
-    expect(performance.now()).toBe(20_000);
+    expect(performance.now()).toBe(40_000);
     expect(opts.requestActivation).not.toHaveBeenCalled();
+  });
+  it.each([undefined, 'B'])('30초 로딩도 40초 안이면 준비된다 (target=%s)', async projectId => {
+    const opts = setup([status('not_selected', null)]);
+    let moved = projectId === undefined;
+    const queryStatus = vi.fn(async () => !moved
+      ? status('not_selected', null)
+      : status(performance.now() < 30_000 ? 'loading' : 'ready', 'B'));
+    const openProject = vi.fn(async () => { moved = true; return { status: 'navigated', projectId: 'B' }; });
+    expect(await finish(ensureDesktopReady({ ...opts, ...(projectId === undefined ? {} : { projectId }), queryStatus, openProject }))).toMatchObject({ status: 'ready' });
+    expect(performance.now()).toBe(30_000);
+    expect(openProject).toHaveBeenCalledTimes(projectId === undefined ? 0 : 1);
   });
   it('T17 follows the current project to ready', async () => {
     const opts = setup([status('loading', 'A'), status('loading', 'B'), status('ready', 'B')]);
@@ -207,7 +218,7 @@ describe('Desktop preparation contract', () => {
         ensureDesktopReady({ ...opts, [boundary]: () => new Promise<never>(() => {}) }),
       );
       expect(result).toMatchObject({ status: 'readiness_timeout' });
-      expect(performance.now()).toBe(20_000);
+      expect(performance.now()).toBe(40_000);
     },
   );
   it('T19 ignores failed notifications and suppresses repeated states', async () => {
@@ -253,7 +264,7 @@ describe('지정 프로젝트 준비', () => {
       expect(navigate).toHaveBeenCalledOnce();
     }
   });
-  it('이동 중에도 전체 20초를 넘기지 않고 HTTP signal을 취소한다', async () => {
+  it('이동 중에도 전체 40초를 넘기지 않고 HTTP signal을 취소한다', async () => {
     let signal: AbortSignal | undefined;
     const navigate = vi.fn(async (args: any) => { signal = args.signal; return new Promise(() => {}); });
     expect(await finish(ensureDesktopReady({ ...setup([status('ready')]), projectId: 'B', openProject: navigate }))).toMatchObject({ status: 'readiness_timeout' });

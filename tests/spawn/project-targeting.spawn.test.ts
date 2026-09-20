@@ -41,7 +41,7 @@ describe.skipIf(process.platform === 'win32')('project targeting stdio → HTTP'
       const result = await client.callTool({ name: 'list-connections', arguments: {}, ...(progress ? { _meta: { progressToken: 'p' } } : {}) });
       expect(result.isError).not.toBe(true);
       expect(requests.map(r => r.method)).toEqual(['get-runtime-status', 'open-project', 'get-runtime-status', 'get-runtime-status', 'list-connections']);
-      expect(requests[1].params.preparationDeadlineAt).toBeGreaterThan(Date.now() - 20_000);
+      expect(requests[1].params.preparationDeadlineAt).toBeGreaterThan(Date.now() - 40_000);
       expect(requests[4].params.context).toEqual({ expectedProjectId: 'B' });
       expect(messages.length).toBe(progress ? 3 : 0);
     } finally { await client.close(); await closeServer(server); rmSync(dir, { recursive: true, force: true }); }
