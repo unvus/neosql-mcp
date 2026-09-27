@@ -11,7 +11,7 @@ as the package landing page.
 MCP hosts run `neosql-mcp` as a stdio server process. The Node process delegates NeoSQL
 work to NeoSQL Desktop over the local UDS/Named Pipe upstream channel.
 
-The public command shape is:
+The CLI syntax, including internal developer options, is:
 
 ```bash
 npx -y neosql-mcp [--profile=<prod|dev|local|stage>] [--project-id=<id>]
@@ -22,8 +22,11 @@ in `README.md`.
 
 ## Profiles
 
-The default profile is `prod`. Do not add `--profile=prod` to public setup examples
-unless there is a concrete reason to be explicit.
+`--profile` is an internal developer option. Keep profile options, examples, and
+profile-specific transport details out of both public READMEs (`README.md` and
+`README.ko.md`). Public setup uses the default production profile implicitly.
+
+The default profile is `prod`. Do not add `--profile=prod` to public setup examples.
 
 Non-production profiles are valid only when NeoSQL Desktop is listening with the same
 profile.

@@ -70,6 +70,14 @@ dist/   tsup 빌드 산출물 (편집 금지)
 - `package.json#files` 화이트리스트와 별개로 멘탈 모델이 단순 — `src/` = 패키지, `tests/` = 검증.
 - TypeScript 컴파일러 본체, Vitest, Prettier, ts-node 등 동일 성격 도구 프로젝트의 다수 컨벤션과 일치.
 
+## 공개 README
+
+- 저장소 루트의 `README.md`는 GitHub/npm 기본 영문 안내다.
+- `README.ko.md`는 같은 내용을 제공하는 한국어 안내다.
+- 두 문서 상단에는 GitHub 절대 URL로 언어 전환 링크를 둔다.
+- 사용자-facing 동작, CLI 옵션, 도구 목록, 설정 예시를 변경하면 같은 변경에서
+  두 README를 함께 갱신한다. 내부 개발 문서는 기존처럼 `docs/`에 둔다.
+
 ## 새 파일 분류 가이드
 
 ### `src/` 4개 경계
