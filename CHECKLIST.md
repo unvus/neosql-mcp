@@ -265,6 +265,11 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     개별 도구·자동 실행·실행 설정 변경 여부 등 세부 결과는 미수집이며
     `docs/e2e-manual.md`에 보고 범위를 기록했다.
   - 자동 검증: lint·typecheck·build·전체 297개 테스트·pack dry-run 통과.
+  - Cowork macOS 검증(2026-09-29): `1.8.3` ZIP 설치·ping 성공. Desktop 소켓과
+    MCP의 접속 소켓 경로가 달라 상수 SQL 조회는 `readiness_timeout`,
+    `requestSent: false`로 종료. 원인은 Claude Desktop이 TMPDIR 없이 MCP를 실행해
+    `os.tmpdir()`가 `/tmp`로 계산된 것. macOS는 `getconf DARWIN_USER_TEMP_DIR`로 계산하도록
+    수정(`b79eb0b`, 앱 `7970a5dfa`). 수정 배포 후 재검증 필요 (`docs/e2e-manual.md` P09).
     실제 host 검증과 구분한다. 시나리오 P01~P09는 `docs/e2e-manual.md`에 기록.
     [구현 commit CI #42](https://github.com/unvus/neosql-mcp/actions/runs/36376995102)도 통과.
 - [x] Plugin 포함 npm 릴리스: `1.8.2`, shrinkwrap 배포·ping·10개 tool 확인,

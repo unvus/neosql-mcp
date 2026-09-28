@@ -20,7 +20,7 @@
 | P06 | project ID를 고정한 수동 등록 + `neosql-mcp@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
 | P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
 | P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
-| P09 | Cowork 로컬 세션 | Desktop 접근·자동 활성화 여부 기록 | 미검증, 지원 표기 전 확인 |
+| P09 | Cowork의 Desktop 연결 세션 | Desktop 접근·자동 활성화 여부 기록 | macOS 1.8.3 업로드·ping 성공. Desktop 연결은 소켓 경로 불일치로 readiness_timeout (2026-09-29), 해결 후 재검증 필요 |
 
 기존 사용자 설정은 덮어쓰지 않고 격리한 환경에 필요한 NeoSQL 등록만 재현한다.
 실제 설정을 잠시 변경해야 하면 먼저 백업하고 종료 후 원복한다.
@@ -77,6 +77,32 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
   기존 `LAUNCHER_PACKAGE_REVIEW` policy hold 1건과 `Account not connected` 경고 1건이
   남았다. 후자는 해당 Claude 조직에서 GitHub 계정을 연결하기 전에는 제출이 거부된다는
   안내다. 계정 연결·최종 제출은 수행하지 않았다.
+
+### Cowork macOS 검증 (2026-09-29)
+
+- 사용자 승인 후 `v1.8.3:plugins/neosql-mcp`의 파일만 ZIP으로 묶어 Claude Desktop의
+  Customize > Plugins > Upload plugin으로 업로드했다. Pro 계정에
+  `neosql-mcp@My Uploads` 버전 `1.8.3`이 활성화됐다. Directory 심사 제출은 아니다.
+- Cowork 세션 `cse_0151yo8PQVuxozFCypKPrfRF`에서 `Claude Desktop (macOS), Connected`를
+  확인했다. 앱·Node·NeoSQL Desktop의 상세 버전은 별도 미수집이다.
+- 실제 tool 기록의 `mcp__remote-devices__plugin_neosql-mcp_neosql__ping` 응답은 `pong`.
+  `get-context-help`도 성공했으나 정적 안내이므로 Desktop 통신 성공으로 간주하지 않는다.
+- `execute-query`에 `SELECT 1 AS neosql_mcp_test`를 한 번 전달했지만
+  `readiness_timeout`, `requestSent: false`, 마지막 단계 `waiting for the app to connect`를
+  반환했다. SQL은 DB로 전달되지 않았으며 데이터·ERD·코드 생성 변경은 수행하지 않았다.
+- 해당 호출 시간대 Node 로그에는 `/tmp/neosql-mcp.sock`에 대한 `connect ENOENT`가
+  반복됐다. 동시에 `lsof -n -U`는 실행 중인 prod NeoSQL이 macOS 사용자별 임시
+  디렉터리 아래 `neosql-mcp.sock`에서 listen하는 것을 확인했다.
+- 원인: Claude Desktop이 띄운 `npx neosql-mcp@1.8.3` 프로세스 env에 `TMPDIR`이 없었다
+  (`ps eww`로 확인). MCP SDK `StdioClientTransport`의 POSIX 기본 상속 env도
+  `HOME, LOGNAME, PATH, SHELL, TERM, USER`뿐이다. 양쪽 구현이 `os.tmpdir()`를 사용해,
+  TMPDIR이 없는 MCP는 `/tmp`, launchd에서 TMPDIR을 받은 앱은 `/var/folders/.../T/`를 계산했다.
+- 수정: macOS socket 디렉터리를 env 대신 `/usr/bin/getconf DARWIN_USER_TEMP_DIR`로 계산한다.
+  neosql-mcp `b79eb0b`, NeoSQL 앱 `neosql-develop` `7970a5dfa`(develop, 원격 미반영).
+- 우회용 소켓 링크나 설정 변경은 하지 않았다. 수정 배포 후 Desktop 연결·상수 조회·자동
+  활성화를 다시 검증해야 한다. Windows Cowork는 미검증이다.
+- 테스트 업로드는 현재 계정에 남아 있다. 후속 재검증 이후 정식 설치와 충돌하지 않도록
+  제거가 필요하며, Claude Code 동기화 여부는 이번 시험에서 확인하지 않았다.
 
 ## 기존 MCP host 검증
 
