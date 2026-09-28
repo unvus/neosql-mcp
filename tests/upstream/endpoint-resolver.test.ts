@@ -1,60 +1,60 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import { resolveSocketPath, HTTP_PATH, getTempDir } from '../../src/upstream/endpoint-resolver.js';
 
 vi.mock('node:child_process', () => ({
   execSync: vi.fn(),
 }));
 
+const setPlatform = (value: NodeJS.Platform): void => {
+  Object.defineProperty(process, 'platform', { value, configurable: true });
+};
+
 describe('getTempDir', () => {
+  const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(execSync).mockReset();
   });
 
-  it('returns os.tmpdir() on non-darwin platforms', () => {
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', originalPlatform);
+    vi.unstubAllEnvs();
+  });
+
+  it('returns os.tmpdir() on non-darwin platforms without calling getconf', () => {
+    setPlatform('linux');
     expect(getTempDir()).toBe(os.tmpdir());
+    expect(execSync).not.toHaveBeenCalled();
   });
 
-  it('uses getconf on darwin when available', async () => {
-    const original = Object.getOwnPropertyDescriptor(process, 'platform');
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-      configurable: true,
-    });
-    try {
-      const { execSync } = await import('node:child_process');
-      vi.mocked(execSync).mockReturnValueOnce('/var/folders/test/T/\n');
-      const result = getTempDir();
-      expect(execSync).toHaveBeenCalledWith(
-        'getconf DARWIN_USER_TEMP_DIR',
-        expect.objectContaining({ encoding: 'utf-8' })
-      );
-      expect(result).toBe('/var/folders/test/T/');
-    } finally {
-      if (original) {
-        Object.defineProperty(process, 'platform', original);
-      }
-    }
+  it('respects TMPDIR on darwin without calling getconf', () => {
+    setPlatform('darwin');
+    vi.stubEnv('TMPDIR', '/custom/tmp');
+    expect(getTempDir()).toBe(os.tmpdir());
+    expect(execSync).not.toHaveBeenCalled();
   });
 
-  it('falls back to os.tmpdir() if getconf fails on darwin', async () => {
-    const original = Object.getOwnPropertyDescriptor(process, 'platform');
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-      configurable: true,
+  it('uses getconf on darwin when TMPDIR is missing', () => {
+    setPlatform('darwin');
+    vi.stubEnv('TMPDIR', '');
+    vi.mocked(execSync).mockReturnValueOnce('/var/folders/test/T/\n');
+    expect(getTempDir()).toBe('/var/folders/test/T/');
+    expect(execSync).toHaveBeenCalledWith(
+      'getconf DARWIN_USER_TEMP_DIR',
+      expect.objectContaining({ encoding: 'utf-8' }),
+    );
+  });
+
+  it('falls back to os.tmpdir() when getconf fails on darwin', () => {
+    setPlatform('darwin');
+    vi.stubEnv('TMPDIR', '');
+    vi.mocked(execSync).mockImplementationOnce(() => {
+      throw new Error('getconf failed');
     });
-    try {
-      const { execSync } = await import('node:child_process');
-      vi.mocked(execSync).mockImplementationOnce(() => {
-        throw new Error('getconf failed');
-      });
-      expect(getTempDir()).toBe(os.tmpdir());
-    } finally {
-      if (original) {
-        Object.defineProperty(process, 'platform', original);
-      }
-    }
+    expect(getTempDir()).toBe(os.tmpdir());
   });
 });
 

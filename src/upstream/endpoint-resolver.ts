@@ -12,8 +12,9 @@ export type Profile = 'prod' | 'dev' | 'local' | 'stage';
 
 export const HTTP_PATH = '/mcp/rpc';
 
+// MCP host 가 TMPDIR 을 뺀 env 로 띄우면 os.tmpdir() 이 /tmp 로 떨어져 앱 socket 과 어긋난다.
 export const getTempDir = (): string => {
-  if (process.platform === 'darwin') {
+  if (process.platform === 'darwin' && !process.env.TMPDIR) {
     try {
       return execSync('getconf DARWIN_USER_TEMP_DIR', {
         encoding: 'utf-8',
