@@ -3,7 +3,7 @@
 `neosql-mcp`를 Anthropic plugin directory(claude.ai **Customize > Plugins**의 Discover,
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
-- 상태: W1 및 릴리스 A(`1.8.1`) 완료, W2~W5a 구현(2026-09-28). Portal·원격 workflow·W6 검증 진행 전. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
+- 상태: W1 및 릴리스 A(`1.8.1`) 완료, W2~W5a 구현·원격 workflow 시험 완료(2026-09-28). Portal·W6 실사용 검증 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
   plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
 - 외부 요구사항 확인일: 2026-09-28
@@ -833,6 +833,10 @@ W5b는 directory에 게시된 뒤에 한다.
 | 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
 
 ## 12. 변경 이력
+
+- 2026-09-28: 구현 commit `852382a`의 CI #42 및 수동 workflow #22 성공. npm publish는
+  skipped, `codex/plugin-release-check`만 같은 commit으로 생성했다. 실제 `plugin-release`는
+  아직 없고 npm latest는 `1.8.1`이다. Portal은 로그인 화면에서 사용자 로그인 대기.
 
 - 2026-09-28: plugin 세 파일, gitignore 예외, 버전 lifecycle, publish 후 fast-forward 및
   `workflow_dispatch` 시험 경로를 구현했다. bundle 검사 7개와 script child process 3개가

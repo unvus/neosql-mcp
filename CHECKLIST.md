@@ -244,15 +244,18 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 - [x] W3: 버전 동기화 script와 실행 테스트
   - child process 3개 테스트 red → green. 별도 임시 Git 저장소에서 실제 `npm version patch`의
     staging·commit·tag까지 확인 (본 저장소는 `1.8.1` 유지).
-- [ ] W4: npm 배포 후 branch 갱신과 배포 없는 시험 경로
+- [x] W4: npm 배포 후 branch 갱신과 배포 없는 시험 경로
   - workflow 구현 및 actionlint 1.7.12 통과. 실제 workflow step을 임시 Git remote에 실행해
     branch 생성·전진, rollback·분기 이력·remote 오류 차단과 tag/버전 불일치 거부 확인.
-  - GitHub의 수동 시험 실행 결과는 별도 확인 필요.
+  - [GitHub 수동 시험 #22](https://github.com/unvus/neosql-mcp/actions/runs/36377037803) 성공:
+    `publish` skipped, `release-plugin` success, 시험 branch가 `852382a`를 가리킴.
+    실제 `plugin-release`는 미생성, npm latest는 `1.8.1` 유지. 정식 tag 경로는 릴리스 B에서 확인.
 - [x] W5a: 구조·릴리스 문서와 plugin README 초안 준비
   - 최종 공개 전 W6 결과와 저장·전송 경로 확인 결과를 반영한다.
 - [ ] W6: macOS·Windows 및 plugin 동기화·중복 설정 검증
   - 자동 검증: lint·typecheck·build·전체 297개 테스트·pack dry-run 통과.
     실제 host 검증과 구분한다. 시나리오 P01~P09는 `docs/e2e-manual.md`에 기록.
+    [구현 commit CI #42](https://github.com/unvus/neosql-mcp/actions/runs/36376995102)도 통과.
 - [ ] 릴리스 B: 확인 작업 완료와 plugin 포함 릴리스
 - [ ] W7: 회사 조직 제출, 필요한 시점에 계정·심사 환경 안내
 - [ ] W5b: 게시 후 공개 README의 설치 안내 추가
