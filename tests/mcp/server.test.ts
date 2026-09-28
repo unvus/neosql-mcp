@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../src/mcp/server.js';
@@ -29,6 +30,18 @@ describe('createServer', () => {
     const result = await client!.listTools();
     const toolNames = result.tools.map((t) => t.name);
     expect(toolNames).toContain('ping');
+  });
+
+  it('reports the package version in the MCP initialization response', async () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+    ) as { version: string };
+    await connectClientToServer();
+
+    expect(client!.getServerVersion()).toEqual({
+      name: 'neosql-mcp',
+      version: manifest.version,
+    });
   });
 
   it('returns "pong" when the ping tool is called', async () => {

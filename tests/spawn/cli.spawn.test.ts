@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +39,14 @@ describe('built CLI via stdio spawn', () => {
     const client = new Client({ name: 'spawn-test-client', version: '0.0.0' });
     clients.push(client);
     await client.connect(transport);
+
+    const manifest = JSON.parse(
+      readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+    ) as { version: string };
+    expect(client.getServerVersion()).toEqual({
+      name: 'neosql-mcp',
+      version: manifest.version,
+    });
 
     const result = await client.callTool({ name: 'ping', arguments: {} });
     const content = result.content as Array<{ type: string; text?: string }>;

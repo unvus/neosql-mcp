@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import packageJson from '../../package.json' with { type: 'json' };
 import { registerPingTool } from './tools/ping.js';
 import { resolveSocketPath, type Profile } from '../upstream/endpoint-resolver.js';
 import { postRpc as defaultPostRpc } from '../upstream/http-client.js';
@@ -22,7 +23,7 @@ import { registerGetMcpSessionIdTool } from './tools/get-mcp-session-id.js';
 import type { PostRpc, UpstreamToolDeps } from './tools/shared.js';
 
 export const SERVER_NAME = 'neosql-mcp';
-export const SERVER_VERSION = '0.0.1';
+export const SERVER_VERSION = packageJson.version;
 
 export interface CreateServerOptions {
   projectId?: string;
