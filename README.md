@@ -175,7 +175,7 @@ Tools that accept the complete explicit coordinate tuple:
 
 `neosql-mcp` talks to NeoSQL Desktop through a deterministic local endpoint:
 
-- macOS: `path.join(os.tmpdir(), 'neosql-mcp.sock')`
+- macOS: `neosql-mcp.sock` in the per-user temp directory from `getconf DARWIN_USER_TEMP_DIR`
 - Windows: `\\.\pipe\neosql-mcp`
 
 ## Troubleshooting

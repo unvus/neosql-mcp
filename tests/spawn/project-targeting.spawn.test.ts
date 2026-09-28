@@ -8,6 +8,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { ProgressNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 import { closeServer, listen } from '../helpers/socket.js';
+import { resolveSocketPath } from '../../src/upstream/endpoint-resolver.js';
 
 const cli = fileURLToPath(new URL('../../dist/cli.js', import.meta.url));
 describe.skipIf(process.platform === 'win32')('project targeting stdio → HTTP', () => {
@@ -34,8 +35,8 @@ describe.skipIf(process.platform === 'win32')('project targeting stdio → HTTP'
     const messages: string[] = [];
     client.setNotificationHandler(ProgressNotificationSchema, notification => { messages.push(notification.params.message ?? ''); });
     try {
-      await listen(server, path.join(dir, 'neosql-mcp-local.sock'));
-      await client.connect(new StdioClientTransport({ command: process.execPath, args: [cli, '--profile=local', '--project-id=B'], env: { TMPDIR: dir, TMP: dir, TEMP: dir, NEOSQL_MCP_LOG_PARENT_DIR: dir } }));
+      await listen(server, resolveSocketPath('local'));
+      await client.connect(new StdioClientTransport({ command: process.execPath, args: [cli, '--profile=local', '--project-id=B'], env: { NEOSQL_MCP_LOG_PARENT_DIR: dir } }));
       await client.listTools(); await client.callTool({ name: 'ping', arguments: {} });
       expect(requests).toHaveLength(0);
       const result = await client.callTool({ name: 'list-connections', arguments: {}, ...(progress ? { _meta: { progressToken: 'p' } } : {}) });

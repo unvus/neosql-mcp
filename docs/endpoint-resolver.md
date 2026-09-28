@@ -13,13 +13,14 @@
 ### macOS
 
 ```
-path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`)
+path.join(execFileSync('/usr/bin/getconf', ['DARWIN_USER_TEMP_DIR']).trim(), `neosql-mcp${suffix}.sock`)
 ```
 
 - `suffix`:
   - prod 빌드(npm 배포본 / `npx neosql-mcp`): `''`
   - non-prod profile(`--profile=dev|local|stage`): `'-' + profile`
-- macOS 의 `os.tmpdir()` 은 OS 가 user-isolated 경로(`/var/folders/.../T/`) 를 반환하므로 다른 사용자와 충돌하지 않는다.
+- `getconf DARWIN_USER_TEMP_DIR` 은 env 와 무관하게 user-isolated 경로(`/var/folders/.../T/`)를 반환하므로 다른 사용자와 충돌하지 않는다.
+- `os.tmpdir()` 은 TMPDIR 에 의존한다. MCP host(MCP SDK 기본 env 등)가 TMPDIR 을 빼고 실행하면 `/tmp` 가 되어 앱과 경로가 어긋나므로 사용하지 않는다.
 - Linux 는 NeoSQL Desktop 지원 대상이 아니므로 public support 범위에서 제외한다.
 
 ### Windows
@@ -65,7 +66,7 @@ const req = http.request({ socketPath, method: 'POST', path: HTTP_PATH });
 
 | 항목                                    | 내용                                                         | 완화                                                   |
 | --------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
-| macOS `sun_path` 길이 ~104 byte          | macOS `os.tmpdir()` 만으로도 ~50 char 차지                   | path 단편이 짧아야 함 (테스트는 `nm-test-{8hex}.sock`) |
+| macOS `sun_path` 길이 ~104 byte          | macOS 사용자 temp 경로만으로도 ~50 char 차지                | path 단편이 짧아야 함 (테스트는 `nm-test-{8hex}.sock`) |
 | macOS socket file 잔존                   | 비정상 종료 시 unlink 안 됨 → 다음 listen `EADDRINUSE`       | electron-main 기동 시 unlink 후 listen (본체 작업)     |
 | Windows Named Pipe 권한                 | `\\.\pipe\name` 의 ACL 기본값은 다른 사용자 접근 가능성 있음 | win32 native 호출로 SDDL 적용 (본체 작업 시 보강)      |
 

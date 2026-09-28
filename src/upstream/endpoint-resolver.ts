@@ -1,6 +1,5 @@
-import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
 
 /**
  * NeoSQL 실행 profile.
@@ -12,26 +11,15 @@ export type Profile = 'prod' | 'dev' | 'local' | 'stage';
 
 export const HTTP_PATH = '/mcp/rpc';
 
-// MCP host 가 TMPDIR 을 뺀 env 로 띄우면 os.tmpdir() 이 /tmp 로 떨어져 앱 socket 과 어긋난다.
-export const getTempDir = (): string => {
-  if (process.platform === 'darwin' && !process.env.TMPDIR) {
-    try {
-      return execSync('getconf DARWIN_USER_TEMP_DIR', {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
-    } catch {
-      // fallback if getconf fails
-    }
-  }
-  return os.tmpdir();
-};
-
 export const resolveSocketPath = (profile: Profile): string => {
   // prod 는 suffix 없음; 그 외 profile 은 모두 `-${profile}` 로 분리.
   const suffix = profile === 'prod' ? '' : `-${profile}`;
   if (process.platform === 'win32') {
     return `\\\\.\\pipe\\neosql-mcp${suffix}`;
   }
-  return path.join(getTempDir(), `neosql-mcp${suffix}.sock`);
+  // MCP host 가 TMPDIR 을 빼고 실행할 수 있으므로 env 대신 OS 에 사용자 temp 경로를 묻는다.
+  const tempDir = execFileSync('/usr/bin/getconf', ['DARWIN_USER_TEMP_DIR'], {
+    encoding: 'utf8',
+  }).trim();
+  return path.join(tempDir, `neosql-mcp${suffix}.sock`);
 };

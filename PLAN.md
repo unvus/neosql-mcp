@@ -15,7 +15,7 @@
 | upstream transport    | **Unix Domain Socket (POSIX) / Named Pipe (Windows)** — TCP 포트 미사용. Node `http`/`net` 이 동일 API 로 추상화                                                |
 | renderer 호출         | electron-main 이 IPC 로 위임                                                                                                                                    |
 | 엔드포인트 검출       | **고정 socket path 에 connect 시도** (config 파일·환경변수·프로세스 탐색 미사용). 양쪽 코드(electron-main / neosql-mcp) 가 동일 규칙으로 path 산출              |
-| socket path 규칙      | POSIX: `${os.tmpdir()}/neosql-mcp${suffix}.sock` · Windows: `\\\\.\\pipe\\neosql-mcp${suffix}`. `suffix` = prod 빈 문자열 / 그 외 `-${profile}`. mcp 는 `--profile=<prod|dev|local|stage>` CLI 인자로 profile 인지 |
+| socket path 규칙      | macOS: `${getconf DARWIN_USER_TEMP_DIR}/neosql-mcp${suffix}.sock` · Windows: `\\\\.\\pipe\\neosql-mcp${suffix}`. `suffix` = prod 빈 문자열 / 그 외 `-${profile}`. mcp 는 `--profile=<prod|dev|local|stage>` CLI 인자로 profile 인지 |
 | HTTP path             | `/mcp/rpc` 고정. 양쪽 코드의 상수로 보유 (config 미저장). `/mcp/` 네임스페이스로 묶어 향후 비-RPC endpoint 또는 다른 RPC 묶음 추가 여지 확보                    |
 | 미설치 vs 미실행 구분 | Phase 1 에서는 합친 메시지로 처리. Phase 3 에서 `not_running` / `stale_socket` / `not_installed` 를 사용자-facing UX 로 구분                                    |
 | Phase 순서            | Phase 0 → 1 → 2-1 ~ 2-4 선행, Phase 3 은 Desktop lifecycle UX, Phase 4 이상은 운영 안정화·보안·배포 UX 재검토                                                   |
@@ -52,7 +52,7 @@ TCP loopback 대신 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** 를 �
 
 - POSIX 는 비정상 종료 시 socket file 잔존 → 본체 기동 시 unlink 필수 (Windows Named Pipe 는 OS 자동 cleanup).
 - POSIX 는 `chmod 0600`, Windows 는 Named Pipe ACL 별도 적용 (Node 표준 API 미제공, win32 native 처리 필요) — 본체 작업 시 보강.
-- POSIX `sun_path` 길이 제한 (~104 byte) 회피 위해 socket path 는 `os.tmpdir()` 등 짧은 위치에 둠.
+- POSIX `sun_path` 길이 제한 (~104 byte) 회피 위해 socket path 는 사용자 temp 디렉터리 같은 짧은 위치에 둠.
 
 ## 기술 스택
 
@@ -111,9 +111,10 @@ TCP loopback 대신 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** 를 �
 
 ### 경로 산출 규칙
 
-- **POSIX**: `path.join(os.tmpdir(), 'neosql-mcp' + suffix + '.sock')`
-  - macOS / Windows 의 `os.tmpdir()` 은 OS 가 이미 user-isolated 경로를 반환 (`/var/folders/.../T/`, `%TEMP%`).
-  - Linux `os.tmpdir()` 이 공유 `/tmp` 일 경우의 보정은 본체 작업 시 결정 (XDG_RUNTIME_DIR 또는 `${HOME}/.cache/neosql/` 등).
+- **macOS**: `path.join(<getconf DARWIN_USER_TEMP_DIR>, 'neosql-mcp' + suffix + '.sock')`
+  - `/usr/bin/getconf DARWIN_USER_TEMP_DIR` 는 env 와 무관하게 user-isolated 경로(`/var/folders/.../T/`)를 반환한다.
+  - `os.tmpdir()` 은 TMPDIR 에 의존한다. MCP host(MCP SDK 기본 env 등)가 TMPDIR 을 빼고 실행하면 `/tmp` 가 되어 앱과 경로가 어긋나므로 사용하지 않는다.
+  - Linux 는 NeoSQL Desktop 배포 대상이 아니므로 지원하지 않는다.
 - **Windows**: `\\.\pipe\neosql-mcp` + suffix
 - `suffix` (profile 구분):
   - prod (npm 배포본): 빈 문자열

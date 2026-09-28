@@ -12,7 +12,7 @@
 
 ## 실행 방법
 
-GitHub Actions CI는 `ubuntu-latest`와 `windows-latest`에서 각각 Node 20으로
+GitHub Actions CI는 `macos-latest`와 `windows-latest`에서 각각 Node 20으로
 설치·lint·typecheck·전체 테스트·build·pack 검사를 실행한다. main push와 PR 외에
 Actions의 CI → Run workflow로도 실행할 수 있다. 한 OS의 실패가 다른 OS 실행을 취소하지 않는다.
 
@@ -21,7 +21,12 @@ Windows CI는 NeoSQL이 없는 GitHub-hosted VM이므로
 테스트를 활성화한다. 이 값을 실제 Desktop이 실행 중인 개인 PC에 그대로 적용하지 않는다.
 HTTP 통합 테스트는 Windows에서 실제 Named Pipe를 사용하며, CLI spawn 테스트도 실행한다.
 POSIX stale socket 시험 3개와 프로젝트 이동 spawn 시험 2개는 기존 Windows 제외 조건을
-유지한다. CI 통과는 실제 Claude Code의 `npx` 실행과 Desktop 설치·자동 활성화·DB 작업의
+유지한다.
+
+CLI spawn 테스트는 운영과 같은 local profile endpoint(macOS는
+`getconf DARWIN_USER_TEMP_DIR`의 `neosql-mcp-local.sock`)에 mock 서버를 띄운다. 따라서 local
+profile NeoSQL 앱이 실행 중이지 않은 환경에서 실행해야 하며, 같은 endpoint를 공유하므로
+`npm run test:integration`은 spawn 테스트 파일을 순차 실행한다. CI 통과는 실제 Claude Code의 `npx` 실행과 Desktop 설치·자동 활성화·DB 작업의
 수동 검증을 대신하지 않는다.
 
 ```bash

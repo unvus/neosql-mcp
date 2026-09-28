@@ -1,22 +1,30 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import os from 'node:os';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
-import { resolveSocketPath, HTTP_PATH, getTempDir } from '../../src/upstream/endpoint-resolver.js';
+import { execFileSync } from 'node:child_process';
+import {
+  HTTP_PATH,
+  resolveSocketPath,
+  type Profile,
+} from '../../src/upstream/endpoint-resolver.js';
 
-vi.mock('node:child_process', () => ({
-  execSync: vi.fn(),
-}));
+vi.mock('node:child_process', () => ({ execFileSync: vi.fn() }));
 
-const setPlatform = (value: NodeJS.Platform): void => {
-  Object.defineProperty(process, 'platform', { value, configurable: true });
+const PROFILE_SUFFIXES: Array<[Profile, string]> = [
+  ['prod', ''],
+  ['dev', '-dev'],
+  ['local', '-local'],
+  ['stage', '-stage'],
+];
+const DARWIN_TEMP_DIR = '/var/folders/ab/cd/T/';
+const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+
+const setPlatform = (platform: NodeJS.Platform): void => {
+  Object.defineProperty(process, 'platform', { ...originalPlatform, value: platform });
 };
 
-describe('getTempDir', () => {
-  const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!;
-
+describe('resolveSocketPath', () => {
   beforeEach(() => {
-    vi.mocked(execSync).mockReset();
+    vi.mocked(execFileSync).mockReset();
   });
 
   afterEach(() => {
@@ -24,71 +32,42 @@ describe('getTempDir', () => {
     vi.unstubAllEnvs();
   });
 
-  it('returns os.tmpdir() on non-darwin platforms without calling getconf', () => {
-    setPlatform('linux');
-    expect(getTempDir()).toBe(os.tmpdir());
-    expect(execSync).not.toHaveBeenCalled();
-  });
+  it.each(PROFILE_SUFFIXES)(
+    'returns the named pipe for the %s profile on win32 without calling getconf',
+    (profile, suffix) => {
+      setPlatform('win32');
+      expect(resolveSocketPath(profile)).toBe(`\\\\.\\pipe\\neosql-mcp${suffix}`);
+      expect(execFileSync).not.toHaveBeenCalled();
+    },
+  );
 
-  it('respects TMPDIR on darwin without calling getconf', () => {
+  it.each(PROFILE_SUFFIXES)(
+    'joins the getconf DARWIN_USER_TEMP_DIR result for the %s profile on darwin',
+    (profile, suffix) => {
+      setPlatform('darwin');
+      vi.mocked(execFileSync).mockReturnValue(`${DARWIN_TEMP_DIR}\n`);
+      expect(resolveSocketPath(profile)).toBe(
+        path.join(DARWIN_TEMP_DIR, `neosql-mcp${suffix}.sock`),
+      );
+      expect(execFileSync).toHaveBeenCalledWith('/usr/bin/getconf', ['DARWIN_USER_TEMP_DIR'], {
+        encoding: 'utf8',
+      });
+    },
+  );
+
+  it('ignores TMPDIR on darwin', () => {
     setPlatform('darwin');
     vi.stubEnv('TMPDIR', '/custom/tmp');
-    expect(getTempDir()).toBe(os.tmpdir());
-    expect(execSync).not.toHaveBeenCalled();
+    vi.mocked(execFileSync).mockReturnValue(`${DARWIN_TEMP_DIR}\n`);
+    expect(resolveSocketPath('prod')).toBe(path.join(DARWIN_TEMP_DIR, 'neosql-mcp.sock'));
   });
 
-  it('uses getconf on darwin when TMPDIR is missing', () => {
+  it('throws when getconf fails on darwin', () => {
     setPlatform('darwin');
-    vi.stubEnv('TMPDIR', '');
-    vi.mocked(execSync).mockReturnValueOnce('/var/folders/test/T/\n');
-    expect(getTempDir()).toBe('/var/folders/test/T/');
-    expect(execSync).toHaveBeenCalledWith(
-      'getconf DARWIN_USER_TEMP_DIR',
-      expect.objectContaining({ encoding: 'utf-8' }),
-    );
-  });
-
-  it('falls back to os.tmpdir() when getconf fails on darwin', () => {
-    setPlatform('darwin');
-    vi.stubEnv('TMPDIR', '');
-    vi.mocked(execSync).mockImplementationOnce(() => {
+    vi.mocked(execFileSync).mockImplementation(() => {
       throw new Error('getconf failed');
     });
-    expect(getTempDir()).toBe(os.tmpdir());
-  });
-});
-
-describe('resolveSocketPath', () => {
-  it('returns the current OS socket path for the prod profile', () => {
-    const expected =
-      process.platform === 'win32'
-        ? '\\\\.\\pipe\\neosql-mcp'
-        : path.join(getTempDir(), 'neosql-mcp.sock');
-    expect(resolveSocketPath('prod')).toBe(expected);
-  });
-
-  it('returns the current OS socket path for the dev profile', () => {
-    const expected =
-      process.platform === 'win32'
-        ? '\\\\.\\pipe\\neosql-mcp-dev'
-        : path.join(getTempDir(), 'neosql-mcp-dev.sock');
-    expect(resolveSocketPath('dev')).toBe(expected);
-  });
-
-  it('returns the current OS socket path for the local profile', () => {
-    const expected =
-      process.platform === 'win32'
-        ? '\\\\.\\pipe\\neosql-mcp-local'
-        : path.join(getTempDir(), 'neosql-mcp-local.sock');
-    expect(resolveSocketPath('local')).toBe(expected);
-  });
-
-  it('returns the current OS socket path for the stage profile', () => {
-    const expected =
-      process.platform === 'win32'
-        ? '\\\\.\\pipe\\neosql-mcp-stage'
-        : path.join(getTempDir(), 'neosql-mcp-stage.sock');
-    expect(resolveSocketPath('stage')).toBe(expected);
+    expect(() => resolveSocketPath('prod')).toThrow('getconf failed');
   });
 });
 

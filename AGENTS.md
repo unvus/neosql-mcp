@@ -143,7 +143,8 @@ endpoint resolution 규칙:
 - `neosql-mcp`와 electron-main이 공유하는 deterministic socket path 계산을 사용한다.
   `PLAN.md`가 명시적으로 바뀌기 전까지 config file read, environment variable
   override, process discovery를 추가하지 않는다.
-- POSIX socket path: `path.join(os.tmpdir(), 'neosql-mcp' + suffix + '.sock')`.
+- macOS socket path: `path.join(<getconf DARWIN_USER_TEMP_DIR>, 'neosql-mcp' + suffix + '.sock')`.
+  MCP host가 TMPDIR을 빼고 실행할 수 있으므로 `os.tmpdir()`를 쓰지 않는다. Linux는 지원하지 않는다.
 - Windows Named Pipe path: `\\\\.\\pipe\\neosql-mcp` + suffix.
 - `suffix`는 prod에서 `''`, 그 외 profile에서 `'-' + profile`이다. 기본 profile은 prod다.
 - HTTP path는 `/mcp/rpc` 상수다. config에 저장하지 않는다. `/mcp/` 네임스페이스로 묶어 향후 비-RPC endpoint나 다른 RPC 묶음 추가 여지를 확보한다.
