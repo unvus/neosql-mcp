@@ -101,6 +101,9 @@ CLI 검증용이다. plugin 검증은 필수 manifest·MCP 설정·README의 존
 
 ## 새 파일 분류 가이드
 
+루트 `npm-shrinkwrap.json`은 개발·CI와 npm 배포가 공유하는 의존성 lockfile이다.
+`package-lock.json`을 병행하지 않으며, plugin 하위 폴더에는 복사하지 않는다.
+
 ### `src/` 4개 경계
 
 | 경계        | 책임                                                    | 예시                                   |

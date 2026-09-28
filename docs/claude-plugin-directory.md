@@ -308,7 +308,7 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
   plugin과 역할을 구분하기 위한 제출 전 변경이다. 내부 MCP server 키는 `neosql`을 유지한다.
 - 이 값은 제출 후 바꿀 수 없다(§3.1). 폴더명은 §3.2의 문자 규칙을 지킨다.
 - root를 plugin 폴더로 쓰는 안은 기각한다.
-  - root에 `package.json`과 `package-lock.json`이 함께 있어 Hold가 걸린다. 더 큰 문제는 모든
+  - root에 `package.json`과 `npm-shrinkwrap.json`이 함께 있어 Hold가 걸린다. 더 큰 문제는 모든
     사용자의 설치 cache에서 `npm ci --ignore-scripts`가 실제로 돌아 devDependencies까지
     내려받는다는 점이다(§3.6).
   - `src/`, `tests/`, `docs/`, `poc/`, 내부 계획 문서가 plugin 파일로 배포되고 scan 대상이 된다.
@@ -323,6 +323,8 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
 ### D3. MCP 서버는 `npx -y neosql-mcp@<정확한 버전>`으로 실행한다
 
 - 버전을 고정하지 않으면 Blocks이므로 반드시 고정한다(§3.5).
+- npm 패키지에 `npm-shrinkwrap.json`을 포함해 하위 의존성도 고정한다. 개발·CI에서도 같은
+  lockfile을 사용한다. Portal의 launcher Hold 해제 여부는 새 배포본으로 재검증해야 한다.
 - **Runs a pinned npx or uvx package** Hold가 버전마다 걸릴 수 있다는 것을 운영 비용으로
   받아들인다(§3.6).
 - `dist/cli.js`를 plugin에 번들하는 안은 기각한다.
@@ -443,13 +445,12 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
   2. 그 저장소의 `.mcp.json`에 `--project-id`를 넣은 `neosql` 서버를 설정한다.
 - 조직이 plugin을 필수로 지정하면 1번이 불가능하다. 이때는 plugin을 쓰면서 project를 지정할
   방법이 없다고 README에 적는다.
-- 기존 수동 설정(`npx -y neosql-mcp`) 사용자가 plugin을 추가해도 command가 달라 도구가 두 벌 뜬다.
-  둘 중 하나를 고르게 안내한다. plugin을 쓰려면 수동 설정을 지우고, 수동 설정을 계속 쓰려면
-  plugin을 끈다.
-- Desktop의 MCP 설정 설치 기능이 만든 `~/.claude.json` 항목도 위 안내 대상이다. 기존 설정의
-  project ID 고정이 필요한 사용자는 해당 설정을 유지하고 plugin을 끈다. 기존 설정을 제거할 때
-  project ID 고정도 사라진다는 점을 안내하며, 다른 MCP 서버 항목은 보존한다.
-- 이 안내는 plugin README와 root README 두 벌에 모두 넣는다.
+- 기존 수동 설정 삭제를 설치 필수 단계로 안내하지 않는다. Claude Code는 같은 endpoint로
+  판단한 서버를 중복 제거하며 수동 설정이 plugin보다 우선한다. 버전 pin 등 인자 차이가 있는
+  실행 명령도 동일하게 처리하는지는 W6에서 확인한다.
+- plugin README에는 중복 도구나 예상과 다른 설정이 보이면 `/mcp`로 활성 서버를 확인하라는
+  문제 해결 안내만 둔다. 특정 credential 파일을 직접 편집하거나 기존 등록을 삭제하라는
+  안내는 두지 않는다. project ID 고정을 위한 수동 설정·plugin 비활성화 안내는 유지한다.
 
 ### D11. 데이터 처리는 Node 중계와 NeoSQL Desktop을 나눠 공개한다
 
@@ -572,9 +573,8 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
    - §11의 전수 확인에서 다른 tool의 저장·전송 경로가 나오면 여기에 추가한다.
 
 6. Existing manual configuration(D10):
-   - 버전 고정 없는 `neosql` 설정이 있으면 plugin과 도구가 두 벌 뜬다. 직접 만든 설정뿐 아니라
-     Desktop의 설정 설치 기능이 만든 `~/.claude.json` 항목도 포함한다. plugin을 쓰려면 해당
-     항목만 제거하고, 기존 설정을 계속 쓰려면 plugin을 끈다.
+   - 기존 등록 삭제를 요구하지 않는다. 중복 도구나 예상과 다른 설정이 보이면 `/mcp`에서
+     활성 서버를 확인하도록 안내한다.
    - plugin은 Desktop에서 선택된 project를 사용한다. 기존 설정의 project ID 고정이 필요하면
      해당 설정을 유지하고 plugin을 끈다. 기존 항목을 제거하면 그 project ID 고정도 사라진다.
    - 특정 project를 대상으로 하려면 그 저장소에서 `"enabledPlugins": { "neosql-mcp@synced": false }`로
@@ -592,7 +592,7 @@ Troubleshooting과 같은 사실이어야 한다. 사용자-facing 동작을 바
 
 ```text
 npm version <x>
-  ├─ package.json / package-lock.json 버전 변경
+  ├─ package.json / npm-shrinkwrap.json 버전 변경
   ├─ version script: plugin.json#version, .mcp.json pin 갱신 후 git add   (W3)
   └─ commit + tag vX.Y.Z
 git push                 → main (directory는 main을 추적하지 않음)
@@ -742,8 +742,8 @@ W5b는 directory에 게시된 뒤에 한다.
 - `claude plugin validate ./plugins/neosql-mcp`에서 `✔ Validation passed`가 나와야 한다.
 - `claude --plugin-dir ./plugins/neosql-mcp`로 Claude Code를 띄우고 `/mcp`에서 `plugin:neosql-mcp:neosql`
   연결과 10개 tool을 확인한다. 이렇게 띄운 plugin의 id는 `neosql-mcp@inline`이다.
-  - 기본 검증은 user·project·local scope의 `neosql` 수동 설정을 잠시 치우고 한다. 수동 설정이
-    있으면 plugin 서버와 둘 다 떠서 어느 쪽 tool이 호출됐는지 구분하기 어렵다.
+  - 기본 검증은 수동 설정이 없는 별도 시험 환경에서 한다. 중복 제거·우선순위와 plugin 자체
+    연결 검증을 구분한다. 사용자의 기존 설정을 임의로 삭제하지 않는다.
 - macOS와 Windows에서 각각 확인한다: Desktop 실행 중, Desktop 종료 상태에서 자동 활성화,
   §6.3의 예시 프롬프트 4개.
 - 중복과 project별 비활성화(§3.11, D10):

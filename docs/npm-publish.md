@@ -11,6 +11,9 @@
 
 ## 배포 원칙
 
+- 의존성 lockfile은 `npm-shrinkwrap.json` 하나로 관리하고 npm 패키지에도 포함한다.
+  `package-lock.json`을 병행 관리하지 않는다. `npm install`로 의존성을 변경하면 shrinkwrap도
+  함께 검토한다. 고정된 하위 의존성의 보안 업데이트는 새 버전 릴리스로 전달한다.
 - GitHub 공개 저장소를 소스의 단일 진실 원천으로 둔다.
 - `main` push는 검증만 수행한다. 자동 npm publish는 하지 않는다.
 - npm publish는 Git tag 또는 GitHub Release 생성 시에만 수행한다.
@@ -300,6 +303,7 @@ npm pack --dry-run
 - `dist/cli.js`가 포함되어야 한다.
 - `dist/cli.js` 첫 줄에 `#!/usr/bin/env node`가 있어야 한다.
 - `README.md`와 `LICENSE`가 포함되어야 한다.
+- `npm-shrinkwrap.json`이 포함되어야 하며, package 버전과 일치해야 한다.
 - `src/`, `tests/`, `docs/`, `.env`, `.mcp.json`, local log, `node_modules/`는 포함되지 않아야 한다.
 - source map을 공개하지 않을 계획이면 `dist/*.map` 포함 여부를 보고 `tsup.config.ts` 또는 `files` 정책을 조정한다.
 
@@ -351,7 +355,7 @@ npm version minor
 npm version major
 ```
 
-`npm version`은 기본적으로 `package.json`, `package-lock.json`을 수정하고 git tag를 만든다.
+`npm version`은 `package.json`, `npm-shrinkwrap.json`을 수정하고 git tag를 만든다.
 tag 기반 publish workflow를 쓸 경우 이 동작을 그대로 활용할 수 있다.
 
 에이전트에게 `version 1.0.0으로 올려줘`, `1.0.0으로 버전 올려줘`,
@@ -386,7 +390,7 @@ GitHub Actions publish workflow의 trigger다.
 
 주의:
 
-- `package.json` 또는 `package-lock.json`을 직접 편집해서 버전을 올리지 않는다.
+- `package.json` 또는 `npm-shrinkwrap.json`을 직접 편집해서 버전을 올리지 않는다.
 - release commit/tag에 섞이면 안 되는 변경이 working tree에 있으면 중단하고 정리한다.
 - npm에 이미 존재하는 버전이면 같은 `name@version`으로 다시 publish할 수 없으므로
   다른 patch version을 사용한다.

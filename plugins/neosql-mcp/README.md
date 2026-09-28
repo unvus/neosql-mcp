@@ -39,12 +39,7 @@ and transaction settings apply. ERD tools change virtual models; they do not app
 those changes to the database. Code generation writes files under the configured
 project location and can overwrite existing files.
 
-## Existing MCP configurations
-
-A manual `npx -y neosql-mcp` registration and this pinned plugin may both load,
-showing duplicate tools. This includes registrations created by Desktop in
-`~/.claude.json`. To switch to the plugin, remove only the existing NeoSQL MCP entry,
-preserving other servers and settings.
+## Fixed project configuration
 
 If a repository needs a fixed project ID, keep its manual MCP configuration and
 disable the directory plugin for that repository. In `.claude/settings.local.json`,
@@ -108,6 +103,9 @@ by your Claude service terms and settings.
 If tools cannot start, check that Node.js and `npx` are on the PATH seen by Claude,
 then restart Claude. If Desktop cannot be reached, open it, select the intended
 project, and check its MCP connection and schema permissions.
+
+If tools appear twice or the active configuration differs from what you expect,
+use `/mcp` in Claude Code to check the active servers.
 
 See the [English guide](https://github.com/unvus/neosql-mcp/blob/main/README.md) or
 [한국어 안내](https://github.com/unvus/neosql-mcp/blob/main/README.ko.md) for setup and

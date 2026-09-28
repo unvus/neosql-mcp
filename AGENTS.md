@@ -212,7 +212,7 @@ Pull request에는 다음을 포함한다.
 `patch/minor/major 버전 올려줘`처럼 버전 bump를 명시하면 `docs/npm-publish.md`의
 버전과 태그 절차를 따른다.
 
-- `package.json` 또는 `package-lock.json`을 직접 편집해서 버전을 올리지 않는다.
+- `package.json` 또는 `npm-shrinkwrap.json`을 직접 편집해서 버전을 올리지 않는다.
 - 먼저 `git status --short`로 working tree 상태를 확인한다. release commit/tag에
   섞이면 안 되는 변경이 있으면 중단하고 사용자에게 확인한다.
 - 정확한 버전이 주어지면 `npm version <version>`을 실행한다. 예:
