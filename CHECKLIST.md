@@ -271,7 +271,8 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     `os.tmpdir()`가 `/tmp`로 계산된 것. macOS는 `getconf DARWIN_USER_TEMP_DIR`로 계산하도록
     수정(`b79eb0b`, 앱 `7970a5dfa`). `1.8.4`로 테스트 업로드를 갱신한 새 Cowork 세션에서
     ping·연결 목록·명시 좌표 `SELECT 1` 성공으로 연결 문제 해소 확인.
-    Cowork 자동 활성화·Windows는 미검증 (`docs/e2e-manual.md` P09).
+    Windows도 Claude CLI·Desktop Cowork 모두 플러그인 사용 테스트 완료 사용자 보고
+    (2026-09-29). Cowork 자동 활성화의 개별 결과는 미수집 (`docs/e2e-manual.md` P09).
     실제 host 검증과 구분한다. 시나리오 P01~P09는 `docs/e2e-manual.md`에 기록.
     [구현 commit CI #42](https://github.com/unvus/neosql-mcp/actions/runs/36376995102)도 통과.
 - [x] Plugin 포함 npm 릴리스: `1.8.2`, shrinkwrap 배포·ping·10개 tool 확인,

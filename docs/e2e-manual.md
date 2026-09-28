@@ -20,7 +20,7 @@
 | P06 | project ID를 고정한 수동 등록 + `neosql-mcp@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
 | P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
 | P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
-| P09 | Cowork의 Desktop 연결 세션 | Desktop 접근·자동 활성화 여부 기록 | macOS 1.8.4 ping·연결 목록·명시 좌표 SELECT 1 성공(2026-09-29). 1.8.3 소켓 경로 불일치 해소 확인. Cowork 자동 활성화·Windows는 미검증 |
+| P09 | Cowork의 Desktop 연결 세션 | Desktop 접근·자동 활성화 여부 기록 | macOS 1.8.4 ping·연결 목록·명시 좌표 SELECT 1 성공(2026-09-29). 1.8.3 소켓 경로 불일치 해소 확인. Windows Desktop Cowork 플러그인 사용 테스트 완료 사용자 보고(2026-09-29). Cowork 자동 활성화의 개별 결과는 미수집 |
 
 기존 사용자 설정은 덮어쓰지 않고 격리한 환경에 필요한 NeoSQL 등록만 재현한다.
 실제 설정을 잠시 변경해야 하면 먼저 백업하고 종료 후 원복한다.
@@ -123,6 +123,15 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
   따른 Desktop의 기존 SQL 문서·이력·로그 저장 동작은 적용될 수 있다.
 - Desktop 완전 종료 후 자동 활성화와 Windows Cowork는 이번 재검증에 포함하지 않았다.
   테스트 업로드 `1.8.4`는 계정에 남아 있으며, 정식 Directory 제출은 수행하지 않았다.
+
+### Windows CLI·Desktop Cowork 후속 사용자 검증 (2026-09-29)
+
+- 사용자가 Windows의 Claude CLI와 Claude Desktop Cowork 모두에서 플러그인 사용
+  테스트를 완료했다고 보고했다. Windows Cowork 사용 성공으로 상태를 갱신한다.
+- 앞서 제공한 가이드는 업로드된 `1.8.4`를 대상으로 했으며, 사용자는 같은 계정에서
+  업로드 플러그인이 보이는 것도 확인했다. 이번 완료 보고에서 실제 실행 버전·도구별
+  원본 응답·Desktop 완전 종료 후 자동 활성화 결과는 별도로 수집하지 않았다.
+- 이 보고를 모든 도구·자동 활성화·비활성화 시나리오의 일괄 통과로 확대하지 않는다.
 
 ## 기존 MCP host 검증
 
