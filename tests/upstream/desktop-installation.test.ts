@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import path from 'node:path';
 import {
   detectDesktopInstallation,
   macDesktopExecutableCandidates,
@@ -225,7 +226,7 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
       platform: 'darwin',
       homeDir,
       readMcpConfigFile: async (filePath) => {
-        expect(filePath).toBe('/Users/shock/.neosql/mcp-config.json');
+        expect(filePath).toBe(path.join(homeDir, '.neosql', 'mcp-config.json'));
         return JSON.stringify({ appPath: '/Volumes/Work/Apps/NeoSQL.app' });
       },
       pathExists: async (candidate) => {
@@ -293,7 +294,7 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
       platform: 'darwin',
       homeDir: '/Users/shock',
       readMcpConfigFile: async (filePath) => {
-        expect(filePath).toBe('/Users/shock/.neosql-stage/mcp-config.json');
+        expect(filePath).toBe(path.join('/Users/shock', '.neosql-stage', 'mcp-config.json'));
         return '{';
       },
       pathExists: async () => false,

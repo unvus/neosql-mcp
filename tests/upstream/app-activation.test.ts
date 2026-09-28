@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import path from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -122,7 +123,7 @@ describe('app activation', () => {
       platform: 'darwin',
       homeDir: '/Users/shock',
       readMcpConfigFile: async (filePath) => {
-        expect(filePath).toBe('/Users/shock/.neosql-dev/mcp-config.json');
+        expect(filePath).toBe(path.join('/Users/shock', '.neosql-dev', 'mcp-config.json'));
         return JSON.stringify({ appPath: '/Volumes/Work/Apps/NeoSQLDev.app' });
       },
       pathExists: async (candidate) => candidate === '/Volumes/Work/Apps/NeoSQLDev.app',

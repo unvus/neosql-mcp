@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -18,15 +18,13 @@ describe('built CLI via stdio spawn', () => {
   const clients: Client[] = [];
   let logParentDir: string;
 
-  afterAll(async () => {
-    await Promise.all(clients.map((c) => c.close()));
-  });
-
   beforeEach(() => {
     logParentDir = mkdtempSync(path.join(os.tmpdir(), 'neosql-mcp-spawn-logs-'));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Windows cannot remove log files while their CLI process still owns them.
+    await Promise.all(clients.splice(0).map((client) => client.close()));
     rmSync(logParentDir, { recursive: true, force: true });
   });
 

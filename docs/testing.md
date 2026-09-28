@@ -20,7 +20,7 @@ Windows CI는 NeoSQL이 없는 GitHub-hosted VM이므로
 `NEOSQL_MCP_DEDICATED_WINDOWS_RUNNER=1`로 고정 Named Pipe를 사용하는 CLI 준비·취소·진행
 테스트를 활성화한다. 이 값을 실제 Desktop이 실행 중인 개인 PC에 그대로 적용하지 않는다.
 HTTP 통합 테스트는 Windows에서 실제 Named Pipe를 사용하며, CLI spawn 테스트도 실행한다.
-POSIX stale socket 시험 1개와 프로젝트 이동 spawn 시험 2개는 기존 Windows 제외 조건을
+POSIX stale socket 시험 3개와 프로젝트 이동 spawn 시험 2개는 기존 Windows 제외 조건을
 유지한다. CI 통과는 실제 Claude Code의 `npx` 실행과 Desktop 설치·자동 활성화·DB 작업의
 수동 검증을 대신하지 않는다.
 

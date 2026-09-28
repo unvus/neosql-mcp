@@ -1,7 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { once } from 'node:events';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import pino from 'pino';
 import { configureLogger, flushLogger, formatLogLine, logger } from '../../src/infra/logger.js';
 import { resolveLogFilePath } from '../../src/infra/log-path.js';
 
@@ -46,14 +48,31 @@ describe('formatLogLine', () => {
 describe('configureLogger', () => {
   let logParentDir: string;
   let previousLogParentDir: string | undefined;
+  let destinationSpy: MockInstance<typeof pino.destination>;
 
   beforeEach(() => {
+    // Observe real destinations so teardown can close the files opened by this test.
+    destinationSpy = vi.spyOn(pino, 'destination');
     previousLogParentDir = process.env['NEOSQL_MCP_LOG_PARENT_DIR'];
     logParentDir = mkdtempSync(path.join(os.tmpdir(), 'neosql-mcp-logs-'));
     process.env['NEOSQL_MCP_LOG_PARENT_DIR'] = logParentDir;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    const destinations = destinationSpy.mock.results
+      .filter(
+        (result, index) =>
+          result.type === 'return' && typeof destinationSpy.mock.calls[index]?.[0] === 'object',
+      )
+      .map((result) => result.value);
+    destinationSpy.mockRestore();
+    await Promise.all(
+      destinations.map(async (destination) => {
+        const closed = once(destination, 'close');
+        destination.end();
+        await closed;
+      }),
+    );
     vi.unstubAllEnvs();
     if (previousLogParentDir === undefined) {
       delete process.env['NEOSQL_MCP_LOG_PARENT_DIR'];
