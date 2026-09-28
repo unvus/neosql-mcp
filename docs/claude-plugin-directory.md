@@ -809,6 +809,13 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 필요한 마이그레이션 안내를 감추거나 실제로 없는 credential 입력 설정을 추가하지 않는다.
 최종 릴리스 B의 Validate에서 재확인하고 같은 탐지가 유지되면 이 근거로 심사 대응한다.
 
+### 9.2 명명 변경 후 Portal Validate (2026-09-28)
+
+`main@c18f298`에서 경로 `plugins/neosql-mcp`, plugin 이름 `neosql-mcp`, 표시 이름
+`NeoSQL MCP`로 재검증했다. 구조·이름·게시자 검사 passed, 경고 1건·policy hold 3건은 §9.1과
+동일하다. Portal에는 repository URL, plugin path, branch를 각각 분리해 입력했다.
+정식 제출·게시는 하지 않았으며 릴리스 B의 최종 commit은 별도 검증한다.
+
 ## 10. Data handling 답변 초안
 
 답변은 현재 구현과 실제 운영 정책에 따라 작성한다. 저장·전송 여부를 새로 결정하는 설계 논의가
@@ -848,7 +855,7 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 | 1   | 사용할 회사 관리 claude.ai 조직과 계정 확인                         | 실제 계정 사용 시점 | 회사 소유 원칙은 확정. W6/W7 각 단계의 용도·권한·필요 항목을 설명하고 해당 시점에 확인 |
 | 3   | 개인정보 처리방침과 MCP 제출 설명 대조                             | 릴리스 B 전 | 공개 URL `https://neosql.unvus.com/en/privacy` 확인 완료. 현재 구현에 따른 제출 설명과 대조 |
 | 5   | reviewer 테스트 환경의 구체적인 준비 항목                           | 제출 준비 시점 | 별도 계정·샘플 데이터 원칙은 확정. 필요한 기능·라이선스·접속 조건을 정리한 뒤 사용자에게 안내 |
-| 6   | plugin 이름 `neosql-mcp` 사용 가능 여부                             | 변경 후 재검증 필요 | §9.1은 이전 `neosql` 이름의 결과다. 새 이름으로 조기 Validate 및 최종 B commit의 W7 검증 필요 |
+| 6   | plugin 이름 `neosql-mcp` 사용 가능 여부                             | 변경 후 확인 완료, W7 재검증 | `main@c18f298` 이름·게시자 검사 통과(§9.2). 최종 B commit의 W7 검증 필요 |
 | 7   | Windows에서 `npx` command 직접 실행 검증과 오류 수정              | W6, 릴리스 B 전 | 실패 원인을 수정하고 macOS·Windows 모두 재검증. Windows 지원 제외로 우회하지 않음 |
 | 8   | Cowork 로컬 세션 동작                                              | W6           | UDS 경로와 Desktop 활성화                                                                                     |
 | 10  | 로그 파일 위치·보관·rotation 정책 (Node 중계와 Desktop)            | 릴리스 B 전 | Data handling 답변과 README 공개 항목에 필요                                                                  |
