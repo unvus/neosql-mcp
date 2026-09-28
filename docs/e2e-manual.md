@@ -63,6 +63,21 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
 - 이번 보고는 Windows 플러그인 MCP 사용 성공으로 기록하며, 동기화·비활성화·자동
   실행 등 개별 미확인 시나리오까지 일괄 통과 처리하지 않는다.
 
+### 1.8.3 배포 및 Portal 재검증 (2026-09-29)
+
+- release commit: `a9fc460717144af5b4bb85adcbaf6cbee5e4d647`, tag `v1.8.3`.
+- [CI](https://github.com/unvus/neosql-mcp/actions/runs/36451825511): Ubuntu·Windows 성공.
+- [Publish Package](https://github.com/unvus/neosql-mcp/actions/runs/36451831096): npm publish 성공.
+  registry 전파 지연으로 `release-plugin`의 npm 조회는 실패했다. 전파 후 배포본 검증,
+  plugin 버전·pin 및 조상 관계 검사를 거쳐 문서의 수동 복구 절차로 `plugin-release`를
+  release commit까지 fast-forward했다. workflow의 실패 기록과 수동 복구 결과를 구분한다.
+- 새 npm cache에서 배포본 실행: npm latest·gitHead 일치, shrinkwrap 원본 일치,
+  MCP server version `1.8.3`, ping `pong`, tool 10개 확인.
+- Portal은 `plugin-release @ a9fc460`에 대해 7 checks, validation passed를 표시했다.
+  기존 `LAUNCHER_PACKAGE_REVIEW` policy hold 1건과 `Account not connected` 경고 1건이
+  남았다. 후자는 해당 Claude 조직에서 GitHub 계정을 연결하기 전에는 제출이 거부된다는
+  안내다. 계정 연결·최종 제출은 수행하지 않았다.
+
 ## 기존 MCP host 검증
 
 자동화된 단위/통합 테스트(`docs/testing.md`)로는 잡지 못하는 영역 — 실제 MCP Host와의 stdio 핸드셰이크, 툴 호출 왕복 — 을 사람이 검증하는 절차.
