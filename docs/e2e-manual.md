@@ -13,10 +13,10 @@
 | ID | 시나리오 | 기대 결과 | 상태 |
 | --- | --- | --- | --- |
 | P01 | `claude plugin validate ./plugins/neosql-mcp` | 구조 검사 통과 | macOS CLI 2.1.283 통과 |
-| P02 | 수동 NeoSQL 등록이 없는 격리 작업 폴더에서 `claude --plugin-dir ./plugins/neosql-mcp`, `/mcp` | `plugin:neosql-mcp:neosql` 연결 및 10개 tool 표시 | 미검증 |
-| P03 | 양 OS에서 Desktop 실행 중·종료 상태 각각 호출 | 정상 연결·필요 시 자동 활성화 | 미검증 |
-| P04 | plugin README의 schema·SQL·ERD·codegen 예시 4개 | 대상 샘플 프로젝트에 맞는 결과 | 미검증 |
-| P05 | Desktop이 생성한 수동 등록 + plugin (project ID 유/무 각각) | 두 서버가 로드됨; 기존 설정을 제거할 때 타 서버 유지 | 미검증 |
+| P02 | 시험 작업 폴더에서 `claude --plugin-dir ./plugins/neosql-mcp`, `/mcp` | `plugin:neosql-mcp:neosql` 연결 및 10개 tool 표시 | macOS 화면 확인: 연결·10개 tool 통과. 사용자 범위 수동 등록도 함께 존재. Windows 미검증 |
+| P03 | 양 OS에서 Desktop 실행 중·종료 상태 각각 호출 | 정상 연결·필요 시 자동 활성화 | macOS 연결 화면 확인, 완전 종료 후 자동 실행 사용자 확인. 프로젝트 미선택 안내 후 선택·재호출 성공 화면 확인. Windows 미검증 |
+| P04 | plugin README의 schema·SQL·ERD·codegen 예시 4개 | 대상 샘플 프로젝트에 맞는 결과 | macOS 스키마 조회 화면 확인. 추가 일련 작업은 사용자 정상 동작 보고이며 SQL·ERD·codegen별 결과는 별도 미수집. Windows 미검증 |
+| P05 | Desktop이 생성한 수동 등록 + plugin (project ID 유/무 각각) | 중복 처리와 실제 호출 서버 확인 | macOS 사용자 등록과 plugin 동시 연결 화면 확인. 사용자 등록의 생성 경로·project ID 인자는 미확인 |
 | P06 | project ID를 고정한 수동 등록 + `neosql-mcp@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
 | P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
 | P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
@@ -36,6 +36,22 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
 
 검증 기록에는 OS, Claude/Node/Desktop 버전, MCP commit 또는 npm 버전, 계정 유형,
 시나리오, 기대/실제 결과, 변경 데이터와 정리 결과를 남긴다.
+
+### macOS 사용자 검증 기록 (2026-09-28)
+
+- 환경: Node `22.22.2`, npx `10.9.7`, Claude Code `2.1.283`. Desktop 버전은 미수집.
+  시험 대상 plugin의 npm pin은 `1.8.2`다.
+- 사용자 터미널 출력에서 manifest validation 통과를 확인했다.
+- `/mcp` 화면에서 사용자 등록 `neosql`과 `plugin:neosql-mcp:neosql`이 각각 연결되고,
+  각 10개 tool이 표시됐다. 이 설정 조합은 자동 중복 제거되지 않았다.
+- plugin 서버를 명시한 실제 호출 화면에서 PostgreSQL 스키마의 테이블·뷰 조회 성공을
+  확인했다. 사용자는 추가 일련 작업도 문제없다고 보고했다. 개별 쓰기 작업의 결과와
+  정리 여부는 이 보고만으로 모두 통과 처리하지 않는다.
+- 사용자가 Desktop 완전 종료 후 자동 실행 시험 완료를 확인했다.
+- 추가 화면에서는 plugin 호출이 `project_not_selected`와 `requestSent: false`를 반환하고,
+  사용자가 Desktop 프로젝트를 선택한 뒤 다시 요청하자 세 스키마 모두 정상 조회됐다.
+  화면만으로 최초 미선택 상태가 된 원인을 단정하지 않는다.
+- Windows, claude.ai 동기화, plugin 비활성화 시나리오는 별도 검증 대상으로 남긴다.
 
 ## 기존 MCP host 검증
 
