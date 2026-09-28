@@ -261,6 +261,8 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
   - 자동 검증: lint·typecheck·build·전체 297개 테스트·pack dry-run 통과.
     실제 host 검증과 구분한다. 시나리오 P01~P09는 `docs/e2e-manual.md`에 기록.
     [구현 commit CI #42](https://github.com/unvus/neosql-mcp/actions/runs/36376995102)도 통과.
-- [ ] 릴리스 B: 확인 작업 완료와 plugin 포함 릴리스
+- [x] Plugin 포함 npm 릴리스: `1.8.2`, shrinkwrap 배포·ping·10개 tool 확인,
+  `plugin-release`가 release commit `13af326`을 가리킴
+- [ ] Directory 제출 전 W6 및 데이터 처리 확인 작업 완료 (npm 릴리스와 별개)
 - [ ] W7: 회사 조직 제출, 필요한 시점에 계정·심사 환경 안내
 - [ ] W5b: 게시 후 공개 README의 설치 안내 추가

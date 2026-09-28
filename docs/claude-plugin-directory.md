@@ -818,6 +818,23 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 동일하다. Portal에는 repository URL, plugin path, branch를 각각 분리해 입력했다.
 정식 제출·게시는 하지 않았으며 릴리스 B의 최종 commit은 별도 검증한다.
 
+### 9.3. shrinkwrap·README 변경 후 검증 (2026-09-28)
+
+- `1.8.2`를 npm에 배포했다. release commit은
+  `13af32665410b9676e256afdfae7c18adcab31cc`, tag는 `v1.8.2`다.
+- 실제 npm tarball의 `npm-shrinkwrap.json`이 release 소스와 동일함을 확인했다.
+  빈 작업 폴더·새 npm cache에서 `npx -y neosql-mcp@1.8.2`로 ping 응답과 10개 tool을 확인했다.
+- [Publish Package #23](https://github.com/unvus/neosql-mcp/actions/runs/36387114810)의
+  npm publish는 성공했다. 후속 job은 registry 조회 404로 처음 실패했으나, 배포본 조회 가능
+  확인 후 `release-plugin`만 재실행해 성공했다. `plugin-release`는 release commit과 일치한다.
+- Portal 추적 branch를 `plugin-release`로 변경하고 같은 commit으로 재검증했다.
+  결과는 passed, policy hold 1건이다. README의 기존 등록 삭제 안내를 제거한 뒤 credential
+  관련 hold 2건은 사라졌다. 아이콘도 정상 인식됐다.
+- shrinkwrap을 배포했어도 `LAUNCHER_PACKAGE_REVIEW`는 남았다. `npx neosql-mcp@1.8.2`에
+  대해 기존 안내 문구가 그대로 표시되므로 lockfile만으로 자동 해제된다고 보지 않는다.
+  심사 시 배포 tarball에 lockfile이 포함됐다는 근거를 제공한다.
+- 정식 directory 제출·게시는 하지 않았다. W6와 미완료 데이터 처리 확인은 계속 남아 있다.
+
 ## 10. Data handling 답변 초안
 
 답변은 현재 구현과 실제 운영 정책에 따라 작성한다. 저장·전송 여부를 새로 결정하는 설계 논의가
