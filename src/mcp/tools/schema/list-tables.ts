@@ -10,10 +10,16 @@ import { coordinateInputShape, validateCoordinateInput } from '../context/coordi
 export type ListTablesDeps = UpstreamToolDeps;
 
 export const registerListTablesTool = (server: McpServer, deps: ListTablesDeps): void => {
+  const title = 'List Tables';
   server.registerTool(
     'list-tables',
     {
-      title: 'List Tables',
+      title,
+      annotations: {
+        title,
+        readOnlyHint: true,
+        openWorldHint: false,
+      },
       description:
         'List all tables and views in a database schema. Returns table names, types (TABLE/VIEW), and comments. ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default.',

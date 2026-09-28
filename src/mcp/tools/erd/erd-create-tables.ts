@@ -11,10 +11,17 @@ import { tableDefSchema } from './input-models.js';
 export type ErdCreateTablesDeps = UpstreamToolDeps;
 
 export const registerErdCreateTablesTool = (server: McpServer, deps: ErdCreateTablesDeps): void => {
+  const title = 'ERD Create Tables';
   server.registerTool(
     'erd-create-tables',
     {
-      title: 'ERD Create Tables',
+      title,
+      annotations: {
+        title,
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       description:
         'Create one or more virtual tables in a NeoSQL ERD without executing SQL or changing the database. ' +
         'Each definition may include columns, primary keys, foreign keys, indexes, and table-level ' +

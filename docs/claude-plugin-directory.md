@@ -3,7 +3,7 @@
 `neosql-mcp`를 Anthropic plugin directory(claude.ai **Customize > Plugins**의 Discover,
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
-- 상태: 설계 합의(2026-09-28), 구현 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
+- 상태: W1 구현·검증 완료(2026-09-28), 릴리스 A 배포 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
   plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
 - 외부 요구사항 확인일: 2026-09-28
@@ -393,7 +393,7 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
 Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다. 첫 제출 전에 annotation이
 포함된 npm 버전을 릴리스하고, plugin은 그 버전 이상을 고정한다.
 
-제안 값은 다음과 같다. `openWorldHint`는 모두 `false`다. tool은 사용자가 NeoSQL Desktop에
+확정 값은 다음과 같다. `openWorldHint`는 모두 `false`다. tool은 사용자가 NeoSQL Desktop에
 구성한 닫힌 대상만 다룬다.
 
 | Tool                 | `readOnlyHint` | `destructiveHint` | 근거                                       |
@@ -415,7 +415,10 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
   유효하지만, §3.12 정책의 annotation 항목에 맞춰 명시한다. 두 값은 같은 문자열을 재사용한다.
 - 조회 tool도 Desktop이 꺼져 있으면 앱을 활성화한다. 이는 데이터 변경이 아니므로
   `readOnlyHint`는 true로 두고, README 공개 항목(§6.3)에서 다룬다.
-- 확정 전에 `docs/upstream-rpc-contract.md`와 대조한다(§11).
+- `docs/upstream-rpc-contract.md`와 본체 handler의 변경 범위를 대조했다(2026-09-28).
+  ERD 수정은 기존 모델 요소를 제거할 수 있고, 코드 생성은 파일을 덮어쓸 수 있으므로
+  `destructiveHint: true`다. 원격 DB라도 사용자가 구성한 대상에 한정되므로
+  `openWorldHint: false`이며, 네트워크 통신 여부를 뜻하는 annotation은 아니다.
 
 ### D10. `--project-id`는 plugin에서 노출하지 않는다. project를 지정하려면 그 저장소에서 plugin을 끄고 수동 설정을 쓴다
 
@@ -646,6 +649,9 @@ list는 합의용 초안이다.
   - `declares readOnlyHint for every registered tool`: 새 tool이 annotation 없이 추가되는 것을 막는다.
   - `matches annotations.title to the top-level title for every tool`
 - W1을 포함한 npm 버전(릴리스 A)을 낸다. plugin은 A 이상의 버전을 가리킨다.
+- 구현 검증(2026-09-28): 위 6개 테스트의 실패를 먼저 확인한 뒤 10개 tool에 annotation을
+  추가했다. 전체 287개 테스트, 별도 spawn 통합 11개, lint, typecheck, build가 통과했다.
+  tool handler의 실행 동작은 변경하지 않았다. 릴리스 A는 아직 배포하지 않았다.
 
 ### W2. Plugin 폴더와 manifest 검사
 
@@ -814,7 +820,6 @@ W5b는 directory에 게시된 뒤에 한다.
 | 6   | plugin 이름 `neosql` 사용 가능 여부                                | W2 main 반영 직후 | 제출 없이 portal Validate로 조기 확인. 대안 `neosql-desktop`. 최종 B commit으로 W7에서 재검증 |
 | 7   | Windows에서 `npx` command 직접 실행 검증과 오류 수정              | W6, 릴리스 B 전 | 실패 원인을 수정하고 macOS·Windows 모두 재검증. Windows 지원 제외로 우회하지 않음 |
 | 8   | Cowork 로컬 세션 동작                                              | W6           | UDS 경로와 Desktop 활성화                                                                                     |
-| 9   | `erd-modify-tables`의 `destructiveHint`, 전 tool의 `openWorldHint` | W1           | `docs/upstream-rpc-contract.md`와 대조                                                                        |
 | 10  | 로그 파일 위치·보관·rotation 정책 (Node 중계와 Desktop)            | 릴리스 B 전 | Data handling 답변과 README 공개 항목에 필요                                                                  |
 | 11  | 첫 게시 뒤 게시 설정(자동 게시) 희망 여부                          | 게시 후      | reviewer가 결정                                                                                               |
 | 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 릴리스 B 전 | MCP 호출에 관련된 저장·전송·로그·보관·삭제만 확인. 제품 전체 조사나 구조 개편은 제외. 결과를 §4, §6.3, §10에 반영 (D11) |

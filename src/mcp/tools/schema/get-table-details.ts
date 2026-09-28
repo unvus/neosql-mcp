@@ -10,10 +10,16 @@ import { coordinateInputShape, validateCoordinateInput } from '../context/coordi
 export type GetTableDetailsDeps = UpstreamToolDeps;
 
 export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDetailsDeps): void => {
+  const title = 'Get Table Details';
   server.registerTool(
     'get-table-details',
     {
-      title: 'Get Table Details',
+      title,
+      annotations: {
+        title,
+        readOnlyHint: true,
+        openWorldHint: false,
+      },
       description:
         'Get detailed information about one or more tables including columns, indexes, primary keys, and foreign keys. ' +
         'Pass multiple table names to retrieve details in a single call. ' +

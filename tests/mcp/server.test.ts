@@ -92,6 +92,75 @@ describe('createServer', () => {
     expect(toolNames.has('modify-tables')).toBe(false);
   });
 
+  it('declares readOnlyHint true for the six read-only tools', async () => {
+    await connectClientToServer();
+    const { tools } = await client!.listTools();
+    const readOnlyTools = tools.filter((tool) => tool.annotations?.readOnlyHint === true);
+
+    expect(readOnlyTools.map((tool) => tool.name).sort()).toEqual([
+      'get-context-help',
+      'get-mcp-session-id',
+      'get-table-details',
+      'list-connections',
+      'list-tables',
+      'ping',
+    ]);
+    for (const tool of readOnlyTools) {
+      expect(tool.annotations, tool.name).not.toHaveProperty('destructiveHint');
+    }
+  });
+
+  it('declares destructiveHint true for execute-query, generate-code, and erd-modify-tables', async () => {
+    await connectClientToServer();
+    const { tools } = await client!.listTools();
+    const destructiveTools = tools.filter((tool) => tool.annotations?.destructiveHint === true);
+
+    expect(destructiveTools.map((tool) => tool.name).sort()).toEqual([
+      'erd-modify-tables',
+      'execute-query',
+      'generate-code',
+    ]);
+    for (const tool of destructiveTools) {
+      expect(tool.annotations?.readOnlyHint, tool.name).toBe(false);
+    }
+  });
+
+  it('declares readOnlyHint false and destructiveHint false for erd-create-tables', async () => {
+    await connectClientToServer();
+    const { tools } = await client!.listTools();
+    const tool = tools.find((candidate) => candidate.name === 'erd-create-tables');
+
+    expect(tool?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
+  });
+
+  it('declares openWorldHint false for every tool', async () => {
+    await connectClientToServer();
+    const { tools } = await client!.listTools();
+
+    for (const tool of tools) {
+      expect(tool.annotations?.openWorldHint, tool.name).toBe(false);
+    }
+  });
+
+  it('declares readOnlyHint for every registered tool', async () => {
+    await connectClientToServer();
+    const { tools } = await client!.listTools();
+
+    for (const tool of tools) {
+      expect(typeof tool.annotations?.readOnlyHint, tool.name).toBe('boolean');
+    }
+  });
+
+  it('matches annotations.title to the top-level title for every tool', async () => {
+    await connectClientToServer();
+    const { tools } = await client!.listTools();
+
+    for (const tool of tools) {
+      expect(tool.title, tool.name).toBeTruthy();
+      expect(tool.annotations?.title, tool.name).toBe(tool.title);
+    }
+  });
+
   it('모든 tool description 은 문자열 연결 사고 없이 온전해야 한다', async () => {
     await connectClientToServer();
     const result = await client!.listTools();

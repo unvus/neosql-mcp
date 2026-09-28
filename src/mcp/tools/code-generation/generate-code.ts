@@ -29,10 +29,17 @@ const errorResult = (payload: unknown): ToolTextResult => ({
 });
 
 export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDeps): void => {
+  const title = 'Generate Code';
   server.registerTool(
     'generate-code',
     {
-      title: 'Generate Code',
+      title,
+      annotations: {
+        title,
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+      },
       description:
         'Generate and save source files for tableNames using the active project template packs. ' +
         'In NeoSQL Project Settings, configure template packs, required variables, and the project root folder (Location); enable MCP access for the target connection/schema. ' +

@@ -13,10 +13,17 @@ import { coordinateInputShape, validateCoordinateInput } from '../context/coordi
 export type ExecuteQueryDeps = UpstreamToolDeps;
 
 export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDeps): void => {
+  const title = 'Execute Query';
   server.registerTool(
     'execute-query',
     {
-      title: 'Execute Query',
+      title,
+      annotations: {
+        title,
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+      },
       description:
         'Execute a SQL query on the database through NeoSQL. ' +
         'Supports SELECT, INSERT, UPDATE, DELETE, EXPLAIN, and DDL statements. ' +

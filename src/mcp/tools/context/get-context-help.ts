@@ -2,10 +2,16 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { jsonTextResult } from '../shared.js';
 
 export const registerGetContextHelpTool = (server: McpServer): void => {
+  const title = 'Get Context Help';
   server.registerTool(
     'get-context-help',
     {
-      title: 'Get Context Help',
+      title,
+      annotations: {
+        title,
+        readOnlyHint: true,
+        openWorldHint: false,
+      },
       description:
         'Explain how NeoSQL resolves the active project and database coordinates. ' +
         'Use the project Default by omitting all coordinates, or use list-connections to discover ' +

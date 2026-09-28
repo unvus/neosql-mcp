@@ -11,10 +11,17 @@ import { alterTableDefSchema } from './input-models.js';
 export type ErdModifyTablesDeps = UpstreamToolDeps;
 
 export const registerErdModifyTablesTool = (server: McpServer, deps: ErdModifyTablesDeps): void => {
+  const title = 'ERD Modify Tables';
   server.registerTool(
     'erd-modify-tables',
     {
-      title: 'ERD Modify Tables',
+      title,
+      annotations: {
+        title,
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+      },
       description:
         'Modify virtual table models in a NeoSQL ERD without executing SQL or changing the database. ' +
         'Alterations may rename tables, update comments and primary keys, and add, modify, or remove ' +

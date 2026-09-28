@@ -236,7 +236,8 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 설계·test list·진행 순서는 [등록 설계](docs/claude-plugin-directory.md)를 따른다.
 
 - [x] 범위와 제출·시험 운영 방향 합의, 공개 지원 주소 확인
-- [ ] W1: tool annotation과 릴리스 A
+- [x] W1: 10개 tool annotation 추가와 `tools/list` 검증 (6개 red → green, 전체 287개 통과)
+- [ ] 릴리스 A: W1을 포함한 npm 버전 배포
 - [ ] W2: plugin 파일·manifest 검사와 조기 portal Validate
 - [ ] W3: 버전 동기화 script와 실행 테스트
 - [ ] W4: npm 배포 후 branch 갱신과 배포 없는 시험 경로
