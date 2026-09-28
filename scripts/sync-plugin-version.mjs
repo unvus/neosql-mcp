@@ -2,8 +2,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const root = new URL('../', import.meta.url);
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
-const manifestPath = 'plugins/neosql/.claude-plugin/plugin.json';
-const mcpPath = 'plugins/neosql/.mcp.json';
+const manifestPath = 'plugins/neosql-mcp/.claude-plugin/plugin.json';
+const mcpPath = 'plugins/neosql-mcp/.mcp.json';
 const { version } = readJson('package.json');
 const manifest = readJson(manifestPath);
 const mcp = readJson(mcpPath);

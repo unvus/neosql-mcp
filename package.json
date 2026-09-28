@@ -29,7 +29,7 @@
     "electron"
   ],
   "scripts": {
-    "version": "node scripts/sync-plugin-version.mjs && git add plugins/neosql",
+    "version": "node scripts/sync-plugin-version.mjs && git add plugins/neosql-mcp",
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "npm run build && vitest run",

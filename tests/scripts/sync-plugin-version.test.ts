@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 let root: string;
-const manifestPath = 'plugins/neosql/.claude-plugin/plugin.json';
-const mcpPath = 'plugins/neosql/.mcp.json';
+const manifestPath = 'plugins/neosql-mcp/.claude-plugin/plugin.json';
+const mcpPath = 'plugins/neosql-mcp/.mcp.json';
 const writeJson = (path: string, value: unknown) =>
   writeFileSync(join(root, path), JSON.stringify(value));
 const readJson = (path: string) => JSON.parse(readFileSync(join(root, path), 'utf8'));
@@ -21,13 +21,13 @@ describe('plugin version lifecycle script', () => {
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'neosql-version-'));
     mkdirSync(join(root, 'scripts'));
-    mkdirSync(join(root, 'plugins/neosql/.claude-plugin'), { recursive: true });
+    mkdirSync(join(root, 'plugins/neosql-mcp/.claude-plugin'), { recursive: true });
     copyFileSync(
       new URL('../../scripts/sync-plugin-version.mjs', import.meta.url),
       join(root, 'scripts/sync-plugin-version.mjs'),
     );
     writeJson('package.json', { version: '2.3.4' });
-    writeJson(manifestPath, { name: 'neosql', version: '1.0.0', license: 'Apache-2.0' });
+    writeJson(manifestPath, { name: 'neosql-mcp', version: '1.0.0', license: 'Apache-2.0' });
     writeJson(mcpPath, {
       mcpServers: {
         neosql: { command: 'npx', args: ['-y', 'neosql-mcp@1.0.0'], env: { EXAMPLE: 'preserved' } },
@@ -47,7 +47,7 @@ describe('plugin version lifecycle script', () => {
   it('keeps other manifest and server fields unchanged', () => {
     expect(run().status).toBe(0);
     expect(readJson(manifestPath)).toEqual({
-      name: 'neosql',
+      name: 'neosql-mcp',
       version: '2.3.4',
       license: 'Apache-2.0',
     });

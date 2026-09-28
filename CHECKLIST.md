@@ -243,6 +243,8 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
   - Chrome의 기존 claude.ai 로그인으로 `main@f267179` 조기 Validate 통과.
     이름·게시자 검사 통과. 경고 1건(icon), policy hold 3건(pinned npx 1, 문서의 설정 경로를
     credential 읽기로 탐지한 항목 2). 제출·게시 없음. 상세 근거는 등록 설계 §9.1.
+- [ ] 제출 전 명명 변경: 경로 `plugins/neosql-mcp`, 식별 이름 `neosql-mcp`, 표시 이름 `NeoSQL MCP`
+  - 구현 참조와 plugin ID 갱신, 기존 10개 검사 및 CLI validate 통과. 새 이름의 portal 재검증 대기.
 - [x] W3: 버전 동기화 script와 실행 테스트
   - child process 3개 테스트 red → green. 별도 임시 Git 저장소에서 실제 `npm version patch`의
     staging·commit·tag까지 확인 (본 저장소는 `1.8.1` 유지).

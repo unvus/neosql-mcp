@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const plugin = 'plugins/neosql/';
+const plugin = 'plugins/neosql-mcp/';
 const readJson = (path: string) => JSON.parse(readFileSync(`${root}${path}`, 'utf8'));
 
 describe('Claude plugin bundle', () => {
@@ -23,8 +23,8 @@ describe('Claude plugin bundle', () => {
     ).toBe(0);
   });
 
-  it('keeps the plugin name neosql', () => {
-    expect(readJson(`${plugin}.claude-plugin/plugin.json`).name).toBe('neosql');
+  it('keeps the plugin name neosql-mcp', () => {
+    expect(readJson(`${plugin}.claude-plugin/plugin.json`).name).toBe('neosql-mcp');
   });
 
   it('sets the plugin version to the package version', () => {

@@ -99,13 +99,13 @@ jobs:
           const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
           const { version } = read('package.json');
           assert.match(version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
-          assert.deepEqual(readdirSync('plugins/neosql', { recursive: true }).sort(), [
+          assert.deepEqual(readdirSync('plugins/neosql-mcp', { recursive: true }).sort(), [
             '.claude-plugin', '.claude-plugin/plugin.json', '.mcp.json', 'README.md',
           ]);
-          const plugin = read('plugins/neosql/.claude-plugin/plugin.json');
-          assert.equal(plugin.name, 'neosql');
+          const plugin = read('plugins/neosql-mcp/.claude-plugin/plugin.json');
+          assert.equal(plugin.name, 'neosql-mcp');
           assert.equal(plugin.version, version);
-          assert.deepEqual(read('plugins/neosql/.mcp.json'), {
+          assert.deepEqual(read('plugins/neosql-mcp/.mcp.json'), {
             mcpServers: { neosql: { command: 'npx', args: ['-y', `neosql-mcp@${version}`] } },
           });
           if (process.env.RELEASE_EVENT === 'push') {

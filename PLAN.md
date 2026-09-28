@@ -386,6 +386,8 @@ record the cross-repo contract. CLI details: [internal configuration](docs/mcp-c
 합의된 설계와 작업 순서는 [등록 설계](docs/claude-plugin-directory.md)를 따른다.
 현재 MCP의 plugin 등록에 집중하며 plugin의 project ID 설정과 Desktop 변경은 제외한다.
 plugin bundle, `npm version` 동기화와 publish 이후 branch 전진 workflow를 구현했다.
+다른 NeoSQL plugin과 구분하도록 경로·식별 이름을 `plugins/neosql-mcp`·`neosql-mcp`,
+표시 이름을 `NeoSQL MCP`로 통일한다.
 현재 pin은 배포된 `1.8.1`이며 portal·양쪽 OS host 검증 후 릴리스 B로 진행한다.
 macOS·Windows를 모두 검증하고, npm 배포 성공 후 기존 release commit으로 `plugin-release`를
 전진시킨다. 배포 없는 시험은 사람이 시작한 workflow가 임시 branch를 갱신한다.

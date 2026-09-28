@@ -1,5 +1,5 @@
 .mcp.json
-!/plugins/neosql/.mcp.json
+!/plugins/neosql-mcp/.mcp.json
 .env
 .env.local
 node_modules/

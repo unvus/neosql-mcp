@@ -28,7 +28,7 @@
 
 포함:
 
-- 이 저장소 안의 plugin 폴더(`plugins/neosql/`)와 manifest, MCP 서버 선언, plugin README.
+- 이 저장소 안의 plugin 폴더(`plugins/neosql-mcp/`)와 manifest, MCP 서버 선언, plugin README.
 - directory 정책을 충족하기 위한 MCP tool annotation 추가(`src/mcp/tools/`).
 - npm 릴리스 흐름과 plugin 버전 동기화, directory가 추적할 branch 운영.
 - developer portal 제출 절차와 제출 폼 답변 초안.
@@ -218,7 +218,7 @@ package 코드를 plugin에 번들해도 Hold가 없어지지 않을 수 있다.
 - plugin을 특정 project에서만 끄려면 `enabledPlugins`에 `"<name>@<origin>": false`를 넣는다.
   - 팀 공유는 project의 `.claude/settings.json`, 개인용은 `.claude/settings.local.json`에 넣는다.
     우선순위는 local > project > user다.
-  - directory에서 추가한 plugin의 origin은 `synced`다. 따라서 `"neosql@synced": false`다.
+  - directory에서 추가한 plugin의 origin은 `synced`다. 따라서 `"neosql-mcp@synced": false`다.
   - 조직이 필수(required)로 지정한 plugin은 끌 수 없다.
   - 출처: plugin loading 문서의 "Control which synced plugins load", "Find where a plugin is enabled".
 - plugin을 제거하지 않고 `/mcp`에서 plugin 서버 연결만 끌 수도 있다.
@@ -257,7 +257,7 @@ package 코드를 plugin에 번들해도 Hold가 없어지지 않을 수 있다.
 | 항목                    | 현재 상태                                                                                                                                                                                                                                                      | 판정                                                     | 조치                                                 |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------- |
 | plugin 폴더와 manifest  | 없음                                                                                                                                                                                                                                                           | Blocks                                                   | W2                                                   |
-| `.mcp.json`             | root에 gitignore된 개발자 로컬 파일만 있음. 개인 서버 설정과 credential이 들어갈 수 있음. `.gitignore`의 `.mcp.json` 패턴은 하위 폴더에도 적용되어 `plugins/neosql/.mcp.json`도 제외됨(`git check-ignore`로 확인)                                              | root plugin이면 충돌 위험, plugin 파일이 commit에서 빠짐 | plugin 폴더 안에 별도 파일 (D2), gitignore 예외 (W2) |
+| `.mcp.json`             | root에 gitignore된 개발자 로컬 파일만 있음. 개인 서버 설정과 credential이 들어갈 수 있음. `.gitignore`의 `.mcp.json` 패턴은 하위 폴더에도 적용되어 `plugins/neosql-mcp/.mcp.json`도 제외됨(`git check-ignore`로 확인)                                              | root plugin이면 충돌 위험, plugin 파일이 commit에서 빠짐 | plugin 폴더 안에 별도 파일 (D2), gitignore 예외 (W2) |
 | 실행 방식               | README 예시는 버전 고정 없는 `npx -y neosql-mcp`                                                                                                                                                                                                               | plugin에서 그대로 쓰면 Blocks                            | 정확한 버전 고정 (D3)                                |
 | README                  | 영문 `README.md`(npm landing)와 한국어 `README.ko.md`를 함께 갱신. Security, Desktop Readiness, Troubleshooting 공개 내용이 있음                                                                                                                               | plugin 폴더에 README가 없음                              | plugin 전용 README (D7)                              |
 | 공개 CLI 옵션           | `--project-id=<id>`: 도구 실행 전 해당 project로 이동하고 실행 대상과 일치를 요구. 빈 값이면 CLI가 시작 실패 (`src/cli/cli-args.ts`)                                                                                                                           | plugin 고정 args로는 설정 불가                           | 그 project에서 plugin을 끄고 수동 설정 (D10)         |
@@ -265,7 +265,7 @@ package 코드를 plugin에 번들해도 Hold가 없어지지 않을 수 있다.
 | License                 | root `LICENSE`, `package.json#license` = Apache-2.0                                                                                                                                                                                                            | plugin 폴더에 없음                                       | `plugin.json#license` (D7)                           |
 | Tool `title`            | 10개 tool 모두 최상위 `title` 있음. 같은 값의 `annotations.title` 추가 예정                                                                                                                                                                                                            | 최상위 필드는 유효. annotation에도 명시 | W1 (D9) |
 | Tool annotation         | `readOnlyHint`/`destructiveHint` 없음                                                                                                                                                                                                                          | Policy 미충족                                            | W1 (D9)                                              |
-| Tool 이름 길이          | 가장 긴 호출 이름 `mcp__plugin_neosql_neosql__get-mcp-session-id`가 45자                                                                                                                                                                                       | 충족                                                     | —                                                    |
+| Tool 이름 길이          | 가장 긴 호출 이름 `mcp__plugin_neosql-mcp_neosql__get-mcp-session-id`가 49자                                                                                                                                                                                       | 충족                                                     | —                                                    |
 | 저장소 규모             | 추적 파일 98개, archive 약 0.2 MiB, `.gitattributes`·`.npmrc` 없음                                                                                                                                                                                             | 충족                                                     | —                                                    |
 | 로그 (Node 중계)        | prod는 info 레벨. tool 인자와 결과는 기록하지 않고 준비 과정 메타데이터와 오류 객체만 기록 (`src/mcp/tools/shared.ts`)                                                                                                                                         | 데이터 최소화 원칙에 부합                                | README에 로그 위치 공개                              |
 | SQL 저장·전송 (Desktop) | `execute-query`로 받은 SQL 전문을 project의 MCP SQL 편집기에 덧붙여 저장한다(`appendExternalSql` → `saveSql`). 로컬 프로젝트는 PouchDB에 저장하고, 계정 프로젝트는 NeoSQL 서버 API(`POST /api/project/{id}/sql-editor`, `PUT /api/sql-editor/{id}`)로 전송한다 | Node 구간만으로는 데이터 흐름 설명이 불완전              | Node와 Desktop을 나눠 공개 (D11)                     |
@@ -301,9 +301,11 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
 - 근거: `neosql-mcp`는 remote URL이 없는 local stdio 서버다. MCP connector 제출은 remote 서버
   URL을 등록하는 경로다. MCPB 경로는 directory에서 폐지되었다(§3.5).
 
-### D2. Plugin 폴더는 이 저장소의 `plugins/neosql/`로 한다
+### D2. Plugin 폴더는 이 저장소의 `plugins/neosql-mcp/`로 한다
 
-- 제출 값: Repository `unvus/neosql-mcp`, Plugin path `plugins/neosql`.
+- 제출 값: Repository `unvus/neosql-mcp`, Plugin path `plugins/neosql-mcp`.
+- plugin 식별 이름은 `neosql-mcp`, 표시 이름은 `NeoSQL MCP`로 맞춘다. NeoSQL의 다른
+  plugin과 역할을 구분하기 위한 제출 전 변경이다. 내부 MCP server 키는 `neosql`을 유지한다.
 - 이 값은 제출 후 바꿀 수 없다(§3.1). 폴더명은 §3.2의 문자 규칙을 지킨다.
 - root를 plugin 폴더로 쓰는 안은 기각한다.
   - root에 `package.json`과 `package-lock.json`이 함께 있어 Hold가 걸린다. 더 큰 문제는 모든
@@ -334,8 +336,8 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
 
 ### D4. Plugin 버전은 npm 버전과 같게 두고 `npm version`에서 자동으로 맞춘다
 
-- 불변 조건: `package.json#version` = `plugins/neosql/.claude-plugin/plugin.json#version` =
-  `plugins/neosql/.mcp.json`의 `neosql-mcp@` 버전.
+- 불변 조건: `package.json#version` = `plugins/neosql-mcp/.claude-plugin/plugin.json#version` =
+  `plugins/neosql-mcp/.mcp.json`의 `neosql-mcp@` 버전.
 - 구현: npm `version` lifecycle script가 `package.json`의 새 버전을 읽어 두 파일을 갱신하고
   `git add`한다. npm은 `version` script에서 `git add`한 파일을 version commit에 포함한다. 따라서
   `npm version <x>` 한 번으로 commit과 tag 안에서 세 값이 같아진다. `AGENTS.md`의 "버전은
@@ -434,7 +436,7 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
   다른 project에 쿼리가 실행될 수 있다.
 - 그래서 project 지정이 필요한 저장소에서는 두 가지를 함께 한다.
   1. 그 저장소에서 plugin을 끈다. 개인용이면 `.claude/settings.local.json`, 팀 공유면
-     `.claude/settings.json`에 `"enabledPlugins": { "neosql@synced": false }`를 넣는다.
+     `.claude/settings.json`에 `"enabledPlugins": { "neosql-mcp@synced": false }`를 넣는다.
   2. 그 저장소의 `.mcp.json`에 `--project-id`를 넣은 `neosql` 서버를 설정한다.
 - 조직이 plugin을 필수로 지정하면 1번이 불가능하다. 이때는 plugin을 쓰면서 project를 지정할
   방법이 없다고 README에 적는다.
@@ -476,7 +478,7 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
 
 ```text
 plugins/
-└── neosql/
+└── neosql-mcp/
     ├── .claude-plugin/
     │   └── plugin.json
     ├── .mcp.json
@@ -491,8 +493,8 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
 
 ```json
 {
-  "name": "neosql",
-  "displayName": "NeoSQL",
+  "name": "neosql-mcp",
+  "displayName": "NeoSQL MCP",
   "version": "X.Y.Z",
   "description": "Use the database connections you already configured in NeoSQL Desktop from Claude: inspect schemas, run SQL, edit ERD models, and generate code through a local MCP server.",
   "author": { "name": "Unvus Co., Ltd.", "url": "https://neosql.unvus.com" },
@@ -514,8 +516,8 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
 }
 ```
 
-- plugin `name`과 server 이름이 모두 `neosql`이므로 tool 호출 이름은
-  `mcp__plugin_neosql_neosql__<tool>`이다.
+- plugin `name`은 `neosql-mcp`, server 이름은 `neosql`이므로 tool 호출 이름은
+  `mcp__plugin_neosql-mcp_neosql__<tool>`이다.
 - 사용자가 `neosql`이라는 이름으로 수동 설정해 두었더라도 command가 다르면 plugin 서버가 그대로
   로드되어 도구가 두 벌 뜬다(§3.11). README에서 D10의 선택지를 안내한다.
 
@@ -572,7 +574,7 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
      항목만 제거하고, 기존 설정을 계속 쓰려면 plugin을 끈다.
    - plugin은 Desktop에서 선택된 project를 사용한다. 기존 설정의 project ID 고정이 필요하면
      해당 설정을 유지하고 plugin을 끈다. 기존 항목을 제거하면 그 project ID 고정도 사라진다.
-   - 특정 project를 대상으로 하려면 그 저장소에서 `"enabledPlugins": { "neosql@synced": false }`로
+   - 특정 project를 대상으로 하려면 그 저장소에서 `"enabledPlugins": { "neosql-mcp@synced": false }`로
      plugin을 끄고, `.mcp.json`에 `--project-id`를 넣은 서버를 둔다.
    - 조직이 plugin을 필수로 지정했다면 이 방법을 쓸 수 없다.
    - `--profile`은 언급하지 않는다.
@@ -663,15 +665,15 @@ list는 합의용 초안이다.
 ### W2. Plugin 폴더와 manifest 검사
 
 - §6.1~6.3의 파일을 만든다.
-- `.gitignore`의 `.mcp.json` 줄 뒤에 `!/plugins/neosql/.mcp.json` 예외를 추가한다. root의 개인
+- `.gitignore`의 `.mcp.json` 줄 뒤에 `!/plugins/neosql-mcp/.mcp.json` 예외를 추가한다. root의 개인
   `.mcp.json`은 계속 제외하고 plugin 파일만 추적한다. 이 예외가 없으면 W3의
-  `git add plugins/neosql`에서 `.mcp.json`이 조용히 빠진다.
+  `git add plugins/neosql-mcp`에서 `.mcp.json`이 조용히 빠진다.
 - test list 초안 (`tests/plugin/plugin-manifest.test.ts`, 새 test 분류):
   - `does not ignore the plugin files in git`: 각 경로별로 `git check-ignore --no-index -q`를
     실행한다. plugin 세 파일은 exit 1, root `.mcp.json`은 exit 0이어야 하며 다른 종료 코드는
     실패다. 추적 중인 파일도 규칙을 검사하도록 `--no-index`를 쓰고, 예외 규칙에서도 exit 0을
     반환하는 `-v`는 쓰지 않는다.
-  - `keeps the plugin name neosql`
+  - `keeps the plugin name neosql-mcp`
   - `sets plugin.json version to the package.json version`
   - `pins the npx launcher in .mcp.json to the package.json version`
   - `declares exactly one MCP server named neosql with args -y and the pinned package only`:
@@ -679,14 +681,14 @@ list는 합의용 초안이다.
   - `declares the Apache-2.0 license in plugin.json`
   - `includes a README with at least 40 words outside code blocks`
   - `keeps package manifests, lockfiles, and .npmrc out of the plugin folder`
-- `main`에 반영한 직후 portal에서 이 branch와 `plugins/neosql` 경로로 Validate만 실행한다.
-  공개 repository는 GitHub 연결 없이 검증할 수 있다(§3.1). 이름 `neosql` 사용 가능 여부를
+- `main`에 반영한 직후 portal에서 이 branch와 `plugins/neosql-mcp` 경로로 Validate만 실행한다.
+  공개 repository는 GitHub 연결 없이 검증할 수 있다(§3.1). 이름 `neosql-mcp` 사용 가능 여부를
   조기에 확인하되, 이름 예약이나 최종 제출 검증을 대신한다고 보지 않는다.
 
 ### W3. 버전 동기화 script
 
 - `scripts/sync-plugin-version.mjs`(새 최상위 분류)를 만들고 `package.json`에
-  `"version": "node scripts/sync-plugin-version.mjs && git add plugins/neosql"`를 추가한다.
+  `"version": "node scripts/sync-plugin-version.mjs && git add plugins/neosql-mcp"`를 추가한다.
   `AGENTS.md` 규칙대로 버전 bump 자체는 계속 `npm version`만 수행한다.
 - TS 테스트에서 `.mjs`를 직접 import하지 않고 Node child process로 실행한다. 임시 폴더에
   script와 package/plugin fixture를 같은 상대 구조로 복사해 실제 진입점을 검증한다. 실제
@@ -724,7 +726,7 @@ list는 합의용 초안이다.
 W5a는 W2~W4와 같은 시기에 한다.
 
 - `docs/project-structure.md`: `plugins/`, `scripts/`, `tests/plugin/`, `tests/scripts/` 분류.
-  기존 "공개 README" 절에 `plugins/neosql/README.md`를 추가하고 세 README 동기화 규칙을 적는다.
+  기존 "공개 README" 절에 `plugins/neosql-mcp/README.md`를 추가하고 세 README 동기화 규칙을 적는다.
 - `docs/npm-publish.md`: 버전과 태그 절차에 plugin 동기화와 `plugin-release` 확인 단계 추가.
 - `PLAN.md`, `CHECKLIST.md`: 이 문서를 참조하는 항목.
 
@@ -735,9 +737,9 @@ W5b는 directory에 게시된 뒤에 한다.
 
 ### W6. 로컬 검증
 
-- `claude plugin validate ./plugins/neosql`에서 `✔ Validation passed`가 나와야 한다.
-- `claude --plugin-dir ./plugins/neosql`로 Claude Code를 띄우고 `/mcp`에서 `plugin:neosql:neosql`
-  연결과 10개 tool을 확인한다. 이렇게 띄운 plugin의 id는 `neosql@inline`이다.
+- `claude plugin validate ./plugins/neosql-mcp`에서 `✔ Validation passed`가 나와야 한다.
+- `claude --plugin-dir ./plugins/neosql-mcp`로 Claude Code를 띄우고 `/mcp`에서 `plugin:neosql-mcp:neosql`
+  연결과 10개 tool을 확인한다. 이렇게 띄운 plugin의 id는 `neosql-mcp@inline`이다.
   - 기본 검증은 user·project·local scope의 `neosql` 수동 설정을 잠시 치우고 한다. 수동 설정이
     있으면 plugin 서버와 둘 다 떠서 어느 쪽 tool이 호출됐는지 구분하기 어렵다.
 - macOS와 Windows에서 각각 확인한다: Desktop 실행 중, Desktop 종료 상태에서 자동 활성화,
@@ -749,9 +751,9 @@ W5b는 directory에 게시된 뒤에 한다.
     서버는 유지되는지, ID 고정이 필요할 때 plugin을 끄고 기존 설정을 유지하는지 확인한다.
   - project scope `.mcp.json`에 `--project-id`를 넣은 `neosql` 서버만 추가하면 plugin 서버가
     여전히 로드되는지 확인한다.
-  - 같은 저장소의 `.claude/settings.local.json`에 `"neosql@inline": false`를 추가하면 수동 서버만
+  - 같은 저장소의 `.claude/settings.local.json`에 `"neosql-mcp@inline": false`를 추가하면 수동 서버만
     남는지 확인한다.
-  - 실제 id인 `neosql@synced`는 plugin zip을 검증용 claude.ai 계정에 올려(**Customize > Plugins >
+  - 실제 id인 `neosql-mcp@synced`는 plugin zip을 검증용 claude.ai 계정에 올려(**Customize > Plugins >
     Upload plugin**) Claude Code로 동기화한 뒤 같은 방법으로 확인한다.
     검증 후 이번 시험에서 올린 plugin은 삭제하고 동기화된 시험 설치도 남아 있지 않은지 확인한다.
 - Windows에서 `command: "npx"`가 그대로 spawn되는지 확인한다(§11). 실패하면 Node/npm 설치,
@@ -775,7 +777,7 @@ W5b는 directory에 게시된 뒤에 한다.
 4. 제출할 조직의 claude.ai 계정에 GitHub을 연결한다. 이 계정은 `unvus/neosql-mcp` push 권한이
    있어야 한다.
 5. `https://claude.ai/directory/manage` → **Submit new** → **Plugin bundle**.
-6. Source: Repository `unvus/neosql-mcp`, Plugin path `plugins/neosql`, Branch or tag
+6. Source: Repository `unvus/neosql-mcp`, Plugin path `plugins/neosql-mcp`, Branch or tag
    `plugin-release` → **Validate**. Blocks가 있으면 고치고 릴리스한 뒤 **Re-validate**.
 7. Listing details: 이름, 설명, README가 제대로 보이는지 확인한다. 고칠 것이 있으면 저장소에서
    고치고 다시 릴리스한다.
@@ -846,7 +848,7 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 | 1   | 사용할 회사 관리 claude.ai 조직과 계정 확인                         | 실제 계정 사용 시점 | 회사 소유 원칙은 확정. W6/W7 각 단계의 용도·권한·필요 항목을 설명하고 해당 시점에 확인 |
 | 3   | 개인정보 처리방침과 MCP 제출 설명 대조                             | 릴리스 B 전 | 공개 URL `https://neosql.unvus.com/en/privacy` 확인 완료. 현재 구현에 따른 제출 설명과 대조 |
 | 5   | reviewer 테스트 환경의 구체적인 준비 항목                           | 제출 준비 시점 | 별도 계정·샘플 데이터 원칙은 확정. 필요한 기능·라이선스·접속 조건을 정리한 뒤 사용자에게 안내 |
-| 6   | plugin 이름 `neosql` 사용 가능 여부                                | 조기 확인 완료, W7 재검증 | `main@f267179`의 이름·게시자 검사 통과(§9.1). 이름 예약은 아님. 최종 B commit으로 W7에서 재검증 |
+| 6   | plugin 이름 `neosql-mcp` 사용 가능 여부                             | 변경 후 재검증 필요 | §9.1은 이전 `neosql` 이름의 결과다. 새 이름으로 조기 Validate 및 최종 B commit의 W7 검증 필요 |
 | 7   | Windows에서 `npx` command 직접 실행 검증과 오류 수정              | W6, 릴리스 B 전 | 실패 원인을 수정하고 macOS·Windows 모두 재검증. Windows 지원 제외로 우회하지 않음 |
 | 8   | Cowork 로컬 세션 동작                                              | W6           | UDS 경로와 Desktop 활성화                                                                                     |
 | 10  | 로그 파일 위치·보관·rotation 정책 (Node 중계와 Desktop)            | 릴리스 B 전 | Data handling 답변과 README 공개 항목에 필요                                                                  |
@@ -855,6 +857,11 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 | 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
 
 ## 12. 변경 이력
+
+- 2026-09-28: 제출 전 명명 변경. `plugins/neosql` → `plugins/neosql-mcp`, plugin `name`은
+  `neosql-mcp`, `displayName`은 `NeoSQL MCP`. 버전 hook·gitignore·workflow·테스트·사용 안내의
+  plugin ID도 함께 변경했다. 내부 MCP server 키와 npm pin `neosql-mcp@1.8.1`은 동일하다.
+  §9.1의 기존 검증 기록은 당시 경로와 이름으로 보존하며 새 이름은 다시 Validate한다.
 
 - 2026-09-28: 구현 commit `852382a`의 CI #42 및 수동 workflow #22 성공. npm publish는
   skipped, `codex/plugin-release-check`만 같은 commit으로 생성했다. 실제 `plugin-release`는

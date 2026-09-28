@@ -57,7 +57,7 @@ tests/                          (모든 테스트 코드)
     ├── mock-uds-server.ts
     └── socket.ts
 
-plugins/neosql/                  Claude directory 배포 bundle (npm package와 별개)
+plugins/neosql-mcp/                  Claude directory 배포 bundle (npm package와 별개)
 ├── .claude-plugin/plugin.json  plugin metadata
 ├── .mcp.json                   고정 버전 npx launcher, project ID 설정 없음
 └── README.md                   directory listing·사용·데이터 처리 안내
@@ -83,7 +83,7 @@ dist/   tsup 빌드 산출물 (편집 금지)
 - 저장소 루트의 `README.md`는 GitHub/npm 기본 영문 안내다.
 - `README.ko.md`는 같은 내용을 제공하는 한국어 안내다.
 - 두 문서 상단에는 GitHub 절대 URL로 언어 전환 링크를 둔다.
-- `plugins/neosql/README.md`는 directory listing용 영문 안내다. 별도 한국어 파일은 만들지
+- `plugins/neosql-mcp/README.md`는 directory listing용 영문 안내다. 별도 한국어 파일은 만들지
   않고 root의 영문·한국어 README로 연결한다.
 - 사용자-facing 동작, CLI 옵션, 도구 목록, 설정 예시를 변경하면 같은 변경에서
   root 두 README를 함께 갱신하고 plugin에 해당하는 설명도 plugin README에 반영한다.

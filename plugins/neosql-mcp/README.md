@@ -1,4 +1,4 @@
-# NeoSQL
+# NeoSQL MCP
 
 Use the database connections configured in NeoSQL Desktop from Claude Code. Inspect
 schemas, run SQL, edit virtual ERD models, and generate source files using your
@@ -53,7 +53,7 @@ merge this setting with your existing settings:
 ```json
 {
   "enabledPlugins": {
-    "neosql@synced": false
+    "neosql-mcp@synced": false
   }
 }
 ```

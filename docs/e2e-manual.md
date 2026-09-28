@@ -12,13 +12,13 @@
 
 | ID | 시나리오 | 기대 결과 | 상태 |
 | --- | --- | --- | --- |
-| P01 | `claude plugin validate ./plugins/neosql` | 구조 검사 통과 | macOS CLI 2.1.283 통과 |
-| P02 | 수동 NeoSQL 등록이 없는 격리 작업 폴더에서 `claude --plugin-dir ./plugins/neosql`, `/mcp` | `plugin:neosql:neosql` 연결 및 10개 tool 표시 | 미검증 |
+| P01 | `claude plugin validate ./plugins/neosql-mcp` | 구조 검사 통과 | macOS CLI 2.1.283 통과 |
+| P02 | 수동 NeoSQL 등록이 없는 격리 작업 폴더에서 `claude --plugin-dir ./plugins/neosql-mcp`, `/mcp` | `plugin:neosql-mcp:neosql` 연결 및 10개 tool 표시 | 미검증 |
 | P03 | 양 OS에서 Desktop 실행 중·종료 상태 각각 호출 | 정상 연결·필요 시 자동 활성화 | 미검증 |
 | P04 | plugin README의 schema·SQL·ERD·codegen 예시 4개 | 대상 샘플 프로젝트에 맞는 결과 | 미검증 |
 | P05 | Desktop이 생성한 수동 등록 + plugin (project ID 유/무 각각) | 두 서버가 로드됨; 기존 설정을 제거할 때 타 서버 유지 | 미검증 |
-| P06 | project ID를 고정한 수동 등록 + `neosql@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
-| P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
+| P06 | project ID를 고정한 수동 등록 + `neosql-mcp@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
+| P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
 | P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
 | P09 | Cowork 로컬 세션 | Desktop 접근·자동 활성화 여부 기록 | 미검증, 지원 표기 전 확인 |
 
@@ -27,8 +27,9 @@
 시험 업로드 plugin과 동기화 설치는 P07 뒤 제거해 정식 게시 이름과 충돌하지 않게 한다.
 P08이 실패하면 PATH·설치·host 실행을 구분해 수정하고 양 OS를 재검증한다.
 
-Portal 조기 Validate: 공개 저장소 `unvus/neosql-mcp`, 경로 `plugins/neosql`, branch `main`.
-2026-09-28 Chrome 기존 로그인 세션에서 `main@f267179` 검증 통과. 이름·게시자 검사 통과,
+Portal 조기 Validate: 공개 저장소 `unvus/neosql-mcp`, 경로 `plugins/neosql-mcp`, branch `main`.
+2026-09-28 Chrome 기존 로그인 세션에서 이전 경로 `plugins/neosql`과 이름 `neosql`의
+`main@f267179` 검증 통과. 새 경로·이름 `neosql-mcp`는 재검증한다. 이전 결과는 이름·게시자 검사 통과,
 icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-plugin-directory.md#91-조기-portal-validate-결과-2026-09-28)에 기록했다.
 이 검사는 제출·게시가 아니며 최종 릴리스 B를 재검증해야 한다.
 
