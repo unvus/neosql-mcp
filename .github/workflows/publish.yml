@@ -1,6 +1,7 @@
 name: Publish Package
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -11,6 +12,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -42,5 +44,104 @@ jobs:
       - name: Check package contents
         run: npm pack --dry-run
 
+      - name: Check release tag before publishing
+        env:
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+          assert.equal(process.env.RELEASE_REF, `refs/tags/v${version}`);
+          NODE
+
       - name: Publish to npm
         run: npm publish --access public
+
+  release-plugin:
+    needs: publish
+    # A manual branch check must run even though publish was skipped.
+    # A failed or canceled real publish must never advance plugin-release.
+    if: >-
+      ${{ !cancelled() &&
+          ((github.event_name == 'push' && needs.publish.result == 'success') ||
+           (github.event_name == 'workflow_dispatch' && needs.publish.result == 'skipped')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: plugin-promotion-${{ github.event_name }}
+      cancel-in-progress: false
+    env:
+      TARGET_BRANCH: ${{ github.event_name == 'workflow_dispatch' && 'codex/plugin-release-check' || 'plugin-release' }}
+
+    steps:
+      - name: Checkout candidate commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Check plugin files and versions
+        id: candidate
+        env:
+          RELEASE_EVENT: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
+          const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
+          const { version } = read('package.json');
+          assert.match(version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
+          assert.deepEqual(readdirSync('plugins/neosql', { recursive: true }).sort(), [
+            '.claude-plugin', '.claude-plugin/plugin.json', '.mcp.json', 'README.md',
+          ]);
+          const plugin = read('plugins/neosql/.claude-plugin/plugin.json');
+          assert.equal(plugin.name, 'neosql');
+          assert.equal(plugin.version, version);
+          assert.deepEqual(read('plugins/neosql/.mcp.json'), {
+            mcpServers: { neosql: { command: 'npx', args: ['-y', `neosql-mcp@${version}`] } },
+          });
+          if (process.env.RELEASE_EVENT === 'push') {
+            assert.equal(process.env.RELEASE_REF, `refs/tags/v${version}`);
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          NODE
+
+      - name: Confirm pinned package exists on npm
+        env:
+          RELEASE_VERSION: ${{ steps.candidate.outputs.version }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if published=$(npm view "neosql-mcp@$RELEASE_VERSION" version --registry=https://registry.npmjs.org); then
+              if [ "$published" = "$RELEASE_VERSION" ]; then
+                exit 0
+              fi
+            fi
+            echo "Waiting for npm registry visibility (attempt $attempt/5)"
+            sleep 5
+          done
+          echo 'Pinned npm package is unavailable; branch will not advance.' >&2
+          exit 1
+
+      - name: Fast-forward the destination branch
+        run: |
+          if git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH"; then
+            git fetch origin "refs/heads/$TARGET_BRANCH"
+            git merge-base --is-ancestor FETCH_HEAD HEAD || {
+              echo 'Destination is not an ancestor; refusing rollback or divergent history.' >&2
+              exit 1
+            }
+          else
+            status=$?
+            # ls-remote returns 2 for an absent ref; other errors must not create it.
+            if [ "$status" -ne 2 ]; then exit "$status"; fi
+          fi
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          echo "Advanced $TARGET_BRANCH to $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"

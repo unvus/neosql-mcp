@@ -3,7 +3,7 @@
 `neosql-mcp`를 Anthropic plugin directory(claude.ai **Customize > Plugins**의 Discover,
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
-- 상태: W1 및 릴리스 A(`1.8.1`) 완료(2026-09-28), W2 착수 가능. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
+- 상태: W1 및 릴리스 A(`1.8.1`) 완료, W2~W5a 구현(2026-09-28). Portal·원격 workflow·W6 검증 진행 전. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
   plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
 - 외부 요구사항 확인일: 2026-09-28
@@ -833,6 +833,17 @@ W5b는 directory에 게시된 뒤에 한다.
 | 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
 
 ## 12. 변경 이력
+
+- 2026-09-28: plugin 세 파일, gitignore 예외, 버전 lifecycle, publish 후 fast-forward 및
+  `workflow_dispatch` 시험 경로를 구현했다. bundle 검사 7개와 script child process 3개가
+  red → green이며, 별도 임시 Git 저장소에서 npm version의 commit/tag 포함을 확인했다.
+  Claude CLI 2.1.283의 plugin validate 통과. Portal 로그인 및 실제 host 검증은 남아 있다.
+  README는 현재 SQL·ERD 저장, 공유 PouchDB 동기화, template pack 조회, 요청 로그를 공개한다.
+  Node 로그는 append-only이고 자동 만료 없음. Desktop은 현재 electron-log 기본값의
+  1 MiB 회전·main.old.log 및 시간 만료 없음, renderer 요청 이력은 메모리 배열이다.
+  근거: Node `src/infra/{logger,log-path}.ts`, 본체 `src-electron/logger.ts`,
+  `mcp-rpc/server.ts`, `src/services/mcp-handler/mcp-request-log.ts` 및 설치된 electron-log.
+  정확한 Desktop OS별 로그 디렉터리는 W6에서 실제 앱 경로와 함께 확인한다.
 
 - 2026-09-28: 초안 작성. 외부 요구사항 스냅샷, 설계 결정 D1~D9, 작업 분해 W1~W7.
 - 2026-09-28: 공개 README 개편(`df238e6`) 반영. `README.ko.md` 추가와 세 README 동기화 규칙,

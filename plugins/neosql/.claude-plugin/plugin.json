@@ -1,0 +1,11 @@
+{
+  "name": "neosql",
+  "displayName": "NeoSQL",
+  "version": "1.8.1",
+  "description": "Use the database connections you already configured in NeoSQL Desktop from Claude: inspect schemas, run SQL, edit ERD models, and generate code through a local MCP server.",
+  "author": { "name": "Unvus Co., Ltd.", "url": "https://neosql.unvus.com" },
+  "homepage": "https://neosql.unvus.com/en/docs/mcp/intro",
+  "repository": "https://github.com/unvus/neosql-mcp",
+  "license": "Apache-2.0",
+  "keywords": ["neosql", "database", "sql", "erd", "schema"]
+}

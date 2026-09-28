@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "neosql": {
+      "command": "npx",
+      "args": ["-y", "neosql-mcp@1.8.1"]
+    }
+  }
+}

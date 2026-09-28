@@ -1,5 +1,40 @@
 # 수동 e2e 검증 (실제 MCP 클라이언트 연동)
 
+## Claude plugin 검증 (2026-09-28 추가)
+
+설계는 [directory 등록 계획](claude-plugin-directory.md)의 W6를 따른다. 실제 DB 변경·파일
+생성을 수행하는 시나리오는 사용자가 지정한 폐기 가능한 샘플 프로젝트와 출력 폴더에서
+실행한다. 운영 DB나 사용 중인 프로젝트를 테스트 대상으로 추정하지 않는다.
+
+준비: macOS/Windows 각각 Node 20 이상·PATH의 npx·NeoSQL Desktop·Claude Code.
+동기화 검증에는 Claude Code 2.1.273 이상과 claude.ai 로그인 및 plugin 업로드 가능한 검증
+계정이 필요하다. 계정 필요 시 용도와 필요한 기능을 사용자에게 먼저 안내한다.
+
+| ID | 시나리오 | 기대 결과 | 상태 |
+| --- | --- | --- | --- |
+| P01 | `claude plugin validate ./plugins/neosql` | 구조 검사 통과 | macOS CLI 2.1.283 통과 |
+| P02 | 수동 NeoSQL 등록이 없는 격리 작업 폴더에서 `claude --plugin-dir ./plugins/neosql`, `/mcp` | `plugin:neosql:neosql` 연결 및 10개 tool 표시 | 미검증 |
+| P03 | 양 OS에서 Desktop 실행 중·종료 상태 각각 호출 | 정상 연결·필요 시 자동 활성화 | 미검증 |
+| P04 | plugin README의 schema·SQL·ERD·codegen 예시 4개 | 대상 샘플 프로젝트에 맞는 결과 | 미검증 |
+| P05 | Desktop이 생성한 수동 등록 + plugin (project ID 유/무 각각) | 두 서버가 로드됨; 기존 설정을 제거할 때 타 서버 유지 | 미검증 |
+| P06 | project ID를 고정한 수동 등록 + `neosql@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
+| P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
+| P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
+| P09 | Cowork 로컬 세션 | Desktop 접근·자동 활성화 여부 기록 | 미검증, 지원 표기 전 확인 |
+
+기존 사용자 설정은 덮어쓰지 않고 격리한 환경에 필요한 NeoSQL 등록만 재현한다.
+실제 설정을 잠시 변경해야 하면 먼저 백업하고 종료 후 원복한다.
+시험 업로드 plugin과 동기화 설치는 P07 뒤 제거해 정식 게시 이름과 충돌하지 않게 한다.
+P08이 실패하면 PATH·설치·host 실행을 구분해 수정하고 양 OS를 재검증한다.
+
+Portal 조기 Validate: 공개 저장소 `unvus/neosql-mcp`, 경로 `plugins/neosql`, branch `main`.
+아직 로그인 전이며 결과 없음. 이 검사는 제출·게시가 아니며 최종 릴리스 B를 재검증해야 한다.
+
+검증 기록에는 OS, Claude/Node/Desktop 버전, MCP commit 또는 npm 버전, 계정 유형,
+시나리오, 기대/실제 결과, 변경 데이터와 정리 결과를 남긴다.
+
+## 기존 MCP host 검증
+
 자동화된 단위/통합 테스트(`docs/testing.md`)로는 잡지 못하는 영역 — 실제 MCP Host와의 stdio 핸드셰이크, 툴 호출 왕복 — 을 사람이 검증하는 절차.
 
 > Phase 0 시점에서는 `ping` 툴 하나만 응답한다. Phase가 진행되면 같은 자리에 시나리오만 추가한다.

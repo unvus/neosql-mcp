@@ -4,6 +4,15 @@ import prettier from 'eslint-config-prettier';
 
 export default [
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module' },
+    rules: {
+      'no-unused-vars': 'error',
+      'no-unreachable': 'error',
+      'no-constant-condition': 'error',
+    },
+  },
+  {
     files: ['src/**/*.ts'],
     languageOptions: {
       parser: tsparser,

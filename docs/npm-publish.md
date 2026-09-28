@@ -3,7 +3,11 @@
 `neosql-mcp`를 public npm package로 등록하고, MCP host에서
 `npx -y neosql-mcp`로 실행할 수 있게 만들기 위한 배포 기준이다.
 
-기준 날짜: 2026-05-13
+최초 배포 준비 기록: 2026-05-13. Plugin 릴리스 절차 갱신: 2026-09-28.
+
+현재 `1.8.1`은 npm 배포 및 배포본 실행 검증까지 완료했다. 아래 "현재 패키지 상태"와
+"배포 전 TODO"는 최초 배포 준비 당시의 기록이며, 현재 버전은 `package.json`과 registry를
+기준으로 확인한다. Claude plugin 추가 후 절차는 아래 "Plugin 릴리스"를 따른다.
 
 ## 배포 원칙
 
@@ -395,6 +399,66 @@ npm dist-tag add neosql-mcp@<version> latest
 ```
 
 ## 배포 후 검증
+
+### Plugin 릴리스
+
+`npm version`의 `version` lifecycle은 `scripts/sync-plugin-version.mjs`를 실행한다.
+root 버전에 맞춰 plugin manifest 버전과 `.mcp.json`의 npm pin을 갱신하고, 변경된 plugin
+파일을 staging한다. 따라서 버전 commit과 tag에 세 버전이 함께 들어간다.
+수동으로 버전 파일을 편집하지 않는다.
+
+정식 tag push에서는 기존 `publish` job이 검증과 npm 배포를 수행한다. 성공하면
+`release-plugin` job이 다음을 확인하고 release commit으로 `plugin-release`를 전진시킨다.
+
+1. plugin 파일 구성, package/plugin/pin 버전 일치, tag 이름 `v<version>` 일치.
+2. 공식 npm registry에서 해당 버전 조회 가능 (최대 5회 재시도).
+3. 기존 원격 branch가 release commit의 조상인지 확인.
+
+새 commit을 만들지 않으며 force push하지 않는다. 오래된 릴리스를 다시 실행해도 branch를
+되돌릴 수 없다. branch가 없으면 첫 plugin 포함 릴리스 commit으로 생성한다.
+`release-plugin`만 `contents: write`를 가지며, `publish`의 기존 OIDC 권한은 유지한다.
+
+배포 후 npm 조회와 함께 아래 두 SHA가 일치하는지 확인한다.
+
+```bash
+git rev-parse 'vX.X.X^{commit}'
+git ls-remote origin refs/heads/plugin-release
+```
+
+#### npm 배포 없는 branch 갱신 시험
+
+GitHub Actions → **Publish Package** → **Run workflow**에서 `main`을 선택한다.
+이때 main의 plugin pin은 이미 배포된 npm 버전이어야 한다. 초기 시험에서는 `1.8.1`을 쓴다.
+`publish`는 건너뛰고 `release-plugin`이 같은 검사를 거쳐 고정된 시험 branch
+`codex/plugin-release-check`만 갱신한다. 실제 `plugin-release`와 npm은 바꾸지 않는다.
+`needs: publish`가 skipped여도 실행되도록 job 조건에 `!cancelled()`와 event/result 검사를
+명시했다. 정식 tag의 publish 실패·취소는 branch 전진을 허용하지 않는다.
+
+이 시험에는 plugin이 없는 릴리스 A tag나 npm 배포를 유발하는 시험용 `v*` tag를 쓰지 않는다.
+시험 branch를 directory 추적 대상으로 등록하지 않는다.
+
+#### npm 성공 후 branch 갱신만 실패했을 때
+
+실패 원인을 수정하고 Actions에서 실패한 `release-plugin` job만 재실행한다. 이미 공개된
+같은 버전의 `publish` job은 재실행하지 않는다. 수동 복구가 필요하면 clean checkout에서
+해당 release tag로 이동하고, 위 파일·버전·registry 검사를 동일하게 통과시킨 뒤 수행한다.
+
+```bash
+git fetch origin tag vX.X.X
+git switch --detach vX.X.X
+npm view neosql-mcp@X.X.X version --registry=https://registry.npmjs.org
+git fetch origin refs/heads/plugin-release
+git merge-base --is-ancestor FETCH_HEAD HEAD
+# 위 검사가 모두 성공했을 때만 실행한다.
+git push origin HEAD:refs/heads/plugin-release
+```
+
+최초 생성이라 원격 branch가 없다면 `git ls-remote --exit-code --heads origin
+refs/heads/plugin-release`의 종료 코드 **2**로 부재를 확인하고 fetch/조상 검사만 생략한다.
+인증·네트워크 오류를 branch 부재로 취급하지 않는다. branch 보호 규칙 때문에 실패하면
+권한·규칙을 확인하며 force push로 우회하지 않는다.
+
+### npm 배포본 확인
 
 publish가 끝나면 registry와 실제 실행 경로를 확인한다.
 
