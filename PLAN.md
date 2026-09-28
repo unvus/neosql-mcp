@@ -380,3 +380,11 @@ tool arguments, automatic retry, UI, or initialization lifecycle changes are add
 [Runtime lifecycle](../neosql/docs/mcp/runtime-lifecycle.html) and
 [verification](../neosql/docs/manual-test/mcp-runtime-lifecycle.md)
 record the cross-repo contract. CLI details: [internal configuration](docs/mcp-client-config.md).
+
+## Claude plugin directory 등록 · 2026-09-28
+
+합의된 설계와 작업 순서는 [등록 설계](docs/claude-plugin-directory.md)를 따른다.
+현재 MCP의 plugin 등록에 집중하며 plugin의 project ID 설정과 Desktop 변경은 제외한다.
+macOS·Windows를 모두 검증하고, npm 배포 성공 후 기존 release commit으로 `plugin-release`를
+전진시킨다. 배포 없는 시험은 사람이 시작한 workflow가 임시 branch를 갱신한다.
+회사 제출 계정과 심사용 테스트 계정은 실제 필요한 단계에서 용도·권한·준비 항목을 안내한다.

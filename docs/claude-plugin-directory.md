@@ -3,8 +3,8 @@
 `neosql-mcp`를 Anthropic plugin directory(claude.ai **Customize > Plugins**의 Discover,
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
-- 상태: 제안(Proposed). 합의 후 `PLAN.md`/`CHECKLIST.md`에 항목을 추가하고 이 문서를
-  단일 진실의 원천으로 참조한다.
+- 상태: 설계 합의(2026-09-28), 구현 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
+  plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
 - 외부 요구사항 확인일: 2026-09-28
 - 기준 코드: `neosql-mcp` 1.8.0 (`main`, `fe9fa6a`), 공개 README는 `df238e6`, neosql 본체
@@ -39,8 +39,9 @@
 - MCPB/desktop extension 패키징. directory가 더 이상 받지 않는다(§3.5).
 - plugin skill, command, agent, hook. v1은 MCP 서버 선언만 담는다(D8).
 - 자체 marketplace(`marketplace.json`) 운영. 필요하면 별도 설계로 다룬다.
-- neosql main app(electron-main, renderer, embedded-server) 변경. Desktop의 데이터 처리는
-  공개(D11)만 하고, 로그 축소처럼 동작을 바꾸는 일은 별도 작업으로 결정한다(§11).
+- neosql main app(electron-main, renderer, embedded-server) 변경과 Desktop의 plugin 설치 안내 개편.
+  이번 작업은 현재 MCP의 plugin 등록에 집중한다. 등록 설명에 필요한 기존 동작만 소스에서
+  확인한다(D11). 등록 과정에서 실제 수정 요구가 나오면 근거와 함께 별도 범위로 다룬다.
 
 ## 3. 외부 요구사항 스냅샷 (2026-09-28 확인)
 
@@ -64,6 +65,8 @@
   조직만 가질 수 있다.
 - 제출 전 claude.ai에 GitHub 계정을 연결해야 하며, 그 계정은 repository에 push 권한이
   있어야 한다. repository는 private 상태에서도 제출할 수 있지만 게시 전에는 public이어야 한다.
+- 공개 repository의 portal Validate는 GitHub 연결 없이 실행할 수 있다. 검증 결과는 특정
+  commit에만 적용되므로, 조기 검증 뒤 변경했다면 최종 제출 commit으로 다시 검증한다.
 - 제출한 뒤에는 **repository와 plugin folder를 바꿀 수 없다**. 바꾸려면 새로 제출해야 한다.
 - 조직당 24시간에 10건까지 제출할 수 있다(draft와 withdraw 포함).
 - portal 단계: Source(Repository, Plugin path, Branch or tag) → Validate → Listing details →
@@ -260,7 +263,7 @@ package 코드를 plugin에 번들해도 Hold가 없어지지 않을 수 있다.
 | 공개 CLI 옵션           | `--project-id=<id>`: 도구 실행 전 해당 project로 이동하고 실행 대상과 일치를 요구. 빈 값이면 CLI가 시작 실패 (`src/cli/cli-args.ts`)                                                                                                                           | plugin 고정 args로는 설정 불가                           | 그 project에서 plugin을 끄고 수동 설정 (D10)         |
 | 내부 CLI 옵션           | `--profile`은 내부 개발용이며 두 공개 README에서 제외 (`docs/mcp-client-config.md`)                                                                                                                                                                            | plugin README도 공개 문서                                | 노출하지 않음 (D7)                                   |
 | License                 | root `LICENSE`, `package.json#license` = Apache-2.0                                                                                                                                                                                                            | plugin 폴더에 없음                                       | `plugin.json#license` (D7)                           |
-| Tool `title`            | 10개 tool 모두 `registerTool` config에 `title` 있음                                                                                                                                                                                                            | 충족                                                     | —                                                    |
+| Tool `title`            | 10개 tool 모두 최상위 `title` 있음. 같은 값의 `annotations.title` 추가 예정                                                                                                                                                                                                            | 최상위 필드는 유효. annotation에도 명시 | W1 (D9) |
 | Tool annotation         | `readOnlyHint`/`destructiveHint` 없음                                                                                                                                                                                                                          | Policy 미충족                                            | W1 (D9)                                              |
 | Tool 이름 길이          | 가장 긴 호출 이름 `mcp__plugin_neosql_neosql__get-mcp-session-id`가 45자                                                                                                                                                                                       | 충족                                                     | —                                                    |
 | 저장소 규모             | 추적 파일 98개, archive 약 0.2 MiB, `.gitattributes`·`.npmrc` 없음                                                                                                                                                                                             | 충족                                                     | —                                                    |
@@ -280,6 +283,16 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
   아니면 원격 API로 보낸다.
 - `app/src-electron/mcp-rpc/server.ts`: 195행에서 요청 본문 전체를 로그로 남긴다.
 - `app/src-electron/logger.ts`: electron-log를 추가 설정 없이 쓴다.
+- `app/src/services/mcp-handler/mcp-client-setup-config.ts`: Desktop의 설정 설치 기능도
+  `npx -y neosql-mcp`를 만들고, project ID를 지정하면 `--project-id=<id>`를 추가한다.
+  `app/src-electron/mcp-client-config/path-resolver.ts`의 Claude 대상은 `~/.claude.json`이다.
+  중복 설정은 사용자가 직접 작성한 경우만이 아니라 이 기능을 이용한 경우에도 발생한다.
+- `app/src/services/mcp-handler/mcp-erd-artifact.service.ts`: MCP ERD를 `addErd`로 만들고
+  `saveErd`로 저장한다. `app/src/services/erd/erd.service.ts`의 `addErd`는 로컬 프로젝트면
+  PouchDB, 계정 프로젝트면 RDB를 선택한다. RDB의 `saveErd`는 ERD 내용을
+  `POST /api/project/{id}/erds` 또는 `PUT /api/project/{id}/erds/{erdId}`로 전송한다.
+  계정 프로젝트의 새 MCP ERD는 원격 저장 경로가 확인되며, 다른 ERD 저장 유형과 tool의
+  전수 확인은 별도 작업이다(§11).
 
 ## 5. 설계 결정
 
@@ -340,6 +353,9 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
 - 결정: `publish.yml`에 `publish` 이후 실행되는 job을 추가한다. 이 job은 npm registry에서 새
   버전이 조회되는 것을 확인한 뒤, tag commit으로 `plugin-release` branch를 fast-forward한다.
   webhook은 이 branch push에 반응한다.
+- branch 갱신은 이미 만들어진 release commit을 가리키도록 원격 branch를 이동하는 것이다.
+  `plugin-release`에서 소스를 따로 편집하거나 새 commit을 만들지 않는다. 파일과 버전 변경은
+  앞선 `npm version`의 release commit에 이미 포함된다.
 - tag 추적 안은 기각한다. 릴리스마다 portal에서 추적 tag를 손으로 바꿔야 한다(§3.10).
 - `main` 추적 후 reviewer Hold에 기대는 안도 기각한다. 게시 설정이 자동 게시로 바뀌는 순간
   경쟁 조건이 드러난다.
@@ -395,6 +411,8 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
 
 - `destructiveHint`는 `readOnlyHint: false`일 때만 의미가 있으므로 read-only tool에는 두지 않는다.
 - `idempotentHint`는 v1에서 선언하지 않는다(MCP 기본값 적용).
+- `annotations.title`에도 기존 최상위 `title`과 같은 값을 넣는다. 최상위 `title` 자체도
+  유효하지만, §3.12 정책의 annotation 항목에 맞춰 명시한다. 두 값은 같은 문자열을 재사용한다.
 - 조회 tool도 Desktop이 꺼져 있으면 앱을 활성화한다. 이는 데이터 변경이 아니므로
   `readOnlyHint`는 true로 두고, README 공개 항목(§6.3)에서 다룬다.
 - 확정 전에 `docs/upstream-rpc-contract.md`와 대조한다(§11).
@@ -403,12 +421,11 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
 
 - plugin의 `.mcp.json` args는 `["-y", "neosql-mcp@X.Y.Z"]`로 고정한다. 따라서 plugin 서버는
   Desktop에서 선택된 project를 대상으로 쓴다.
-- `userConfig`로 노출하는 안은 기각한다.
-  - `userConfig` 값은 사용자 설정(`pluginConfigs`)에 저장되어 모든 project에 똑같이 적용된다.
-    project마다 다른 ID를 써야 하는 `--project-id`와 맞지 않는다.
-  - 값을 비워 두는 선택 항목을 만들 수 없다. `--project-id=`처럼 빈 값을 넘기면 CLI가 시작하지
-    못한다(`src/cli/cli-args.ts`). 이를 허용하려면 CLI 동작부터 바꿔야 한다.
-  - Cowork는 기본값이 없는 option을 참조하는 서버를 무시한다(§3.9).
+- 이번 배포 범위를 줄이기 위해 plugin의 project ID 설정은 제외한다(2026-09-28 사용자 결정).
+  선택값 구현이 불가능해서 제외하는 것은 아니다. 필요하면 후속 지원으로 설계한다.
+- 기존 CLI의 선택 인자 `--project-id`와 미지정 동작은 유지한다. 인자 생략과 빈 값 전달은
+  다르며, `--project-id=`는 현재처럼 오류다(`src/cli/cli-args.ts`). 이번 작업에서 project ID용
+  `userConfig`, 환경변수, CLI 동작 변경을 추가하지 않는다.
 - 수동 설정만 추가하면 plugin 서버가 꺼지지 않는다. `--project-id`를 넣으면 command가 달라져 plugin
   서버와 수동 서버가 둘 다 로드된다(§3.11). 그러면 project 제한이 없는 plugin 쪽 tool이 호출되어
   다른 project에 쿼리가 실행될 수 있다.
@@ -421,24 +438,34 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
 - 기존 수동 설정(`npx -y neosql-mcp`) 사용자가 plugin을 추가해도 command가 달라 도구가 두 벌 뜬다.
   둘 중 하나를 고르게 안내한다. plugin을 쓰려면 수동 설정을 지우고, 수동 설정을 계속 쓰려면
   plugin을 끈다.
+- Desktop의 MCP 설정 설치 기능이 만든 `~/.claude.json` 항목도 위 안내 대상이다. 기존 설정의
+  project ID 고정이 필요한 사용자는 해당 설정을 유지하고 plugin을 끈다. 기존 설정을 제거할 때
+  project ID 고정도 사라진다는 점을 안내하며, 다른 MCP 서버 항목은 보존한다.
 - 이 안내는 plugin README와 root README 두 벌에 모두 넣는다.
 
 ### D11. 데이터 처리는 Node 중계와 NeoSQL Desktop을 나눠 공개한다
 
 - plugin이 실행하는 것은 Node 중계(`neosql-mcp`)뿐이다. 하지만 사용자 데이터의 실제 흐름은
   Desktop을 거친다. security scan과 Data handling 답변은 사용자가 겪는 흐름 전체를 기준으로 쓴다.
+- Data handling은 developer portal의 plugin 제출 양식이다. 개인 데이터 접근·저장, 외부 서비스
+  전송, 보관 기간, 18세 미만 대상 여부를 작성한다. 매번 tool 실행 시 사용자에게 질문하거나
+  새 동의 화면을 추가하는 기능이 아니다. README에도 기존 데이터 흐름을 설명한다(§3.8).
 - Node 중계: local IPC로만 Desktop과 통신하고, tool 인자와 결과를 저장하거나 로그에 남기지 않는다.
 - Desktop(§4 근거):
   - `execute-query`로 실행한 SQL 전문을 project의 MCP SQL 편집기에 저장한다.
   - 로컬 프로젝트는 이 기기의 로컬 저장소에 둔다.
   - 계정 프로젝트는 NeoSQL 서버로 전송해 저장한다.
+  - 새 MCP ERD는 로컬 프로젝트에서 PouchDB에, 계정 프로젝트에서 NeoSQL API를 통해 저장한다.
   - MCP 요청 본문(SQL과 tool 인자)을 Desktop 로그 파일에 기록한다.
 - 계정 프로젝트가 NeoSQL 서버로 데이터를 보내므로 개인정보 처리방침 링크(§3.12)는 필수다.
-- Desktop 로그에 요청 본문 전체를 남기는 동작은 "로그 목적으로도 불필요한 데이터를 수집하지
-  않는다"는 정책(§3.12)과 충돌할 수 있다. 바꾸려면 main app을 고쳐야 하므로 이 저장소 범위 밖이다.
-  제출 전에 유지할지 축소할지 결정한다(§11).
+- Desktop의 요청 본문 로그는 확인된 현재 동작으로 README와 제출 답변에 적는다. 정책은 기능에
+  불필요한 대화 데이터 수집을 금지하지만, 필요한 tool 인자가 로그에 남는다는 사실만으로
+  그 위반이나 등록 거절이 확정된 것은 아니다. 현재 확인된 거절 사유는 없다. 실제 정책 위반이나
+  심사 수정 요구가 확인되면 근거를 기록하고 별도 범위로 다룬다.
 - `execute-query` 외 tool(ERD 수정, 코드 생성 등)의 Desktop 측 저장·전송 경로는 아직 전부
-  확인하지 않았다. 제출 전에 확인해 공개 항목에 반영한다(§11).
+  확인하지 않았다. 릴리스 B 전에 확인해 공개 항목에 반영한다(§11). tool별 로컬 저장, 원격
+  전송, 로그, 보관·삭제 경로 중 MCP 호출과 관련된 부분을 확인한다. 제품 전체의 저장 구조
+  개편이나 MCP와 무관한 기능 조사는 범위에 넣지 않는다.
 
 ## 6. 파일 설계
 
@@ -465,7 +492,7 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
   "displayName": "NeoSQL",
   "version": "X.Y.Z",
   "description": "Use the database connections you already configured in NeoSQL Desktop from Claude: inspect schemas, run SQL, edit ERD models, and generate code through a local MCP server.",
-  "author": { "name": "<§11에서 확정>", "url": "https://neosql.unvus.com" },
+  "author": { "name": "Unvus Co., Ltd.", "url": "https://neosql.unvus.com" },
   "homepage": "https://neosql.unvus.com/en/docs/mcp/intro",
   "repository": "https://github.com/unvus/neosql-mcp",
   "license": "Apache-2.0",
@@ -495,7 +522,10 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
 
 1. 한 문단 소개: NeoSQL Desktop에 구성된 연결을 Claude에서 쓰는 local MCP 서버.
 2. Requirements: macOS 또는 Windows, Node.js 20 이상과 PATH의 `npx`, 같은 머신에 설치된 NeoSQL
-   Desktop, MCP 접근이 허용된 연결과 schema.
+   Desktop, MCP 접근이 허용된 연결과 schema. macOS와 Windows 모두 W6 검증을 통과해야 한다.
+   directory에서 설치한 plugin을 terminal Claude Code로 동기화하려면 v2.1.273 이상과
+   claude.ai 계정 로그인이 필요하다(§3.9). API key만으로 사용하는 세션은 이 동기화 경로를
+   이용할 수 없다. 이를 모든 plugin 설치 방식의 제한으로 표현하지 않는다.
 3. Where it works: Claude Code. Chat에서는 동작하지 않는다는 점(D6).
 4. Examples: 실제로 동작하는 프롬프트 3개 이상(Policy). 초안:
    - "List the tables in my default NeoSQL schema and summarize how they relate."
@@ -529,11 +559,16 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
      것은 SQL 문 텍스트다.
    - Desktop은 받은 MCP 요청(SQL과 tool 인자 포함)을 로컬 로그 파일에 기록한다. 로그 위치와 보관
      기간은 §11에서 확정한 뒤 적는다.
+   - 새 MCP ERD도 저장된다. 로컬 프로젝트는 PouchDB에 저장하고, 계정 프로젝트는 ERD 내용을
+     NeoSQL API로 전송해 저장한다. 기존 ERD의 다른 저장 유형은 §11의 전수 확인 결과를 반영한다.
    - §11의 전수 확인에서 다른 tool의 저장·전송 경로가 나오면 여기에 추가한다.
 
 6. Existing manual configuration(D10):
-   - `neosql`을 직접 설정해 두었다면 plugin과 도구가 두 벌 뜬다. plugin을 쓰려면 수동 설정을
-     지우고, 수동 설정을 계속 쓰려면 plugin을 끈다.
+   - 버전 고정 없는 `neosql` 설정이 있으면 plugin과 도구가 두 벌 뜬다. 직접 만든 설정뿐 아니라
+     Desktop의 설정 설치 기능이 만든 `~/.claude.json` 항목도 포함한다. plugin을 쓰려면 해당
+     항목만 제거하고, 기존 설정을 계속 쓰려면 plugin을 끈다.
+   - plugin은 Desktop에서 선택된 project를 사용한다. 기존 설정의 project ID 고정이 필요하면
+     해당 설정을 유지하고 plugin을 끈다. 기존 항목을 제거하면 그 project ID 고정도 사라진다.
    - 특정 project를 대상으로 하려면 그 저장소에서 `"enabledPlugins": { "neosql@synced": false }`로
      plugin을 끄고, `.mcp.json`에 `--project-id`를 넣은 서버를 둔다.
    - 조직이 plugin을 필수로 지정했다면 이 방법을 쓸 수 없다.
@@ -567,6 +602,13 @@ plugin-release push → directory webhook → 검증 + security scan
   중단한다.
 - 실패할 때의 동작:
   - npm publish가 실패하면 `release-plugin`이 돌지 않는다. listing은 이전 버전을 계속 제공한다.
+  - npm publish는 성공했지만 `release-plugin`만 실패하면, 먼저 원인을 해결하고 같은 tag의
+    실패한 job만 재실행한다. 이미 게시된 npm 버전을 다시 publish하지 않는다.
+  - job 재실행이 불가능할 때는 해당 release tag를 별도 checkout에서 확인하고, plugin 세 파일의
+    존재와 package/plugin/pin 버전 일치, `npm view neosql-mcp@X.Y.Z version`을 확인한다.
+    최신 `plugin-release`를 fetch해 대상 tag가 fast-forward인지 확인한 뒤 그 tag의 commit을
+    `refs/heads/plugin-release`로 push한다. 최초 생성은 branch가 없을 때만 허용한다.
+    push 직전 branch가 바뀌거나 fast-forward가 아니면 중단하고, `--force`는 쓰지 않는다.
   - scan이 실패하거나 Hold가 걸려도 listing은 이전 버전을 계속 제공한다(§3.10). 수정한 뒤 새
     patch 릴리스를 낸다.
 - 첫 `plugin-release`는 plugin 폴더와 `release-plugin` job이 모두 들어간 첫 릴리스(§8의 릴리스
@@ -580,8 +622,10 @@ plugin-release push → directory webhook → 검증 + security scan
 1. W1 → **릴리스 A**: annotation이 들어간 npm 버전. plugin 폴더는 아직 없다.
 2. W2, W3, W4, W5a를 `main`에 반영한다. 이 시점의 `package.json` 버전은 A이므로 plugin 파일도
    이미 npm에 있는 A를 가리킨다.
+   W2가 `main`에 들어가면 제출 없이 portal Validate를 먼저 실행해 이름과 구조를 확인한다.
 3. W6: A를 가리키는 plugin으로 로컬 검증을 한다.
-4. **릴리스 B**: plugin 폴더를 포함한 첫 릴리스. `npm version`이 plugin 버전을 B로 맞추고,
+4. §11의 "릴리스 B 전" 항목과 W4/W6의 미결 사항을 닫고 README를 확정한다.
+   **릴리스 B**: plugin 폴더를 포함한 첫 릴리스. `npm version`이 plugin 버전을 B로 맞추고,
    publish가 성공하면 `release-plugin` job이 `plugin-release` branch를 만든다(§7).
 5. W7: `plugin-release`(B)로 제출한다.
 6. 게시된 뒤 W5b를 진행한다.
@@ -593,12 +637,14 @@ list는 합의용 초안이다.
 
 - 10개 `registerTool` config에 D9 값으로 `annotations`를 추가한다. SDK는
   `@modelcontextprotocol/sdk` 1.29.0이다.
+  `annotations.title`은 각 tool의 기존 최상위 `title`과 같은 문자열을 재사용한다.
 - test list 초안 (`tests/mcp/`, in-memory client `listTools` 기준):
   - `declares readOnlyHint true for the six read-only tools`
   - `declares destructiveHint true for execute-query, generate-code, and erd-modify-tables`
   - `declares readOnlyHint false and destructiveHint false for erd-create-tables`
   - `declares openWorldHint false for every tool`
   - `declares readOnlyHint for every registered tool`: 새 tool이 annotation 없이 추가되는 것을 막는다.
+  - `matches annotations.title to the top-level title for every tool`
 - W1을 포함한 npm 버전(릴리스 A)을 낸다. plugin은 A 이상의 버전을 가리킨다.
 
 ### W2. Plugin 폴더와 manifest 검사
@@ -608,8 +654,10 @@ list는 합의용 초안이다.
   `.mcp.json`은 계속 제외하고 plugin 파일만 추적한다. 이 예외가 없으면 W3의
   `git add plugins/neosql`에서 `.mcp.json`이 조용히 빠진다.
 - test list 초안 (`tests/plugin/plugin-manifest.test.ts`, 새 test 분류):
-  - `does not ignore the plugin files in git`: `git check-ignore`로 plugin 폴더의 세 파일이 제외되지
-    않는지, root `.mcp.json`은 계속 제외되는지 확인한다.
+  - `does not ignore the plugin files in git`: 각 경로별로 `git check-ignore --no-index -q`를
+    실행한다. plugin 세 파일은 exit 1, root `.mcp.json`은 exit 0이어야 하며 다른 종료 코드는
+    실패다. 추적 중인 파일도 규칙을 검사하도록 `--no-index`를 쓰고, 예외 규칙에서도 exit 0을
+    반환하는 `-v`는 쓰지 않는다.
   - `keeps the plugin name neosql`
   - `sets plugin.json version to the package.json version`
   - `pins the npx launcher in .mcp.json to the package.json version`
@@ -618,23 +666,45 @@ list는 합의용 초안이다.
   - `declares the Apache-2.0 license in plugin.json`
   - `includes a README with at least 40 words outside code blocks`
   - `keeps package manifests, lockfiles, and .npmrc out of the plugin folder`
+- `main`에 반영한 직후 portal에서 이 branch와 `plugins/neosql` 경로로 Validate만 실행한다.
+  공개 repository는 GitHub 연결 없이 검증할 수 있다(§3.1). 이름 `neosql` 사용 가능 여부를
+  조기에 확인하되, 이름 예약이나 최종 제출 검증을 대신한다고 보지 않는다.
 
 ### W3. 버전 동기화 script
 
 - `scripts/sync-plugin-version.mjs`(새 최상위 분류)를 만들고 `package.json`에
   `"version": "node scripts/sync-plugin-version.mjs && git add plugins/neosql"`를 추가한다.
   `AGENTS.md` 규칙대로 버전 bump 자체는 계속 `npm version`만 수행한다.
-- 테스트할 수 있도록 로직은 파일 경로를 인자로 받는 export 함수로 둔다.
+- TS 테스트에서 `.mjs`를 직접 import하지 않고 Node child process로 실행한다. 임시 폴더에
+  script와 package/plugin fixture를 같은 상대 구조로 복사해 실제 진입점을 검증한다. 실제
+  저장소의 버전 파일은 바꾸지 않는다. 현재 tsconfig에서 직접 import하면 TS7016이 발생한다.
+  타입 선언이나 `allowJs`로 해결할 수도 있지만, 이 작업은 실행 진입점 검증을 선택한다.
+- 기존 `tests/spawn/`처럼 실행 파일의 외부 동작을 검증한다. `process.execPath`와 인자 배열로
+  shell 없이 실행하고, timeout과 임시 파일 정리를 둔다. 종료 코드·실패 시 오류와 결과 JSON을
+  검사한다. 복잡한 순수 로직이 생길 때만 해당 로직의 unit test를 추가한다.
 - test list 초안 (`tests/scripts/sync-plugin-version.test.ts`):
   - `rewrites the plugin version and npx pin to the given version`
   - `keeps other manifest and server fields unchanged`
   - `fails when .mcp.json has no neosql-mcp launcher argument`
-- `tsconfig`, eslint, vitest include 범위에 `scripts/`를 넣을지 이 작업에서 정한다.
+- script의 eslint 적용 여부는 확인하되, 테스트 import만을 위해 tsconfig를 확장하지 않는다.
+  child process 테스트 결과를 `npm version`의 staging·commit·tag 전체 검증으로 간주하지 않는다.
 
 ### W4. `publish.yml` 확장
 
-- §7의 `release-plugin` job을 추가한다. 직접 실행하기 전에 workflow 문법 검토와 fork 또는
-  prerelease tag에서의 시험 방법을 PR에 적는다.
+- §7의 `release-plugin` job을 추가한다. workflow 문법과 publish 성공/실패 시 의존성을 검토한다.
+- 실제 저장소의 prerelease `v*` tag도 npm publish를 실행하므로 시험용 tag push는 사용하지
+  않는다. 별도 npm 배포 인증이 없는 fork에서 전체 workflow 성공을 검증하는 방법도 쓰지 않는다.
+- npm publish를 실행하지 않는 branch 전진 시험 경로를 마련하고 §7의 실패 복구 절차를
+  `docs/npm-publish.md`에도 적는다. `workflow_dispatch`로 시작하는 시험 경로에서 이미 배포된
+  A를 pin한 plugin 포함 commit을 검증하고, 시험 전용 `codex/plugin-release-check` branch를
+  전진시킨다(사용자 합의). 이 경로는 npm publish와 실제 `plugin-release` 갱신을 실행하지 않는다.
+  `workflow_dispatch`만 추가하면 충분하지 않다. publish를 skip할 경우 `needs: publish`인 job도
+  기본적으로 skip되므로 의존성과 조건을 별도로 설계한다. publish 실패 후 전진을 허용하면 안 된다.
+- 여기서 수동 실행은 사람이 GitHub Actions의 Run workflow나 CLI로 workflow 시작을 요청한다는
+  뜻이다. 시작 이후 검사와 branch push는 workflow가 수행한다. 정식 릴리스는 tag push가
+  workflow를 자동으로 시작한다. §7의 장애 시 직접 Git push하는 복구 절차와 구분한다.
+- 릴리스 A tag에는 plugin 폴더가 없다. npm 버전 A를 가리키는 plugin 포함 commit과 A tag를
+  구분하고, A tag로 실제 `plugin-release`를 생성하는 시험은 하지 않는다(§7).
 
 ### W5. 문서 갱신
 
@@ -661,13 +731,21 @@ W5b는 directory에 게시된 뒤에 한다.
   §6.3의 예시 프롬프트 4개.
 - 중복과 project별 비활성화(§3.11, D10):
   - 버전을 고정하지 않은 수동 설정 `neosql`과 plugin을 함께 두면 서버가 둘 다 로드되는지 확인한다.
+  - Desktop의 설정 설치 기능으로 `~/.claude.json`에 추가한 설정과 plugin을 함께 검증한다.
+    project ID 미지정/지정 두 경우를 확인한다. plugin으로 전환할 때 해당 항목만 제거하고 다른
+    서버는 유지되는지, ID 고정이 필요할 때 plugin을 끄고 기존 설정을 유지하는지 확인한다.
   - project scope `.mcp.json`에 `--project-id`를 넣은 `neosql` 서버만 추가하면 plugin 서버가
     여전히 로드되는지 확인한다.
   - 같은 저장소의 `.claude/settings.local.json`에 `"neosql@inline": false`를 추가하면 수동 서버만
     남는지 확인한다.
-  - 실제 id인 `neosql@synced`는 plugin zip을 개인 claude.ai 계정에 올려(**Customize > Plugins >
+  - 실제 id인 `neosql@synced`는 plugin zip을 검증용 claude.ai 계정에 올려(**Customize > Plugins >
     Upload plugin**) Claude Code로 동기화한 뒤 같은 방법으로 확인한다.
-- Windows에서 `command: "npx"`가 그대로 spawn되는지 확인한다(§11).
+    검증 후 이번 시험에서 올린 plugin은 삭제하고 동기화된 시험 설치도 남아 있지 않은지 확인한다.
+- Windows에서 `command: "npx"`가 그대로 spawn되는지 확인한다(§11). 실패하면 Node/npm 설치,
+  PATH, host의 command 실행 문제를 구분해 기록한다. 공통 `.mcp.json`을 `cmd /c`로 감싸는
+  변경은 macOS와 정책 검토에 영향을 주므로 양쪽 OS를 만족하는 해결책을 적용하고 재검증한다.
+  실패하면 원인을 수정해 macOS와 Windows 모두 통과시킨다. Windows 지원을 제외해 출시하는
+  대안은 두지 않는다. 해결 전에는 출시 검증 완료로 처리하지 않는다.
 - 가능하면 Cowork 로컬 세션에서 확인한다(D6).
 - `docs/e2e-manual.md`에 plugin 시나리오를 추가한다.
 
@@ -677,7 +755,7 @@ W5b는 directory에 게시된 뒤에 한다.
 
 ## 9. 제출 runbook
 
-1. §11 항목 중 "제출 전 필수"로 표시한 것을 닫는다.
+1. §11의 "릴리스 B 전" 항목이 릴리스에 반영됐는지 확인하고, "제출 전 필수" 항목을 닫는다.
 2. §3 재확인 규칙(§1)에 따라 원문을 한 번 확인하고 스냅샷을 갱신한다.
 3. 두 가지를 확인한다. `plugin-release`가 plugin 폴더를 포함한 릴리스(B 이상)의 commit을
    가리키는지, 그 commit의 plugin 파일이 가리키는 버전이 npm에 있는지.
@@ -696,31 +774,51 @@ W5b는 directory에 게시된 뒤에 한다.
 
 ## 10. Data handling 답변 초안
 
+답변은 현재 구현과 실제 운영 정책에 따라 작성한다. 저장·전송 여부를 새로 결정하는 설계 논의가
+아니다. 확인된 SQL·ERD 저장과 요청 본문 로그는 그대로 기재한다. 보관 기간처럼 아직 확인하지
+않은 사실만 §11의 확인 작업으로 남기며, 코드에서 확인할 수 없는 운영 정보는 담당자에게 확인한다.
+
 | 질문                                             | 답변 초안                                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 개인 데이터를 읽거나 저장하는가                  | 사용자가 요청할 때만 NeoSQL Desktop에 구성된 DB에서 schema와 쿼리 결과를 읽어 대화로 반환한다. DB에 개인 데이터가 있으면 결과에 포함될 수 있다. Node 중계는 결과를 저장하지 않는다. Desktop은 실행한 SQL 문을 project의 MCP SQL 편집기에 저장하고, MCP 요청 본문을 Desktop 로그에 기록한다 |
-| 선언한 connector 외의 서비스로 데이터를 보내는가 | Node 중계는 보내지 않는다. 같은 머신의 Desktop과 local IPC로만 통신하고, 시작할 때 `npx`가 npm registry에서 package를 내려받는다. 계정 프로젝트에서는 Desktop이 실행한 SQL 문을 NeoSQL 서비스에 저장한다(§11의 전수 확인 결과를 더한다)                                                    |
-| 데이터를 얼마나 보관하는가                       | Node 중계는 tool 인자와 결과를 보관하지 않고, 로컬 로그에 운영 메타데이터와 오류만 남긴다. MCP SQL 편집기의 SQL은 사용자가 지울 때까지 로컬 저장소(로컬 프로젝트)나 NeoSQL 서비스(계정 프로젝트)에 남는다. 로그 보관 기간과 NeoSQL 서비스 보관 정책은 §11에서 확정한다                     |
+| 개인 데이터를 읽거나 저장하는가                  | 사용자가 요청할 때만 NeoSQL Desktop에 구성된 DB에서 schema와 쿼리 결과를 읽어 대화로 반환한다. DB에 개인 데이터가 있으면 결과에 포함될 수 있다. Node 중계는 결과를 저장하지 않는다. Desktop은 실행한 SQL과 MCP ERD를 저장하고, MCP 요청 본문을 Desktop 로그에 기록한다 |
+| 선언한 connector 외의 서비스로 데이터를 보내는가 | Node 중계는 보내지 않는다. 같은 머신의 Desktop과 local IPC로만 통신하고, 시작할 때 `npx`가 npm registry에서 package를 내려받는다. 계정 프로젝트에서는 Desktop이 실행한 SQL 문과 새 MCP ERD를 NeoSQL 서비스에 저장한다(§11의 전수 확인 결과를 더한다)                                                    |
+| 데이터를 얼마나 보관하는가                       | Node 중계는 tool 인자와 결과를 보관하지 않고, 로컬 로그에 운영 메타데이터와 오류만 남긴다. Desktop이 저장하는 SQL·ERD의 보관·삭제 경로, 로그 보관 기간, NeoSQL 서비스 보관 정책은 §11에서 릴리스 B 전에 확정한다                     |
 | 18세 미만 대상인가                               | 아니다                                                                                                                                                                                                                                                                                     |
 
 ## 11. 미결 사항
 
+이 목록에는 설계 결정과 사실 확인 작업이 함께 있다. 데이터 처리 관련 항목은 기존 동작·운영
+정책을 확인해 제출 답변을 완성하는 작업이며, 사용자에게 새로운 저장·보관 방식을 선택받는
+논의가 아니다. 이미 확인한 저장·전송·로그 동작은 D11과 §10에 기록하고 재논의하지 않는다.
+
+합의된 제출·시험 운영 기준(2026-09-28):
+
+- 제출 소유자는 회사가 관리하는 claude.ai 계정·조직으로 한다. 특정 계정과 조직은 필요 시점에
+  확인한다. 지금 계정 생성이나 자격 증명 제공을 요청하지 않는다.
+- 게시자는 공식 영문 표기 `Unvus Co., Ltd.`, 지원 주소는 `contact@unvus.com`으로 한다.
+  [NeoSQL 공개 개인정보 처리방침](https://neosql.unvus.com/en/privacy)의 §15와 회사 웹사이트에서
+  표기를 확인했다. 주소의 공개 게시를 확인한 것이며 메일함 수신 테스트를 한 것은 아니다.
+- 심사용 환경은 별도 테스트 계정과 샘플 데이터로 구성한다. 실제 필요한 기능·라이선스·DB 접근
+  조건을 먼저 정리한 후 사용자에게 필요한 준비 사항을 알린다.
+- 계정이 실제로 필요한 단계에서 목적, 필요한 서비스와 권한, 사용 기간·정리 절차를 안내한다.
+  W6 동기화 시험용 Claude 로그인, W7 listing 소유·제출용 회사 조직과 GitHub 연결,
+  reviewer용 NeoSQL 테스트 계정·샘플 DB를 구분한다. 계정이 필요 없는 구현·검증은 먼저 진행한다.
+- W4 시험은 수동으로 시작한 workflow가 임시 branch를 갱신하는 방식으로 확정했다.
+  첫 게시 후 자동 게시 사용 여부는 그 시점에 결정한다.
+
 | #   | 항목                                                               | 필요 시점    | 비고                                                                                                          |
 | --- | ------------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| 1   | 제출할 claude.ai 조직과 계정                                       | 제출 전 필수 | listing 소유권은 사실상 영구다(§3.1)                                                                          |
-| 2   | `author.name` 표기                                                 | W2           | 회사 공식 표기                                                                                                |
-| 3   | 개인정보 처리방침 공개 URL                                         | 제출 전 필수 | 계정 프로젝트가 SQL을 NeoSQL 서비스로 보내므로 필수다(D11). web 소스에 `/privacy` route가 있음. 공개 URL 확인 |
-| 4   | 지원 연락처                                                        | 제출 전 필수 | web 소스의 `contact@unvus.com` 사용 여부                                                                      |
-| 5   | reviewer 테스트 환경                                               | 제출 전 필수 | Desktop 다운로드, 계정 또는 라이선스, 샘플 DB 제공 방법                                                       |
-| 6   | plugin 이름 `neosql` 사용 가능 여부                                | W7           | portal Validate에서만 확인 가능. 대안 `neosql-desktop`                                                        |
-| 7   | Windows에서 `npx` command 직접 실행                                | W6           | Claude Code 문서에 언급 없음. 실측                                                                            |
+| 1   | 사용할 회사 관리 claude.ai 조직과 계정 확인                         | 실제 계정 사용 시점 | 회사 소유 원칙은 확정. W6/W7 각 단계의 용도·권한·필요 항목을 설명하고 해당 시점에 확인 |
+| 3   | 개인정보 처리방침과 MCP 제출 설명 대조                             | 릴리스 B 전 | 공개 URL `https://neosql.unvus.com/en/privacy` 확인 완료. 현재 구현에 따른 제출 설명과 대조 |
+| 5   | reviewer 테스트 환경의 구체적인 준비 항목                           | 제출 준비 시점 | 별도 계정·샘플 데이터 원칙은 확정. 필요한 기능·라이선스·접속 조건을 정리한 뒤 사용자에게 안내 |
+| 6   | plugin 이름 `neosql` 사용 가능 여부                                | W2 main 반영 직후 | 제출 없이 portal Validate로 조기 확인. 대안 `neosql-desktop`. 최종 B commit으로 W7에서 재검증 |
+| 7   | Windows에서 `npx` command 직접 실행 검증과 오류 수정              | W6, 릴리스 B 전 | 실패 원인을 수정하고 macOS·Windows 모두 재검증. Windows 지원 제외로 우회하지 않음 |
 | 8   | Cowork 로컬 세션 동작                                              | W6           | UDS 경로와 Desktop 활성화                                                                                     |
 | 9   | `erd-modify-tables`의 `destructiveHint`, 전 tool의 `openWorldHint` | W1           | `docs/upstream-rpc-contract.md`와 대조                                                                        |
-| 10  | 로그 파일 위치·보관·rotation 정책 (Node 중계와 Desktop)            | 제출 전 필수 | Data handling 답변과 README 공개 항목에 필요                                                                  |
+| 10  | 로그 파일 위치·보관·rotation 정책 (Node 중계와 Desktop)            | 릴리스 B 전 | Data handling 답변과 README 공개 항목에 필요                                                                  |
 | 11  | 첫 게시 뒤 게시 설정(자동 게시) 희망 여부                          | 게시 후      | reviewer가 결정                                                                                               |
-| 12  | Desktop의 MCP 요청 본문 로그를 유지할지 축소할지                   | 제출 전 필수 | 데이터 최소화 정책과 충돌할 수 있음. 바꾸려면 main app 변경이 필요해 별도 작업 (D11)                          |
-| 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 제출 전 필수 | ERD 수정, 코드 생성 등. 결과를 §4, §6.3, §10에 반영 (D11)                                                     |
-| 14  | NeoSQL 서비스의 MCP SQL 편집기 데이터 보관 정책                    | 제출 전 필수 | §10의 보관 답변에 필요                                                                                        |
+| 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 릴리스 B 전 | MCP 호출에 관련된 저장·전송·로그·보관·삭제만 확인. 제품 전체 조사나 구조 개편은 제외. 결과를 §4, §6.3, §10에 반영 (D11) |
+| 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
 
 ## 12. 변경 이력
 
@@ -737,3 +835,21 @@ W5b는 directory에 게시된 뒤에 한다.
     공개한다.
   - W2에 `.gitignore` 예외와 추적 여부 test를 추가했다.
   - §8 진행 순서 정정: 첫 `plugin-release`는 plugin 폴더를 포함한 릴리스 B에서 만든다.
+- 2026-09-28: 구현 가능성 검토에서 동의한 사항 반영.
+  - project ID는 이번 plugin 범위에서 제외하는 사용자 결정을 기록하고, 선택값 구현이 불가능하다는
+    D10의 설명을 제거했다. 기존 CLI의 선택 인자는 유지한다.
+  - W2의 gitignore 검사를 `--no-index -q`로 수정하고, W3은 임시 fixture의 child process 검증으로
+    정했다. W1에 `annotations.title`을 추가했다.
+  - 실제 npm 배포를 유발하는 W4 시험 방법을 제거하고 실패 복구 절차를 추가했다. 구체적인 시험
+    경로, Desktop 안내 전환, Windows 실패 시 지원 범위는 §11에서 검토한다.
+  - Desktop 설치 설정의 중복 시나리오, Claude Code 동기화 요구사항, 시험 plugin 정리를 추가했다.
+  - README에 필요한 정책과 데이터 흐름 확인을 B 이전으로 당기고 조기 portal Validate를 추가했다.
+    계정 프로젝트의 새 MCP ERD가 API로 원격 저장되는 실제 소스 경로도 반영했다.
+- 2026-09-28: 사용자 범위 정리 반영. Desktop 설치 안내 개편을 미결 사항에서 제거하고 현재 MCP의
+  plugin 등록에 집중한다. Windows 실패 시 지원 제외 대안을 없애고 수정·재검증을 필수로 한다.
+  제출 양식의 Data handling, 기존 commit으로의 branch 이동, workflow 수동 시작의 의미와
+  script 실행 테스트 기준을 명확히 했다.
+- 2026-09-28: 남은 제안에 대한 사용자 합의 반영. W4의 수동 시작·시험 branch 갱신, 회사 관리
+  제출 계정, 공식 게시자·지원 주소, 별도 심사용 계정·샘플 데이터 원칙을 확정했다. 계정은 실제
+  필요 단계에서 목적과 준비 항목을 설명하고 요청한다. 공개 웹에서 지원 주소와 개인정보 처리방침
+  URL을 확인했다.

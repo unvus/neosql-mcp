@@ -230,3 +230,18 @@ Phase 2-4에서 9개 tool의 본체 HTTP method 구현과 as-is/to-be 비교 검
 - [ ] End-user guide and configuration UI (explicitly deferred).
 
 Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecycle.md).
+
+## Claude plugin directory 등록 · 2026-09-28
+
+설계·test list·진행 순서는 [등록 설계](docs/claude-plugin-directory.md)를 따른다.
+
+- [x] 범위와 제출·시험 운영 방향 합의, 공개 지원 주소 확인
+- [ ] W1: tool annotation과 릴리스 A
+- [ ] W2: plugin 파일·manifest 검사와 조기 portal Validate
+- [ ] W3: 버전 동기화 script와 실행 테스트
+- [ ] W4: npm 배포 후 branch 갱신과 배포 없는 시험 경로
+- [ ] W5a: 구조·릴리스 문서와 plugin README 준비
+- [ ] W6: macOS·Windows 및 plugin 동기화·중복 설정 검증
+- [ ] 릴리스 B: 확인 작업 완료와 plugin 포함 릴리스
+- [ ] W7: 회사 조직 제출, 필요한 시점에 계정·심사 환경 안내
+- [ ] W5b: 게시 후 공개 README의 설치 안내 추가
