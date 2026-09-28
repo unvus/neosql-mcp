@@ -354,8 +354,9 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
   publish가 도는 동안 directory가 그 commit을 스캔할 수 있다. 자동 게시가 켜져 있으면 아직
   없는 npm 버전을 가리키는 plugin이 나가거나, publish가 실패했을 때 계속 깨진 상태로 남는다.
   또 문서 수정 같은 `main`의 모든 commit이 scan 대상이 된다.
-- 결정: `publish.yml`에 `publish` 이후 실행되는 job을 추가한다. 이 job은 npm registry에서 새
-  버전이 조회되는 것을 확인한 뒤, tag commit으로 `plugin-release` branch를 fast-forward한다.
+- 결정: `publish.yml`에서 `publish` job 성공 후 파일·버전 검사를 거쳐 tag commit으로
+  `plugin-release` branch를 fast-forward한다. npm registry 재조회는 하지 않는다. 배포 직후
+  registry 반영 지연으로 새 plugin 실행이 잠시 실패할 수 있으며, 이 가용성 공백은 허용한다.
   webhook은 이 branch push에 반응한다.
 - branch 갱신은 이미 만들어진 release commit을 가리키도록 원격 branch를 이동하는 것이다.
   `plugin-release`에서 소스를 따로 편집하거나 새 commit을 만들지 않는다. 파일과 버전 변경은
@@ -599,7 +600,7 @@ git push                 → main (directory는 main을 추적하지 않음)
 git push origin vX.Y.Z   → publish.yml
   ├─ job publish: lint, typecheck, test(버전 일치 검사 포함), build, pack, npm publish
   └─ job release-plugin (needs: publish, contents: write)                    (W4)
-       ├─ npm view neosql-mcp@X.Y.Z version  (조회될 때까지 짧게 재시도)
+       ├─ plugin 파일·package/plugin/pin 버전·tag 일치 검사
        └─ git push origin HEAD:refs/heads/plugin-release  (fast-forward만 허용)
 plugin-release push → directory webhook → 검증 + security scan
   → pinned npx Hold → reviewer 확인 → 게시 (게시 설정에 따름)
@@ -613,7 +614,7 @@ plugin-release push → directory webhook → 검증 + security scan
   - npm publish는 성공했지만 `release-plugin`만 실패하면, 먼저 원인을 해결하고 같은 tag의
     실패한 job만 재실행한다. 이미 게시된 npm 버전을 다시 publish하지 않는다.
   - job 재실행이 불가능할 때는 해당 release tag를 별도 checkout에서 확인하고, plugin 세 파일의
-    존재와 package/plugin/pin 버전 일치, `npm view neosql-mcp@X.Y.Z version`을 확인한다.
+    존재와 package/plugin/pin 버전 일치, 해당 tag commit의 `publish` job 성공을 확인한다.
     최신 `plugin-release`를 fetch해 대상 tag가 fast-forward인지 확인한 뒤 그 tag의 commit을
     `refs/heads/plugin-release`로 push한다. 최초 생성은 branch가 없을 때만 허용한다.
     push 직전 branch가 바뀌거나 fast-forward가 아니면 중단하고, `--force`는 쓰지 않는다.

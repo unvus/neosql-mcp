@@ -415,8 +415,11 @@ root 버전에 맞춰 plugin manifest 버전과 `.mcp.json`의 npm pin을 갱신
 `release-plugin` job이 다음을 확인하고 release commit으로 `plugin-release`를 전진시킨다.
 
 1. plugin 파일 구성, package/plugin/pin 버전 일치, tag 이름 `v<version>` 일치.
-2. 공식 npm registry에서 해당 버전 조회 가능 (최대 5회 재시도).
-3. 기존 원격 branch가 release commit의 조상인지 확인.
+2. 기존 원격 branch가 release commit의 조상인지 확인.
+
+정식 branch 전진은 `publish` job 성공을 기준으로 하며 npm registry를 다시 조회하지 않는다.
+배포 직후 registry 반영이 지연되면 새 plugin의 `npx` 실행이 일시적으로 실패할 수 있으며,
+반영 후 다시 실행한다. 이 짧은 가용성 공백은 허용한다.
 
 새 commit을 만들지 않으며 force push하지 않는다. 오래된 릴리스를 다시 실행해도 branch를
 되돌릴 수 없다. branch가 없으면 첫 plugin 포함 릴리스 commit으로 생성한다.
@@ -432,7 +435,7 @@ git ls-remote origin refs/heads/plugin-release
 #### npm 배포 없는 branch 갱신 시험
 
 GitHub Actions → **Publish Package** → **Run workflow**에서 `main`을 선택한다.
-이때 main의 plugin pin은 이미 배포된 npm 버전이어야 한다. 초기 시험에서는 `1.8.1`을 쓴다.
+이 시험은 파일·버전 일치와 branch 전진만 검증하며, npm 배포 여부는 확인하지 않는다.
 `publish`는 건너뛰고 `release-plugin`이 같은 검사를 거쳐 고정된 시험 branch
 `codex/plugin-release-check`만 갱신한다. 실제 `plugin-release`와 npm은 바꾸지 않는다.
 `needs: publish`가 skipped여도 실행되도록 job 조건에 `!cancelled()`와 event/result 검사를
@@ -445,12 +448,12 @@ GitHub Actions → **Publish Package** → **Run workflow**에서 `main`을 선�
 
 실패 원인을 수정하고 Actions에서 실패한 `release-plugin` job만 재실행한다. 이미 공개된
 같은 버전의 `publish` job은 재실행하지 않는다. 수동 복구가 필요하면 clean checkout에서
-해당 release tag로 이동하고, 위 파일·버전·registry 검사를 동일하게 통과시킨 뒤 수행한다.
+해당 tag commit의 `publish` job 성공을 확인한다. 해당 release tag로 이동하고,
+위 파일·버전 검사를 동일하게 통과시킨 뒤 수행한다.
 
 ```bash
 git fetch origin tag vX.X.X
 git switch --detach vX.X.X
-npm view neosql-mcp@X.X.X version --registry=https://registry.npmjs.org
 git fetch origin refs/heads/plugin-release
 git merge-base --is-ancestor FETCH_HEAD HEAD
 # 위 검사가 모두 성공했을 때만 실행한다.

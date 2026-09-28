@@ -88,14 +88,13 @@ jobs:
           package-manager-cache: false
 
       - name: Check plugin files and versions
-        id: candidate
         env:
           RELEASE_EVENT: ${{ github.event_name }}
           RELEASE_REF: ${{ github.ref }}
         run: |
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
-          import { appendFileSync, readFileSync } from 'node:fs';
+          import { readFileSync } from 'node:fs';
           const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
           const { version } = read('package.json');
           assert.match(version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
@@ -110,24 +109,7 @@ jobs:
           if (process.env.RELEASE_EVENT === 'push') {
             assert.equal(process.env.RELEASE_REF, `refs/tags/v${version}`);
           }
-          appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           NODE
-
-      - name: Confirm pinned package exists on npm
-        env:
-          RELEASE_VERSION: ${{ steps.candidate.outputs.version }}
-        run: |
-          for attempt in 1 2 3 4 5; do
-            if published=$(npm view "neosql-mcp@$RELEASE_VERSION" version --registry=https://registry.npmjs.org); then
-              if [ "$published" = "$RELEASE_VERSION" ]; then
-                exit 0
-              fi
-            fi
-            echo "Waiting for npm registry visibility (attempt $attempt/5)"
-            sleep 5
-          done
-          echo 'Pinned npm package is unavailable; branch will not advance.' >&2
-          exit 1
 
       - name: Fast-forward the destination branch
         run: |
