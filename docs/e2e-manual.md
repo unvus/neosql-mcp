@@ -20,7 +20,7 @@
 | P06 | project ID를 고정한 수동 등록 + `neosql-mcp@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
 | P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
 | P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
-| P09 | Cowork의 Desktop 연결 세션 | Desktop 접근·자동 활성화 여부 기록 | macOS 1.8.3 업로드·ping 성공. Desktop 연결은 소켓 경로 불일치로 readiness_timeout (2026-09-29), 해결 후 재검증 필요 |
+| P09 | Cowork의 Desktop 연결 세션 | Desktop 접근·자동 활성화 여부 기록 | macOS 1.8.4 ping·연결 목록·명시 좌표 SELECT 1 성공(2026-09-29). 1.8.3 소켓 경로 불일치 해소 확인. Cowork 자동 활성화·Windows는 미검증 |
 
 기존 사용자 설정은 덮어쓰지 않고 격리한 환경에 필요한 NeoSQL 등록만 재현한다.
 실제 설정을 잠시 변경해야 하면 먼저 백업하고 종료 후 원복한다.
@@ -103,6 +103,26 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
   활성화를 다시 검증해야 한다. Windows Cowork는 미검증이다.
 - 테스트 업로드는 현재 계정에 남아 있다. 후속 재검증 이후 정식 설치와 충돌하지 않도록
   제거가 필요하며, Claude Code 동기화 여부는 이번 시험에서 확인하지 않았다.
+
+### Cowork macOS 1.8.4 재검증 (2026-09-29)
+
+- 기존 업로드는 여전히 `1.8.3`이므로 Claude의 플러그인 Contents 편집에서 manifest
+  버전과 `.mcp.json` npm pin을 릴리스 `v1.8.4`와 일치시켰다. 나머지 파일은 두 릴리스 간
+  동일하며, `npx -y neosql-mcp@1.8.4` 저장과 활성화 상태를 UI에서 확인했다.
+- 새 Cowork 세션 `cse_01YUS8eMtVKeMPARD2kUzjHh`에서
+  `Claude Desktop (macOS), Connected`와 플러그인 도구 호출 기록을 확인했다.
+- `ping`은 `pong`. 좌표를 생략한 첫 `execute-query`는 기존 타임아웃 대신
+  `No MCP default context is configured for the active project.`를 반환했다.
+  기본 연결 설정은 변경하지 않았다.
+- `list-connections` 성공 후 응답에 포함된 PostgreSQL 연결 좌표를 모두 명시한
+  `SELECT 1 AS neosql_mcp_test`를 한 번 실행했다. 실제 도구 Request/Response에서
+  `type: SELECT`, `columns: ["neosql_mcp_test"]`, `rows: [[1]]`, `rowCount: 1`,
+  `executionTimeMs: 264`를 확인했다.
+- macOS Cowork → npm MCP → NeoSQL Desktop → DB의 상수 조회 경로가 성공했다.
+  실제 테이블 데이터 조회·DDL/DML·ERD 변경·코드 생성은 수행하지 않았다. SQL 실행에
+  따른 Desktop의 기존 SQL 문서·이력·로그 저장 동작은 적용될 수 있다.
+- Desktop 완전 종료 후 자동 활성화와 Windows Cowork는 이번 재검증에 포함하지 않았다.
+  테스트 업로드 `1.8.4`는 계정에 남아 있으며, 정식 Directory 제출은 수행하지 않았다.
 
 ## 기존 MCP host 검증
 
