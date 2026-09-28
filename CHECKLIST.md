@@ -238,9 +238,11 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 - [x] 범위와 제출·시험 운영 방향 합의, 공개 지원 주소 확인
 - [x] W1: 10개 tool annotation 추가와 `tools/list` 검증 (6개 red → green, 전체 287개 통과)
 - [x] 릴리스 A: `1.8.1` npm 배포, `latest`·release commit 일치와 배포본 ping·10개 annotation 확인
-- [ ] W2: plugin 파일·manifest 검사와 조기 portal Validate
+- [x] W2: plugin 파일·manifest 검사와 조기 portal Validate
   - 파일 3개, gitignore 예외, 검사 7개 및 `claude plugin validate` 통과.
-  - portal은 claude.ai 로그인 필요. 조기 Validate 결과는 아직 없음.
+  - Chrome의 기존 claude.ai 로그인으로 `main@f267179` 조기 Validate 통과.
+    이름·게시자 검사 통과. 경고 1건(icon), policy hold 3건(pinned npx 1, 문서의 설정 경로를
+    credential 읽기로 탐지한 항목 2). 제출·게시 없음. 상세 근거는 등록 설계 §9.1.
 - [x] W3: 버전 동기화 script와 실행 테스트
   - child process 3개 테스트 red → green. 별도 임시 Git 저장소에서 실제 `npm version patch`의
     staging·commit·tag까지 확인 (본 저장소는 `1.8.1` 유지).

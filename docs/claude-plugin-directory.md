@@ -3,7 +3,7 @@
 `neosql-mcp`를 Anthropic plugin directory(claude.ai **Customize > Plugins**의 Discover,
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
-- 상태: W1 및 릴리스 A(`1.8.1`) 완료, W2~W5a 구현·원격 workflow 시험 완료(2026-09-28). Portal·W6 실사용 검증 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
+- 상태: W1 및 릴리스 A(`1.8.1`), W2~W5a 구현·원격 workflow 시험·조기 Portal Validate 완료(2026-09-28). W6 실사용 검증 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
   plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
 - 외부 요구사항 확인일: 2026-09-28
@@ -785,6 +785,28 @@ W5b는 directory에 게시된 뒤에 한다.
     push updates**를 진행한다(repository admin 권한 필요).
 11. 제출 후에는 Versions 탭에서 scan 결과와 Hold 사유를 확인하고, 통과하면 **Publish**를 요청한다.
 
+### 9.1 조기 Portal Validate 결과 (2026-09-28)
+
+사용자가 지정한 Chrome의 기존 claude.ai 세션으로 공개 저장소 `unvus/neosql-mcp`,
+경로 `plugins/neosql`, branch `main`, commit `f267179`를 검증했다. 결과는 **passed**,
+7개 check와 이름·게시자 검사 통과다. 심사 제출·게시·GitHub 연결은 하지 않았다.
+결과는 해당 commit에만 해당하며 이름 예약이나 최종 보안 심사 통과를 의미하지 않는다.
+
+| 구분 | 결과 | 대응 |
+| --- | --- | --- |
+| Policy hold 1 | 버전 고정 npx package 실행 | D3에서 수용한 심사 항목. 현재 npm 배포·고정 버전 방식을 설명 |
+| Policy hold 2 | README의 `~/.claude.json`과 `neosql.unvus.com` URL을 credential 전달로 판단 | README는 사용자가 기존 등록을 제거하는 방법을 안내한다. plugin 실행 명령에는 credential read나 env 전달이 없다. 심사 때 사실관계를 설명 |
+| Policy hold 3 | 위 README 경로와 plugin.json 홈페이지 URL을 합쳐 credential 전달로 판단 | 홈페이지는 metadata 링크이며 파일 업로드 목적지가 아니다. 앞 항목과 같은 오탐 근거를 제출 설명에 포함 |
+| Warning 1 | icon 없음 | 세 파일 bundle 설계 유지. 검증을 막는 오류가 아님 |
+| Note | local MCP는 Claude Chat에서 실행되지 않음 | README에 이미 명시. Cowork 실측은 W6 |
+
+credential 항목의 탐지 코드는 `MCP_FORWARDS_CREDENTIAL_ENV`다. `src/`에는 `.claude`나
+`CLAUDE` 참조가 없으며, 실제 설치 hint 읽기는 `src/upstream/mcp-config-record.ts`의
+`~/.neosql/mcp-config.json`에서 `appPath` 문자열만 가져온다. 현 배포본 `1.8.1` 이후
+runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 동작으로 해석한 것으로 판단한다.
+필요한 마이그레이션 안내를 감추거나 실제로 없는 credential 입력 설정을 추가하지 않는다.
+최종 릴리스 B의 Validate에서 재확인하고 같은 탐지가 유지되면 이 근거로 심사 대응한다.
+
 ## 10. Data handling 답변 초안
 
 답변은 현재 구현과 실제 운영 정책에 따라 작성한다. 저장·전송 여부를 새로 결정하는 설계 논의가
@@ -824,7 +846,7 @@ W5b는 directory에 게시된 뒤에 한다.
 | 1   | 사용할 회사 관리 claude.ai 조직과 계정 확인                         | 실제 계정 사용 시점 | 회사 소유 원칙은 확정. W6/W7 각 단계의 용도·권한·필요 항목을 설명하고 해당 시점에 확인 |
 | 3   | 개인정보 처리방침과 MCP 제출 설명 대조                             | 릴리스 B 전 | 공개 URL `https://neosql.unvus.com/en/privacy` 확인 완료. 현재 구현에 따른 제출 설명과 대조 |
 | 5   | reviewer 테스트 환경의 구체적인 준비 항목                           | 제출 준비 시점 | 별도 계정·샘플 데이터 원칙은 확정. 필요한 기능·라이선스·접속 조건을 정리한 뒤 사용자에게 안내 |
-| 6   | plugin 이름 `neosql` 사용 가능 여부                                | W2 main 반영 직후 | 제출 없이 portal Validate로 조기 확인. 대안 `neosql-desktop`. 최종 B commit으로 W7에서 재검증 |
+| 6   | plugin 이름 `neosql` 사용 가능 여부                                | 조기 확인 완료, W7 재검증 | `main@f267179`의 이름·게시자 검사 통과(§9.1). 이름 예약은 아님. 최종 B commit으로 W7에서 재검증 |
 | 7   | Windows에서 `npx` command 직접 실행 검증과 오류 수정              | W6, 릴리스 B 전 | 실패 원인을 수정하고 macOS·Windows 모두 재검증. Windows 지원 제외로 우회하지 않음 |
 | 8   | Cowork 로컬 세션 동작                                              | W6           | UDS 경로와 Desktop 활성화                                                                                     |
 | 10  | 로그 파일 위치·보관·rotation 정책 (Node 중계와 Desktop)            | 릴리스 B 전 | Data handling 답변과 README 공개 항목에 필요                                                                  |

@@ -28,7 +28,9 @@
 P08이 실패하면 PATH·설치·host 실행을 구분해 수정하고 양 OS를 재검증한다.
 
 Portal 조기 Validate: 공개 저장소 `unvus/neosql-mcp`, 경로 `plugins/neosql`, branch `main`.
-아직 로그인 전이며 결과 없음. 이 검사는 제출·게시가 아니며 최종 릴리스 B를 재검증해야 한다.
+2026-09-28 Chrome 기존 로그인 세션에서 `main@f267179` 검증 통과. 이름·게시자 검사 통과,
+icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-plugin-directory.md#91-조기-portal-validate-결과-2026-09-28)에 기록했다.
+이 검사는 제출·게시가 아니며 최종 릴리스 B를 재검증해야 한다.
 
 검증 기록에는 OS, Claude/Node/Desktop 버전, MCP commit 또는 npm 버전, 계정 유형,
 시나리오, 기대/실제 결과, 변경 데이터와 정리 결과를 남긴다.
