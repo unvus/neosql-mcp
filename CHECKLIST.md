@@ -237,7 +237,7 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 
 - [x] 범위와 제출·시험 운영 방향 합의, 공개 지원 주소 확인
 - [x] W1: 10개 tool annotation 추가와 `tools/list` 검증 (6개 red → green, 전체 287개 통과)
-- [ ] 릴리스 A: W1을 포함한 npm 버전 배포
+- [x] 릴리스 A: `1.8.1` npm 배포, `latest`·release commit 일치와 배포본 ping·10개 annotation 확인
 - [ ] W2: plugin 파일·manifest 검사와 조기 portal Validate
 - [ ] W3: 버전 동기화 script와 실행 테스트
 - [ ] W4: npm 배포 후 branch 갱신과 배포 없는 시험 경로

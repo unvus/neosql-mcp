@@ -3,7 +3,7 @@
 `neosql-mcp`를 Anthropic plugin directory(claude.ai **Customize > Plugins**의 Discover,
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
-- 상태: W1 구현·검증 완료(2026-09-28), 릴리스 A 배포 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
+- 상태: W1 및 릴리스 A(`1.8.1`) 완료(2026-09-28), W2 착수 가능. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
   plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
 - 외부 요구사항 확인일: 2026-09-28
@@ -651,7 +651,14 @@ list는 합의용 초안이다.
 - W1을 포함한 npm 버전(릴리스 A)을 낸다. plugin은 A 이상의 버전을 가리킨다.
 - 구현 검증(2026-09-28): 위 6개 테스트의 실패를 먼저 확인한 뒤 10개 tool에 annotation을
   추가했다. 전체 287개 테스트, 별도 spawn 통합 11개, lint, typecheck, build가 통과했다.
-  tool handler의 실행 동작은 변경하지 않았다. 릴리스 A는 아직 배포하지 않았다.
+  tool handler의 실행 동작은 변경하지 않았다.
+- 릴리스 A 배포 확인(2026-09-28): `1.8.1`, tag `v1.8.1`, release commit
+  `779aabbc7f1cfad9d774e341aac1733cd21ada83`.
+  [Publish Package](https://github.com/unvus/neosql-mcp/actions/runs/36374999431)와 CI 성공,
+  npm registry의 `version: 1.8.1`, `latest: 1.8.1`, `gitHead` 일치를 확인했다.
+  빈 임시 작업 폴더와 새 npm cache에서 `npx -y neosql-mcp@1.8.1`을 실행해 MCP 연결,
+  `ping`의 `pong` 응답, 10개 tool의 annotation을 검증했다. 저장소 내부에서 실행하면 npx가
+  동일 이름·버전의 로컬 package를 선택할 수 있으므로 배포본 검증은 저장소 밖에서 한다.
 
 ### W2. Plugin 폴더와 manifest 검사
 
