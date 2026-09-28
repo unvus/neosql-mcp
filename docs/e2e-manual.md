@@ -13,9 +13,9 @@
 | ID | 시나리오 | 기대 결과 | 상태 |
 | --- | --- | --- | --- |
 | P01 | `claude plugin validate ./plugins/neosql-mcp` | 구조 검사 통과 | macOS CLI 2.1.283 통과 |
-| P02 | 시험 작업 폴더에서 `claude --plugin-dir ./plugins/neosql-mcp`, `/mcp` | `plugin:neosql-mcp:neosql` 연결 및 10개 tool 표시 | macOS 화면 확인: 연결·10개 tool 통과. 사용자 범위 수동 등록도 함께 존재. Windows 미검증 |
+| P02 | 시험 작업 폴더에서 `claude --plugin-dir ./plugins/neosql-mcp`, `/mcp` | `plugin:neosql-mcp:neosql` 연결 및 10개 tool 표시 | macOS 화면 확인: 연결·10개 tool 통과. 사용자 범위 수동 등록도 함께 존재. Windows plugin MCP 사용 성공 사용자 보고(2026-09-29), 도구 개수 화면은 미수집 |
 | P03 | 양 OS에서 Desktop 실행 중·종료 상태 각각 호출 | 정상 연결·필요 시 자동 활성화 | macOS 연결 화면 확인, 완전 종료 후 자동 실행 사용자 확인. 프로젝트 미선택 안내 후 선택·재호출 성공 화면 확인. Windows 미검증 |
-| P04 | plugin README의 schema·SQL·ERD·codegen 예시 4개 | 대상 샘플 프로젝트에 맞는 결과 | macOS 스키마 조회 화면 확인. 추가 일련 작업은 사용자 정상 동작 보고이며 SQL·ERD·codegen별 결과는 별도 미수집. Windows 미검증 |
+| P04 | plugin README의 schema·SQL·ERD·codegen 예시 4개 | 대상 샘플 프로젝트에 맞는 결과 | macOS 스키마 조회 화면 확인. 추가 일련 작업은 사용자 정상 동작 보고이며 SQL·ERD·codegen별 결과는 별도 미수집. Windows plugin MCP 사용 성공 사용자 보고, 개별 도구 결과는 미수집 |
 | P05 | Desktop이 생성한 수동 등록 + plugin (project ID 유/무 각각) | 중복 처리와 실제 호출 서버 확인 | macOS 사용자 등록과 plugin 동시 연결 화면 확인. 사용자 등록의 생성 경로·project ID 인자는 미확인 |
 | P06 | project ID를 고정한 수동 등록 + `neosql-mcp@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
 | P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
@@ -52,6 +52,16 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
   사용자가 Desktop 프로젝트를 선택한 뒤 다시 요청하자 세 스키마 모두 정상 조회됐다.
   화면만으로 최초 미선택 상태가 된 원인을 단정하지 않는다.
 - Windows, claude.ai 동기화, plugin 비활성화 시나리오는 별도 검증 대상으로 남긴다.
+
+### Windows 사용자 검증 기록 (2026-09-29)
+
+- 사용자가 Windows에서 플러그인으로 MCP를 사용하고 테스트를 완료했다고 보고했다.
+- 앞선 사용자 정정에 따라 시험 패키지 버전은 `1.8.2`다. MCP 서버가 보고하는
+  `0.0.1`은 서버 메타데이터 하드코딩 문제이며 패키지 버전과 구분한다.
+- Windows·Node·Claude Code·Desktop의 상세 버전, 개별 도구 실행 결과, Desktop 완전
+  종료 후 자동 실행 여부, 공통 `command: npx` 설정의 변경 여부는 별도 미수집이다.
+- 이번 보고는 Windows 플러그인 MCP 사용 성공으로 기록하며, 동기화·비활성화·자동
+  실행 등 개별 미확인 시나리오까지 일괄 통과 처리하지 않는다.
 
 ## 기존 MCP host 검증
 

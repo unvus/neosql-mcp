@@ -260,7 +260,10 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 - [ ] W6: macOS·Windows 및 plugin 동기화·중복 설정 검증
   - macOS 사용자 검증(2026-09-28): plugin 연결·10개 tool 및 PostgreSQL 조회 화면 확인,
     Desktop 완전 종료 후 자동 실행 사용자 확인. 프로젝트 미선택 안내 후 선택·재호출 성공.
-    사용자 MCP와 plugin이 함께 연결됨을 확인. Windows·동기화·비활성화는 미검증.
+    사용자 MCP와 plugin이 함께 연결됨을 확인. 동기화·비활성화는 미검증.
+  - Windows 사용자 검증(2026-09-29): npm `1.8.2` plugin MCP 사용 및 테스트 완료 보고.
+    개별 도구·자동 실행·실행 설정 변경 여부 등 세부 결과는 미수집이며
+    `docs/e2e-manual.md`에 보고 범위를 기록했다.
   - 자동 검증: lint·typecheck·build·전체 297개 테스트·pack dry-run 통과.
     실제 host 검증과 구분한다. 시나리오 P01~P09는 `docs/e2e-manual.md`에 기록.
     [구현 commit CI #42](https://github.com/unvus/neosql-mcp/actions/runs/36376995102)도 통과.
