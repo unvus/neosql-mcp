@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "neosql-mcp@1.8.2"
+        "neosql-mcp@1.8.3"
       ]
     }
   }
