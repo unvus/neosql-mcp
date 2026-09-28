@@ -95,13 +95,12 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
-          import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
+          import { appendFileSync, readFileSync } from 'node:fs';
           const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
           const { version } = read('package.json');
           assert.match(version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
-          assert.deepEqual(readdirSync('plugins/neosql-mcp', { recursive: true }).sort(), [
-            '.claude-plugin', '.claude-plugin/plugin.json', '.mcp.json', 'README.md',
-          ]);
+          const prose = readFileSync('plugins/neosql-mcp/README.md', 'utf8').replace(/```[\s\S]*?```/g, '');
+          assert.ok(prose.trim().split(/\s+/).length >= 40);
           const plugin = read('plugins/neosql-mcp/.claude-plugin/plugin.json');
           assert.equal(plugin.name, 'neosql-mcp');
           assert.equal(plugin.version, version);

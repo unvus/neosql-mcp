@@ -59,10 +59,13 @@ tests/                          (모든 테스트 코드)
 
 plugins/neosql-mcp/                  Claude directory 배포 bundle (npm package와 별개)
 ├── .claude-plugin/plugin.json  plugin metadata
+├── .claude-plugin/icon.png     directory 등록용 512×512 투명 PNG 아이콘 (원본은 assets/)
 ├── .mcp.json                   고정 버전 npx launcher, project ID 설정 없음
 └── README.md                   directory listing·사용·데이터 처리 안내
 scripts/                        repository 유지보수용 Node ESM script (npm 배포 제외)
 └── sync-plugin-version.mjs     npm version lifecycle의 plugin 버전·pin 동기화
+assets/                         배포 파일의 편집용 디자인 원본 (npm package·plugin bundle 미포함)
+└── neosql-mcp-icon.svg         plugin icon.png의 SVG 원본
 docs/   사용자/에이전트 가이드 (이 문서 포함)
 ├── research/                  제품 문서가 아닌 분석/도구 사용 참고 자료
 │   └── supabase-cli/          Supabase CLI 참조 분석 문서 (`../cli` sibling clone 대상)
@@ -92,8 +95,9 @@ dist/   tsup 빌드 산출물 (편집 금지)
 
 `tests/scripts/`는 script를 직접 import하지 않고 임시 디렉터리에 복사한 뒤 Node로 실행한다.
 빌드 산출물에 의존하지 않으므로 `test:unit`에도 포함한다. `tests/spawn/`은 기존처럼 built
-CLI 검증용이다. plugin 폴더에는 위 세 배포 파일만 두고 실행 script나 package manifest를
-추가하지 않는다.
+CLI 검증용이다. plugin 검증은 필수 manifest·MCP 설정·README의 존재와 내용을 확인하며,
+전체 파일 목록이나 개수를 고정하지 않는다. 아이콘 등 배포에 필요한 추가 파일을 허용한다.
+아이콘의 편집용 SVG 원본은 `assets/`에 둔다.
 
 ## 새 파일 분류 가이드
 

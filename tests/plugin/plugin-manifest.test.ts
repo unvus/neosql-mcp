@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -48,13 +48,5 @@ describe('Claude plugin bundle', () => {
   it('includes at least 40 README words outside code blocks', () => {
     const prose = readFileSync(`${root}${plugin}README.md`, 'utf8').replace(/```[\s\S]*?```/g, '');
     expect(prose.trim().split(/\s+/).length).toBeGreaterThanOrEqual(40);
-  });
-
-  it('contains only the three distribution files', () => {
-    expect(
-      readdirSync(`${root}${plugin}`, { recursive: true })
-        .map((path) => String(path).replaceAll('\\', '/'))
-        .sort(),
-    ).toEqual(['.claude-plugin', '.claude-plugin/plugin.json', '.mcp.json', 'README.md']);
   });
 });

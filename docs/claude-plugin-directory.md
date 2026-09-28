@@ -371,7 +371,10 @@ Desktop 행의 근거 소스(`../neosql`, `3f9ffe363`):
 - 전제 조건(Node.js 20 이상, `npx`가 PATH에 있을 것, 같은 머신의 NeoSQL Desktop, macOS/Windows)을
   README 첫 부분에 적는다.
 
-### D7. Plugin 폴더는 manifest, `.mcp.json`, README 세 파일로 구성한다
+### D7. Plugin 폴더는 manifest, `.mcp.json`, README를 필수로 포함한다
+
+- 필수 파일의 존재와 내용은 검증하되 전체 파일 목록이나 개수를 고정하지 않는다.
+  아이콘 등 배포에 필요한 추가 파일을 허용한다. directory 자체 파일 정책(§3.7)은 별개다.
 
 - license는 `plugin.json#license: "Apache-2.0"`로 충족한다. `LICENSE` 파일을 복사하면 root와
   이중으로 관리해야 하고, symlink는 금지다(§3.2).
@@ -680,7 +683,6 @@ list는 합의용 초안이다.
     `--profile`과 `--project-id`가 들어가지 않았는지 함께 확인한다(D7, D10).
   - `declares the Apache-2.0 license in plugin.json`
   - `includes a README with at least 40 words outside code blocks`
-  - `keeps package manifests, lockfiles, and .npmrc out of the plugin folder`
 - `main`에 반영한 직후 portal에서 이 branch와 `plugins/neosql-mcp` 경로로 Validate만 실행한다.
   공개 repository는 GitHub 연결 없이 검증할 수 있다(§3.1). 이름 `neosql-mcp` 사용 가능 여부를
   조기에 확인하되, 이름 예약이나 최종 제출 검증을 대신한다고 보지 않는다.
