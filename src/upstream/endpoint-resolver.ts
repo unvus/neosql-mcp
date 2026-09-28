@@ -1,5 +1,6 @@
 import os from 'node:os';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 /**
  * NeoSQL 실행 profile.
@@ -11,11 +12,25 @@ export type Profile = 'prod' | 'dev' | 'local' | 'stage';
 
 export const HTTP_PATH = '/mcp/rpc';
 
+export const getTempDir = (): string => {
+  if (process.platform === 'darwin') {
+    try {
+      return execSync('getconf DARWIN_USER_TEMP_DIR', {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim();
+    } catch {
+      // fallback if getconf fails
+    }
+  }
+  return os.tmpdir();
+};
+
 export const resolveSocketPath = (profile: Profile): string => {
   // prod 는 suffix 없음; 그 외 profile 은 모두 `-${profile}` 로 분리.
   const suffix = profile === 'prod' ? '' : `-${profile}`;
   if (process.platform === 'win32') {
     return `\\\\.\\pipe\\neosql-mcp${suffix}`;
   }
-  return path.join(os.tmpdir(), `neosql-mcp${suffix}.sock`);
+  return path.join(getTempDir(), `neosql-mcp${suffix}.sock`);
 };
