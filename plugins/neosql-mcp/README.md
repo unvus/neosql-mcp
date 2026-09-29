@@ -1,8 +1,8 @@
 # NeoSQL MCP
 
-Use the database connections configured in NeoSQL Desktop from Claude Code. Inspect
-schemas, run SQL, edit virtual ERD models, and generate source files using your
-project's templates. This plugin starts the version-pinned `neosql-mcp` npm package
+Use the database connections configured in NeoSQL Desktop from Claude Code or
+Claude Desktop Cowork. Inspect schemas, run SQL, edit virtual ERD models, and generate
+source files using your project's templates. This plugin starts the version-pinned `neosql-mcp` npm package
 with `npx`; NeoSQL Desktop performs the database and project operations.
 
 ## Requirements
@@ -12,13 +12,12 @@ with `npx`; NeoSQL Desktop performs the database and project operations.
   Select a project and enable MCP access for the connections and schemas you want
   Claude to use. Set a default connection and schema in Desktop for requests that
   omit them.
-- Claude Code. Receiving plugins from the claude.ai directory requires Claude Code
-  2.1.273 or later and a claude.ai account login; API-key-only sessions do not receive
-  that directory synchronization.
+- Claude Code or Claude Desktop Cowork. For Claude Code, receiving plugins from the
+  claude.ai directory requires version 2.1.273 or later and a claude.ai account login;
+  API-key-only Claude Code sessions do not receive that directory synchronization.
 
-Claude Chat does not run this local MCP server. Cowork support has not yet been
-verified. Windows and macOS host validation is required before the first directory
-release.
+Claude Chat does not run this local MCP server. Plugin usage has been tested with
+Claude Code and Claude Desktop Cowork on macOS and Windows.
 
 ## Use it
 
@@ -39,7 +38,7 @@ and transaction settings apply. ERD tools change virtual models; they do not app
 those changes to the database. Code generation writes files under the configured
 project location and can overwrite existing files.
 
-## Fixed project configuration
+## Fixed project configuration in Claude Code
 
 If a repository needs a fixed project ID, keep its manual MCP configuration and
 disable the directory plugin for that repository. In `.claude/settings.local.json`,
