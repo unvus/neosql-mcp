@@ -44,6 +44,9 @@ of that data and Desktop's database connections are outside this local transport
 `execute-query` can execute SQL including DDL, and `generate-code` can write files;
 review the requested operations and Desktop access settings before use.
 
+See the [NeoSQL MCP Privacy Policy](https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md)
+for data processing, storage, retention, and deletion details.
+
 ## Prerequisites
 
 - Node.js 20 or later.

@@ -81,10 +81,13 @@ dist/   tsup 빌드 산출물 (편집 금지)
 - `package.json#files` 화이트리스트와 별개로 멘탈 모델이 단순 — `src/` = 패키지, `tests/` = 검증.
 - TypeScript 컴파일러 본체, Vitest, Prettier, ts-node 등 동일 성격 도구 프로젝트의 다수 컨벤션과 일치.
 
-## 공개 README
+## 공개 문서
 
 - 저장소 루트의 `README.md`는 GitHub/npm 기본 영문 안내다.
 - `README.ko.md`는 같은 내용을 제공하는 한국어 안내다.
+- 루트 `PRIVACY.md`는 NeoSQL MCP의 정식 영문 개인정보 처리방침이며 npm package에도
+  포함한다. 별도 한국어 방침은 두지 않는다. root 두 README와 plugin README에서 연결하고,
+  plugin manifest의 `privacyPolicyUrl`에 GitHub 공개 URL을 명시한다.
 - 두 문서 상단에는 GitHub 절대 URL로 언어 전환 링크를 둔다.
 - `plugins/neosql-mcp/README.md`는 directory listing용 영문 안내다. 별도 한국어 파일은 만들지
   않고 root의 영문·한국어 README로 연결한다.

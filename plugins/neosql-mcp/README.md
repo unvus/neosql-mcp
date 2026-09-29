@@ -60,6 +60,9 @@ way to fix a project ID in that situation.
 
 ## Local processes and data handling
 
+See the [NeoSQL MCP Privacy Policy](https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md)
+for data processing, storage, retention, deletion, and privacy inquiries.
+
 `npx` downloads the pinned package from the npm registry and runs a local Node.js
 process. The process communicates with Desktop over a Unix domain socket on macOS
 or a named pipe on Windows. It does not start a TCP listener. If Desktop is not
@@ -93,7 +96,7 @@ at approximately 1 MiB into `main.old.log`; it has no time-based expiry configur
 Desktop's in-memory MCP request history lasts until cleared or the renderer exits.
 
 NeoSQL service retention and deletion rules are described in the
-[Privacy Policy](https://neosql.unvus.com/en/privacy). Project and synchronization
+[NeoSQL Service Privacy Policy](https://neosql.unvus.com/en/privacy). Project and synchronization
 data are generally kept until deletion or the end of service use, subject to the
 policy's backup, security, and legal exceptions. Claude's own retention is governed
 by your Claude service terms and settings.

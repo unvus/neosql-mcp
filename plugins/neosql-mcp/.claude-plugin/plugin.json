@@ -8,6 +8,7 @@
     "url": "https://neosql.unvus.com"
   },
   "homepage": "https://neosql.unvus.com/en/docs/mcp/intro",
+  "privacyPolicyUrl": "https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md",
   "repository": "https://github.com/unvus/neosql-mcp",
   "license": "Apache-2.0",
   "keywords": [

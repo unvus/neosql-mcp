@@ -42,6 +42,10 @@ Control 설정을 따릅니다. MCP 호스트 설정에 데이터베이스 인�
 실행할 수 있고, `generate-code`는 파일을 쓸 수 있으므로 요청한 작업과 Desktop의 접근
 설정을 확인하고 사용하세요.
 
+데이터 처리, 저장, 보관 및 삭제에 관한 사항은
+[NeoSQL MCP 개인정보 처리방침(영문)](https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md)을
+참고하세요.
+
 ## 사전 준비
 
 - Node.js 20 이상.
