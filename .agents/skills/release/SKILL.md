@@ -111,22 +111,30 @@ git push origin v<X.Y.Z>
 - tag를 push한 뒤에는 되돌리지 않는다. 잘못 올렸으면 새 patch 버전으로 고친다. tag 삭제나
   force push는 하지 않는다.
 
-## 5. 배포 후 확인과 보고
+## 5. 배포 완료 확인과 보고
 
-tag push 직후에는 workflow가 아직 실행 중이므로 결과를 단정하지 않는다.
+tag push는 배포의 시작일 뿐이다. GitHub Actions의 `publish` job이 npm에 올리고
+`release-plugin` job이 plugin 브랜치를 전진시켜야 끝난다. 사용자는 "배포 완료" 보고를 받으면
+바로 `npx -y neosql-mcp@X.Y.Z`를 시도하거나 다른 사람에게 알릴 수 있으므로, 다음 세 가지가
+실제로 확인된 뒤에만 완료라고 보고한다. 확인 전에는 "배포 진행 중"이라고만 말한다.
 
-- Actions 페이지 링크를 안내한다: `https://github.com/unvus/neosql-mcp/actions`.
-- 몇 분 뒤 확인할 명령을 안내하거나 사용자가 원하면 대신 실행한다.
+1. publish workflow run이 `success`로 끝났다.
+2. `npm view neosql-mcp version`이 새 버전을 돌려준다.
+3. `refs/heads/plugin-release`가 release tag의 commit을 가리킨다.
 
-```bash
-npm view neosql-mcp version
-git rev-parse 'vX.Y.Z^{commit}'
-git ls-remote origin refs/heads/plugin-release
-```
+확인 방법은 상황에 맞게 고른다. 보통은 `node scripts/wait-for-release.mjs vX.Y.Z`를
+백그라운드로 실행하면 workflow 상태와 npm 반영을 함께 지켜보다가 결과를 종료 코드(0 성공,
+1 실패·timeout)와 마지막 로그 줄로 알려 준다. workflow는 보통 3~5분 걸린다. 스크립트가 못
+쓰이는 환경이면 Actions 페이지와 `npm view`로 같은 세 가지를 직접 확인한다. 어느 쪽이든
+자리를 비우거나 사용자에게 확인을 떠넘기지 않는다.
 
-registry 반영이 늦어 새 버전의 `npx` 실행이 잠시 실패할 수 있다. 이건 허용된 공백이다.
-`publish` job은 성공했는데 `release-plugin`만 실패한 경우의 복구는 `docs/npm-publish.md`의
-"npm 성공 후 branch 갱신만 실패했을 때"를 따르고, 같은 버전의 `publish`를 재실행하지 않는다.
+- workflow가 실패·취소됐으면 job 상태와 run 링크를 그대로 보고하고, 임의로 재실행하거나 tag를
+  다시 만들지 않는다. 같은 버전은 다시 publish할 수 없으므로 수정 뒤 새 patch로 간다.
+- `publish`는 성공했는데 `release-plugin`만 실패한 경우 npm 배포 자체는 끝난 상태다. 복구는
+  `docs/npm-publish.md`의 "npm 성공 후 branch 갱신만 실패했을 때"를 따르고, 같은 버전의
+  `publish` job을 재실행하지 않는다.
+- registry 반영이 workflow 성공보다 몇 분 늦을 수 있다. 그 사이 새 버전의 `npx` 실행이
+  실패하는 것은 허용된 공백이다.
 
-완료 보고에는 이전·새 버전, 선택 근거 한 줄, version commit SHA와 tag, push 결과, Actions
-링크를 넣는다.
+완료 보고에는 이전·새 버전, 선택 근거 한 줄, version commit SHA와 tag, workflow run 링크와
+결과, npm에서 확인한 버전, plugin 브랜치 SHA 일치 여부를 넣는다.

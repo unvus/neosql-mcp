@@ -63,7 +63,8 @@ plugins/neosql-mcp/                  Claude directory 배포 bundle (npm package
 ├── .mcp.json                   고정 버전 npx launcher, project ID 설정 없음
 └── README.md                   directory listing·사용·데이터 처리 안내
 scripts/                        repository 유지보수용 Node ESM script (npm 배포 제외)
-└── sync-plugin-version.mjs     npm version lifecycle의 plugin 버전·pin 동기화
+├── sync-plugin-version.mjs     npm version lifecycle의 plugin 버전·pin 동기화
+└── wait-for-release.mjs        release 스킬이 tag push 뒤 Actions·npm 반영을 polling
 assets/                         배포 파일의 편집용 디자인 원본 (npm package·plugin bundle 미포함)
 └── neosql-mcp-icon.svg         plugin icon.png의 SVG 원본
 .claude/skills/                 Claude Code용 project skill (다른 .claude/ 내용은 gitignore)
