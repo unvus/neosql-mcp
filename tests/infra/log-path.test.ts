@@ -37,6 +37,10 @@ describe('resolveLogAppName', () => {
     expect(resolveLogAppName('local')).toBe('NeoSqlMcpLocal');
     expect(resolveLogAppName('stage')).toBe('NeoSqlMcpStage');
   });
+
+  it('returns the test app name for the test profile', () => {
+    expect(resolveLogAppName('test')).toBe('NeoSqlMcpTest');
+  });
 });
 
 describe('resolveLogParentDir', () => {

@@ -14,7 +14,7 @@ work to NeoSQL Desktop over the local UDS/Named Pipe upstream channel.
 The CLI syntax, including internal developer options, is:
 
 ```bash
-npx -y neosql-mcp [--profile=<prod|dev|local|stage>] [--project-id=<id>]
+npx -y neosql-mcp [--profile=<prod|dev|local|stage|test>] [--project-id=<id>]
 ```
 
 This file intentionally does not duplicate host-specific JSON/TOML snippets. Keep those
@@ -53,6 +53,10 @@ profile.
 | `dev`   | `-dev`              | `-dev`              |
 | `local` | `-local`            | `-local`            |
 | `stage` | `-stage`            | `-stage`            |
+| `test`  | `-test`             | `-test`             |
+
+`test` exists only for this repository's spawn tests: it gives the mock upstream server a
+socket path that no real NeoSQL Desktop ever listens on. Do not use it with a Desktop build.
 
 If multiple valid `--profile=...` values are present, the last valid value wins. Invalid
 profile values are ignored and the previous valid profile is kept.

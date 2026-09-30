@@ -23,9 +23,11 @@ export const parseCliArgs = (argv: readonly string[]): ParsedCliArgs => {
     if (arg === '--project-id' || arg.startsWith('--project-id=')) {
       if (projectId !== undefined) throw new Error('--project-id must be specified only once.');
       const value = arg === '--project-id' ? argv[++i] : valueAfterEquals(arg);
-      if (!value?.trim() || value.startsWith('--')) throw new Error('--project-id requires a nonempty project ID.');
+      if (!value?.trim() || value.startsWith('--'))
+        throw new Error('--project-id requires a nonempty project ID.');
       projectId = value.trim();
-    } else if (arg.startsWith('--profile=')) profile = parseProfile(valueAfterEquals(arg)) ?? profile;
+    } else if (arg.startsWith('--profile='))
+      profile = parseProfile(valueAfterEquals(arg)) ?? profile;
     else if (isLegacyContextArg(arg)) continue;
   }
   return { profile, ...(projectId === undefined ? {} : { projectId }) };
@@ -37,6 +39,13 @@ const isLegacyContextArg = (arg: string): boolean =>
   LEGACY_CONTEXT_ARG_PREFIXES.some((prefix) => arg.startsWith(prefix));
 
 const parseProfile = (value: string | undefined): Profile | undefined => {
-  if (value === 'prod' || value === 'dev' || value === 'local' || value === 'stage') return value;
+  if (
+    value === 'prod' ||
+    value === 'dev' ||
+    value === 'local' ||
+    value === 'stage' ||
+    value === 'test'
+  )
+    return value;
   return undefined;
 };

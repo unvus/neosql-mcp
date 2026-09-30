@@ -101,7 +101,8 @@ describe('built CLI via stdio spawn', () => {
   });
 });
 
-// Binds the real local-profile endpoint, so no local-profile NeoSQL may be running.
+// Binds the test-profile endpoint (`neosql-mcp-test.sock`), which no real Desktop uses,
+// so a leftover socket file is always stale and safe to remove before listening.
 // Windows runs it only on a dedicated runner without NeoSQL.
 describe.skipIf(
   process.platform === 'win32' && process.env.NEOSQL_MCP_DEDICATED_WINDOWS_RUNNER !== '1',
@@ -110,7 +111,7 @@ describe.skipIf(
     'cancels preparation and exits naturally when stdin ends during %s',
     async (phase) => {
       const logDir = mkdtempSync(path.join(os.tmpdir(), 'mp-'));
-      const socketPath = resolveSocketPath('local');
+      const socketPath = resolveSocketPath('test');
       let child: ChildProcessWithoutNullStreams | undefined;
       let queries = 0;
       let operations = 0;
@@ -139,7 +140,9 @@ describe.skipIf(
               return;
             }
           } else if (rpc.method === 'open-project') {
-            res.on('close', () => { httpClosedAt = performance.now(); });
+            res.on('close', () => {
+              httpClosedAt = performance.now();
+            });
             endInput();
             return;
           } else {
@@ -154,7 +157,7 @@ describe.skipIf(
                 rpc.method === 'get-runtime-status'
                   ? {
                       app: 'neosql',
-                      profile: 'local',
+                      profile: 'test',
                       renderer: 'responsive',
                       project: { state: queries === 1 ? 'loading' : 'ready', projectId: 'A' },
                     }
@@ -167,13 +170,21 @@ describe.skipIf(
       try {
         // Bind before spawning; never use SDK close/kill.
         await listen(mock, socketPath);
-        child = spawn(process.execPath, [CLI_PATH, '--profile=local', ...(phase === 'pending navigation' ? ['--project-id=B'] : [])], {
-          stdio: 'pipe',
-          env: {
-            ...process.env,
-            NEOSQL_MCP_LOG_PARENT_DIR: logDir,
+        child = spawn(
+          process.execPath,
+          [
+            CLI_PATH,
+            '--profile=test',
+            ...(phase === 'pending navigation' ? ['--project-id=B'] : []),
+          ],
+          {
+            stdio: 'pipe',
+            env: {
+              ...process.env,
+              NEOSQL_MCP_LOG_PARENT_DIR: logDir,
+            },
           },
-        });
+        );
         const exit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
           (resolve, reject) => {
             child!.once('error', reject);
@@ -203,7 +214,11 @@ describe.skipIf(
                 _meta: { progressToken: 'eof-test' },
               },
             });
-          } else if (message.method === 'notifications/progress' && inputEndedAt === undefined && phase === 'loading') {
+          } else if (
+            message.method === 'notifications/progress' &&
+            inputEndedAt === undefined &&
+            phase === 'loading'
+          ) {
             endInput();
           }
         });
@@ -251,7 +266,7 @@ describe.skipIf(
     async (progressToken) => {
       const { startMockRpcServer } = await import('../helpers/mock-uds-server.js');
       const logDir = mkdtempSync(path.join(os.tmpdir(), 'mp-'));
-      const socketPath = resolveSocketPath('local');
+      const socketPath = resolveSocketPath('test');
       let queries = 0;
       let operations = 0;
       const wire: Array<Record<string, unknown>> = [];
@@ -266,7 +281,7 @@ describe.skipIf(
               kind: 'result',
               result: {
                 app: 'neosql',
-                profile: 'local',
+                profile: 'test',
                 renderer: 'responsive',
                 project: { state: queries < 3 ? 'loading' : 'ready', projectId: 'B' },
               },
@@ -281,7 +296,7 @@ describe.skipIf(
         // Bind must succeed before the CLI is allowed to start.
         const transport = new StdioClientTransport({
           command: process.execPath,
-          args: [CLI_PATH, '--profile=local'],
+          args: [CLI_PATH, '--profile=test'],
           env: {
             NEOSQL_MCP_LOG_PARENT_DIR: logDir,
           },
@@ -334,19 +349,19 @@ describe.skipIf(
     },
   );
 
-  it('connects to the local-profile endpoint when the host strips TMPDIR', async () => {
+  it('connects to the test-profile endpoint when the host strips TMPDIR', async () => {
     const { startMockRpcServer } = await import('../helpers/mock-uds-server.js');
     const logDir = mkdtempSync(path.join(os.tmpdir(), 'mp-'));
     let client: Client | undefined;
     const mock = await startMockRpcServer({
-      socketPath: resolveSocketPath('local'),
+      socketPath: resolveSocketPath('test'),
       handler: (req) =>
         req.method === 'get-runtime-status'
           ? {
               kind: 'result',
               result: {
                 app: 'neosql',
-                profile: 'local',
+                profile: 'test',
                 renderer: 'responsive',
                 project: { state: 'ready', projectId: 'A' },
               },
@@ -357,7 +372,7 @@ describe.skipIf(
       // The SDK default env omits TMPDIR, the same as MCP hosts such as Claude Desktop.
       const transport = new StdioClientTransport({
         command: process.execPath,
-        args: [CLI_PATH, '--profile=local'],
+        args: [CLI_PATH, '--profile=test'],
         env: { NEOSQL_MCP_LOG_PARENT_DIR: logDir },
       });
       client = new Client({ name: 'tmpdir-stripped-test', version: '1' });

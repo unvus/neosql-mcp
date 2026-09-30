@@ -14,6 +14,7 @@ const PROFILE_SUFFIXES: Array<[Profile, string]> = [
   ['dev', '-dev'],
   ['local', '-local'],
   ['stage', '-stage'],
+  ['test', '-test'],
 ];
 const DARWIN_TEMP_DIR = '/var/folders/ab/cd/T/';
 const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!;

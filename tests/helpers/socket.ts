@@ -24,11 +24,11 @@ export const closeServer = (server: net.Server | http.Server): Promise<void> =>
     server.close(() => resolve());
   });
 
-export const listen = (
-  server: net.Server | http.Server,
-  socketPath: string,
-): Promise<void> =>
+export const listen = (server: net.Server | http.Server, socketPath: string): Promise<void> =>
   new Promise((resolve, reject) => {
+    // A leftover file at a test-owned path is always stale (a killed run); clear it so
+    // the next run cannot fail with EADDRINUSE.
+    removeSocketFile(socketPath);
     server.once('error', reject);
     server.listen(socketPath, () => {
       server.removeListener('error', reject);

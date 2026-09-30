@@ -119,12 +119,14 @@ TCP loopback 대신 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** 를 �
 - `suffix` (profile 구분):
   - prod (npm 배포본): 빈 문자열
   - non-prod: `-${profile}` (`-dev`, `-local`, `-stage`)
+  - `test`: `-test`. 이 저장소의 spawn 테스트 전용 profile. Desktop 은 이 profile 로 실행되지
+    않으므로 테스트 mock 서버가 실사용 socket 과 충돌하지 않는다.
   - mcp 는 `--profile=<prod|dev|local|stage>` CLI 인자로 profile 인지. electron 도 해당 profile 실행 시 동일 suffix 로 listen 한다는 전제 (본체 작업 시 확정).
 
 ### 산출물
 
 - `endpointResolver` 모듈
-  - profile (prod, dev, local, stage) → socket path 산출.
+  - profile (prod, dev, local, stage, test) → socket path 산출.
   - HTTP path 상수 (`/mcp/rpc`) 보유.
 - `healthCheck` 모듈: 산출된 socket path 로 connect 시도. 결과:
   - `running`: connect 성공.
