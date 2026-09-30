@@ -286,5 +286,3 @@ npm link
 # ... MCP 호스트에서 테스트 ...
 npm unlink -g neosql-mcp
 ```
-
-전체 수동 검증 절차는 `docs/e2e-manual.md`를 참고하세요.

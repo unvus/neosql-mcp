@@ -291,5 +291,3 @@ npm link
 # ... test from your MCP host ...
 npm unlink -g neosql-mcp
 ```
-
-See `docs/e2e-manual.md` for the full manual verification procedure.
