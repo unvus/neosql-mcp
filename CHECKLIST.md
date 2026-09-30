@@ -291,4 +291,4 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
   - 고정 `mcp-publisher v1.8.1`로 자리표시·주입 버전 `server.json` 모두 `validate` 통과.
   - 로컬에서 버전 주입, tag 불일치 거부, `mcpName` 없는 `1.8.8` 대기 timeout, `mcpName`이
     있는 패키지의 일치 판정을 실제 명령으로 확인.
-- [ ] 첫 게시: `mcpName`이 포함된 다음 릴리스에서 workflow 성공과 registry 조회 확인
+- [x] 첫 게시: `1.8.9` (2026-10-01 KST), OIDC namespace·registry 조회 확인. 상세는 문서 §7

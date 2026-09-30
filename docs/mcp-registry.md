@@ -4,7 +4,7 @@
 `io.github.unvus/neosql-mcp`로 게시하기 위한 내부 개발자 참고 문서다. 외부 요구사항,
 설계 결정, 릴리스 흐름, 실패 대응을 이 문서에 모은다.
 
-- 상태: 구현·로컬 검증 완료(2026-09-30). 첫 게시는 `mcpName`이 포함된 다음 릴리스에서 확인한다.
+- 상태: `1.8.9`로 첫 게시 완료(2026-10-01 KST). 이후 릴리스마다 tag push로 자동 게시한다.
 - 작성일: 2026-09-30
 - 외부 요구사항 확인일: 2026-09-30
 - 기준 코드: `neosql-mcp` 1.8.8 (`main`, `14932ae`)
@@ -203,10 +203,18 @@ curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.un
 - workflow 단계를 실제 명령으로 실행: 버전 주입, tag 불일치 거부, `mcpName`이 없는 `1.8.8`의
   대기 timeout, `mcpName`이 있는 패키지(chrome-devtools-mcp)의 일치 판정.
 
-미검증 (첫 릴리스에서 확인, `CHECKLIST.md`에 기록):
+첫 게시 (`1.8.9`, 2026-10-01 KST):
 
-- OIDC 로그인과 `io.github.unvus` namespace 부여.
-- 실제 게시와 registry 조회.
+- [Publish to MCP Registry #36782126214](https://github.com/unvus/neosql-mcp/actions/runs/36782126214)
+  성공. 같은 tag의 [Publish Package](https://github.com/unvus/neosql-mcp/actions/runs/36782126054)와
+  CI도 성공.
+- 개인 계정 저장소에서 `login github-oidc`로 `io.github.unvus` namespace를 받았다. 사람의
+  조치는 필요 없었다.
+- npm `mcpName` 대기 123초 뒤 반영 확인. 로그인·게시는 각 1초 이내, publish 재시도 없음.
+  대기 없이 바로 게시했다면 소유권 검증에 실패했을 가능성이 높다(§3 R4 측정치 76초·189초와
+  같은 범위).
+- registry 조회: `io.github.unvus/neosql-mcp` `1.8.9`, status `active`, `isLatest: true`,
+  publishedAt `2026-09-30T21:54:14Z`, package `neosql-mcp@1.8.9`.
 
 ## 8. 미결 사항
 
