@@ -1,7 +1,7 @@
 {
   "name": "neosql-mcp",
   "displayName": "NeoSQL MCP",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "description": "Use the database connections you already configured in NeoSQL Desktop from Claude: inspect schemas, run SQL, edit ERD models, and generate code through a local MCP server.",
   "author": {
     "name": "Unvus Co., Ltd.",
