@@ -211,9 +211,12 @@ Pull request에는 다음을 포함한다.
 
 ## Version bump와 release tag
 
-사용자가 `version 1.0.0으로 올려줘`, `1.0.0으로 버전 올려줘`,
-`patch/minor/major 버전 올려줘`처럼 버전 bump를 명시하면 `docs/npm-publish.md`의
-버전과 태그 절차를 따른다.
+버전 bump, 배포, push하고 릴리스 같은 요청은 `.claude/skills/release/SKILL.md`
+(Codex는 `.agents/skills/release/SKILL.md`, 내용 동일)를 따른다. 스킬은 미배포 변경을
+분석해 버전을 추천하고, 사용자 승인 뒤 아래 절차를 실행한다. 두 스킬 파일을 고칠 때는 같은
+변경에서 함께 갱신한다. 사용자가 `version 1.0.0으로 올려줘`,
+`patch/minor/major 버전 올려줘`처럼 버전을 명시하면 그 값이 추천보다 우선하며,
+세부 배포 원칙은 `docs/npm-publish.md`의 버전과 태그 절차를 따른다.
 
 - `package.json` 또는 `npm-shrinkwrap.json`을 직접 편집해서 버전을 올리지 않는다.
 - 먼저 `git status --short`로 working tree 상태를 확인한다. release commit/tag에

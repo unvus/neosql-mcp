@@ -8,6 +8,7 @@ coverage/
 *.log
 .DS_Store
 .idea/
-.claude/
+.claude/*
+!.claude/skills/
 docs/memo/
 *.iml

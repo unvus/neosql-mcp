@@ -66,6 +66,10 @@ scripts/                        repository 유지보수용 Node ESM script (npm 
 └── sync-plugin-version.mjs     npm version lifecycle의 plugin 버전·pin 동기화
 assets/                         배포 파일의 편집용 디자인 원본 (npm package·plugin bundle 미포함)
 └── neosql-mcp-icon.svg         plugin icon.png의 SVG 원본
+.claude/skills/                 Claude Code용 project skill (다른 .claude/ 내용은 gitignore)
+└── release/SKILL.md            버전 추천·승인 → npm version → push → tag push
+.agents/skills/                 Codex용 project skill. .claude/skills/와 파일 내용을 동일하게 유지
+└── release/SKILL.md
 docs/   사용자/에이전트 가이드 (이 문서 포함)
 ├── research/                  제품 문서가 아닌 분석/도구 사용 참고 자료
 │   └── supabase-cli/          Supabase CLI 참조 분석 문서 (`../cli` sibling clone 대상)
