@@ -41,6 +41,8 @@
 
 - `README.md`: npm/GitHub에 노출되는 end-user 문서. 공개 설정 예시와 사용자-facing
   설명은 README에 둔다.
+- `README.ko.md`: `README.md`의 한국어판. 사용자에게 보이는 동작, 옵션, 도구 목록, 설정
+  예시를 바꿀 때는 같은 변경에서 두 파일을 함께 갱신한다.
 - `PLAN.md`: 아키텍처 결정과 phase 전략의 단일 진실의 원천.
 - `CHECKLIST.md`: 현재 진행 상태의 단일 진실의 원천.
 - `docs/project-structure.md`: 파일 배치 규칙의 단일 진실의 원천.

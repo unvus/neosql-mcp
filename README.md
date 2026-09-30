@@ -2,14 +2,14 @@
 
 **English** | [한국어](https://github.com/unvus/neosql-mcp/blob/main/README.ko.md)
 
-> Bring NeoSQL Desktop's database tools into your MCP host (Claude Code, Codex, …) via `npx`.
+> Bring NeoSQL Desktop's database tools into your MCP host (Claude Code, Codex, Gemini CLI, Cursor, …) via `npx`.
 
 [![npm version](https://img.shields.io/npm/v/neosql-mcp.svg)](https://www.npmjs.com/package/neosql-mcp)
 [![license](https://img.shields.io/npm/l/neosql-mcp.svg)](LICENSE)
 [![node](https://img.shields.io/node/v/neosql-mcp.svg)](https://nodejs.org)
 
-`neosql-mcp` is a local stdio MCP server that lets MCP hosts use NeoSQL Desktop
-tools through `npx`.
+`neosql-mcp` is a local stdio MCP server that lets MCP hosts use
+[NeoSQL Desktop](https://neosql.unvus.com) tools through `npx`.
 
 It is not a standalone database server, database CLI, or replacement for NeoSQL
 Desktop. The package runs inside the MCP host process tree, exposes NeoSQL tools over
@@ -17,8 +17,24 @@ standard MCP stdio, and delegates database/UI work to a running NeoSQL Desktop a
 through JSON-RPC over HTTP on a macOS Unix Domain Socket or Windows Named Pipe.
 
 ```text
-[MCP host] -- stdio MCP --> [neosql-mcp]
-  -- JSON-RPC over HTTP on UDS/Named Pipe --> [NeoSQL Desktop]
++-------------------+    +-------------------+    +-------------------+
+|                   |    |                   |    |                   |
+|  Claude Code      +--->+                   +--->+  NeoSQL Desktop   |
+|                   |    |                   |    |                   |
+|                   |    |                   |    +---------+---------+
+|  Codex            |    |                   |              |
+|                   |    |                   |              v
+|                   |    |                   |    +-------------------+
+|  Gemini CLI       |    |     neosql-mcp    |    |                   |
+|                   |    |                   |    |  PostgreSQL       |
+|                   |    |                   |    |  MySQL            |
+|  Cursor           |    |                   |    |  MariaDB          |
+|                   |    |                   |    |  Oracle           |
+|                   |    |                   |    |  SQL Server       |
+|  Other MCP hosts  |    |                   |    |  ... and more     |
+|                   |    |                   |    |                   |
++-------------------+    +-------------------+    +-------------------+
+     MCP hosts             stdio MCP server            Databases
 ```
 
 ## Why neosql-mcp?
@@ -27,9 +43,18 @@ through JSON-RPC over HTTP on a macOS Unix Domain Socket or Windows Named Pipe.
   and run real queries, instead of guessing column names and table shapes.
   neosql-mcp exposes the database your team already configured in NeoSQL Desktop
   to any MCP host.
-- One running NeoSQL Desktop, one npx command — Claude Code, Codex, and any
-  other MCP host can use the connections and schemas already configured in
+- One running NeoSQL Desktop, one npx command — Claude Code, Codex, Gemini CLI, Cursor,
+  and any other MCP host can use the connections and schemas already configured in
   NeoSQL Desktop. Database connections are configured in Desktop rather than separately for each MCP host.
+
+## Supported Databases
+
+PostgreSQL, Supabase, MySQL, MariaDB, Oracle, SQL Server, SQLite, H2, and Databricks.
+
+Database connections are made by NeoSQL Desktop, so `neosql-mcp` works with every DBMS
+that Desktop supports. See the
+[DBMS connection guide](https://neosql.unvus.com/en/docs/database/dbms) for
+version requirements and per-DBMS connection details.
 
 ## Security
 
@@ -51,7 +76,7 @@ for data processing, storage, retention, and deletion details.
 
 - Node.js 20 or later.
 - NeoSQL Desktop installed on the same machine.
-- An MCP host that can launch stdio servers, such as Claude Code or Codex.
+- An MCP host that can launch stdio servers, such as Claude Code, Codex, Gemini CLI, or Cursor.
 - A NeoSQL project with MCP-enabled database connections and schemas.
 
 ## Quick Start
@@ -67,7 +92,19 @@ look like it is waiting for input. That is expected.
 
 ## MCP Host Configuration
 
-### Claude Code `.mcp.json`
+neosql-mcp has been tested with Claude Code, Codex, Gemini CLI, and Cursor. Any MCP
+host that can launch a stdio server can use the same command and arguments.
+
+| Host        | Config file                                                          |
+| ----------- | -------------------------------------------------------------------- |
+| Claude Code | `.mcp.json` in the project, or `~/.claude.json` for the user         |
+| Codex       | `.codex/config.toml` in the project, or `~/.codex/config.toml`       |
+| Gemini CLI  | `.gemini/settings.json` in the project, or `~/.gemini/settings.json` |
+| Cursor      | `.cursor/mcp.json` in the project, or `~/.cursor/mcp.json`           |
+
+### Claude Code, Gemini CLI, Cursor
+
+These hosts share the same JSON shape under `mcpServers`:
 
 ```json
 {
@@ -80,7 +117,7 @@ look like it is waiting for input. That is expected.
 }
 ```
 
-### Codex `config.toml`
+### Codex
 
 ```toml
 [mcp_servers.neosql]
@@ -138,41 +175,38 @@ keep their existing result format and are never automatically resent.
 NeoSQL tools always use the project currently selected and fully loaded in NeoSQL
 Desktop. With `--project-id`, the Node process retains the requested project ID for
 navigation and target validation. Desktop still owns the active project and its
-Default database coordinate.
+Default connection target.
 
-Database tools accept coordinates in one of two forms:
+Database tools accept a connection target in one of two forms:
 
 1. Omit `connectionId`, `database`, and `schema` together to use the active project's
    Default selected in NeoSQL MCP Access Control.
-2. Pass all three values together to use an explicit MCP-enabled coordinate returned by
+2. Pass all three values together to use an explicit MCP-enabled target returned by
    `list-connections`. Use `database: null` for DBMSs without a database hierarchy.
 
-Passing only one or two coordinate fields is invalid. Explicit coordinates never fall
-back to the project Default when they are invalid.
+Passing only one or two of these fields is invalid. An explicit target never falls
+back to the project Default when it is invalid.
 
-Tools that accept the complete explicit coordinate tuple:
-
-- `list-tables`
-- `get-table-details`
-- `erd-create-tables`
-- `erd-modify-tables`
-- `execute-query`
-- `generate-code`
+Tools that accept an explicit connection target are marked in
+[Available Tools](#available-tools).
 
 ## Available Tools
 
-| Tool                 | Purpose                                                                                                                                                                                                                                                          |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ping`               | Returns `pong` for a lightweight MCP health check.                                                                                                                                                                                                               |
-| `get-mcp-session-id` | Diagnostic tool that returns the upstream session id used by this process.                                                                                                                                                                                       |
-| `list-connections`   | Lists MCP-enabled NeoSQL connections and schemas for the current project.                                                                                                                                                                                        |
-| `list-tables`        | Lists tables using the project Default or an explicit coordinate.                                                                                                                                                                                                |
-| `get-table-details`  | Returns columns, keys, indexes, and related table metadata.                                                                                                                                                                                                      |
-| `get-context-help`   | Explains active-project Default and explicit coordinate usage.                                                                                                                                                                                                   |
-| `erd-create-tables`  | Adds virtual tables to an ERD without changing the database.                                                                                                                                                                                                     |
-| `erd-modify-tables`  | Modifies virtual ERD table models without changing the database.                                                                                                                                                                                                 |
-| `execute-query`      | Executes SQL, including DDL, using the Default or an explicit coordinate.                                                                                                                                                                                        |
-| `generate-code`      | Generates and saves source files for specified tables using template packs configured in Project Settings. Requires template packs, required variables, and an output folder (Location). May overwrite existing files without an additional confirmation dialog. |
+| Tool                 | Target | Purpose                                                                                                                                                                                                                                                          |
+| -------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ping`               |        | Returns `pong` for a lightweight MCP health check.                                                                                                                                                                                                               |
+| `get-mcp-session-id` |        | Diagnostic tool that returns the upstream session id used by this process.                                                                                                                                                                                       |
+| `list-connections`   |        | Lists MCP-enabled NeoSQL connections and schemas for the current project.                                                                                                                                                                                        |
+| `get-context-help`   |        | Explains active-project Default and explicit target usage.                                                                                                                                                                                                       |
+| `list-tables`        | Yes    | Lists tables.                                                                                                                                                                                                                                                    |
+| `get-table-details`  | Yes    | Returns columns, keys, indexes, and related table metadata.                                                                                                                                                                                                      |
+| `erd-create-tables`  | Yes    | Adds virtual tables to an ERD without changing the database.                                                                                                                                                                                                     |
+| `erd-modify-tables`  | Yes    | Modifies virtual ERD table models without changing the database.                                                                                                                                                                                                 |
+| `execute-query`      | Yes    | Executes SQL, including DDL.                                                                                                                                                                                                                                     |
+| `generate-code`      | Yes    | Generates and saves source files for specified tables using template packs configured in Project Settings. Requires template packs, required variables, and an output folder (Location). May overwrite existing files without an additional confirmation dialog. |
+
+Tools marked **Target** accept the `connectionId`, `database`, and `schema` fields
+described in [Context Resolution](#context-resolution).
 
 ## Transport
 
@@ -211,11 +245,11 @@ implicitly undo or automatically retry the operation.
 ### Context-sensitive tools fail
 
 Select a project in Desktop and enable MCP access for the target connection and schema.
-Either configure a Default in MCP Access Control and omit all coordinate fields, or
+Either configure a Default in MCP Access Control and omit all three target fields, or
 run `list-connections` and pass its `connectionId`, `databaseName`, and `schemaName`
 together as `connectionId`, `database`, and `schema`. The explicit form does not require
-a Default. Use `database: null` when there is no database hierarchy; partial coordinates
-are invalid.
+a Default. Use `database: null` when there is no database hierarchy; a partial target
+is invalid.
 
 If the response asks for sign-in or user action, complete the indicated step in
 Desktop, such as unlocking the project, resolving a missing driver, or acknowledging
@@ -232,6 +266,14 @@ Save or discard unsaved changes, complete any sign-in or project notices, then r
 If the active project changed during the request, return to the intended project
 before trying again.
 
+## Resources
+
+- [NeoSQL website](https://neosql.unvus.com)
+- [NeoSQL MCP documentation](https://neosql.unvus.com/en/docs/mcp/intro)
+- [Install NeoSQL Desktop](https://neosql.unvus.com/en/docs/install)
+- [Supported DBMS and connection guide](https://neosql.unvus.com/en/docs/database/dbms)
+- [NeoSQL MCP Privacy Policy](https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md)
+
 ## Development
 
 ```bash
@@ -240,20 +282,13 @@ npm run build
 npm test
 ```
 
-For local MCP host testing, build and link the binary:
+To test a local build from an MCP host, link the binary and unlink it when you are done:
 
 ```bash
 npm run build
 npm link
-ls -la $(which neosql-mcp)
-```
-
-When local testing is done, unlink it so direct `neosql-mcp` commands no longer use the
-workspace build:
-
-```bash
+# ... test from your MCP host ...
 npm unlink -g neosql-mcp
 ```
 
-Keep `README.md` and `README.ko.md` in sync in the same change when updating user-facing
-behavior, options, tool lists, or configuration examples.
+See `docs/e2e-manual.md` for the full manual verification procedure.

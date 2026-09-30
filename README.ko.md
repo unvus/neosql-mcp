@@ -2,14 +2,15 @@
 
 [English](https://github.com/unvus/neosql-mcp/blob/main/README.md) | **한국어**
 
-> `npx`로 NeoSQL Desktop의 데이터베이스 도구를 MCP 호스트(Claude Code, Codex 등)에서 사용하세요.
+> `npx`로 NeoSQL Desktop의 데이터베이스 도구를 MCP 호스트(Claude Code, Codex, Gemini CLI, Cursor 등)에서 사용하세요.
 
 [![npm version](https://img.shields.io/npm/v/neosql-mcp.svg)](https://www.npmjs.com/package/neosql-mcp)
 [![license](https://img.shields.io/npm/l/neosql-mcp.svg)](LICENSE)
 [![node](https://img.shields.io/node/v/neosql-mcp.svg)](https://nodejs.org)
 
-`neosql-mcp`는 MCP 호스트가 `npx`를 통해 NeoSQL Desktop의 도구를 사용할 수 있게 하는
-로컬 stdio MCP 서버입니다.
+`neosql-mcp`는 MCP 호스트가 `npx`를 통해
+[NeoSQL Desktop](https://neosql.unvus.com)의 도구를 사용할 수 있게 하는 로컬 stdio MCP
+서버입니다.
 
 독립적인 데이터베이스 서버나 데이터베이스 CLI가 아니며, NeoSQL Desktop을 대체하지 않습니다.
 MCP 호스트가 실행하는 프로세스로 동작하며, 표준 MCP stdio로 NeoSQL 도구를 제공합니다.
@@ -17,8 +18,24 @@ MCP 호스트가 실행하는 프로세스로 동작하며, 표준 MCP stdio로 
 HTTP 기반 JSON-RPC를 통해 실행 중인 NeoSQL Desktop에 위임합니다.
 
 ```text
-[MCP host] -- stdio MCP --> [neosql-mcp]
-  -- JSON-RPC over HTTP on UDS/Named Pipe --> [NeoSQL Desktop]
++-------------------+    +-------------------+    +-------------------+
+|                   |    |                   |    |                   |
+|  Claude Code      +--->+                   +--->+  NeoSQL Desktop   |
+|                   |    |                   |    |                   |
+|                   |    |                   |    +---------+---------+
+|  Codex            |    |                   |              |
+|                   |    |                   |              v
+|                   |    |                   |    +-------------------+
+|  Gemini CLI       |    |     neosql-mcp    |    |                   |
+|                   |    |                   |    |  PostgreSQL       |
+|                   |    |                   |    |  MySQL            |
+|  Cursor           |    |                   |    |  MariaDB          |
+|                   |    |                   |    |  Oracle           |
+|                   |    |                   |    |  SQL Server       |
+|  Other MCP hosts  |    |                   |    |  ... and more     |
+|                   |    |                   |    |                   |
++-------------------+    +-------------------+    +-------------------+
+     MCP 호스트             stdio MCP 서버              데이터베이스
 ```
 
 ## neosql-mcp를 사용하는 이유
@@ -26,9 +43,17 @@ HTTP 기반 JSON-RPC를 통해 실행 중인 NeoSQL Desktop에 위임합니다.
 - AI 코딩 도우미가 컬럼 이름과 테이블 구조를 추측하는 대신, 실제 스키마를 읽고 쿼리를 실행해
   코드를 작성할 수 있습니다. 팀이 NeoSQL Desktop에 구성한 데이터베이스를 MCP 호스트에서
   활용할 수 있습니다.
-- 실행 중인 NeoSQL Desktop과 `npx` 명령으로 Claude Code, Codex 등 MCP 호스트에서
+- 실행 중인 NeoSQL Desktop과 `npx` 명령으로 Claude Code, Codex, Gemini CLI, Cursor 등 MCP 호스트에서
   기존 연결과 스키마를 사용할 수 있습니다. 데이터베이스 연결은 MCP 호스트마다 별도로
   구성하지 않고 Desktop에서 관리합니다.
+
+## 지원 데이터베이스
+
+PostgreSQL, Supabase, MySQL, MariaDB, Oracle, SQL Server, SQLite, H2, Databricks.
+
+데이터베이스 연결은 NeoSQL Desktop이 담당하므로 `neosql-mcp`는 Desktop이 지원하는 모든
+DBMS에서 동작합니다. 버전 요구사항과 DBMS별 연결 방법은
+[DBMS별 연결 가이드](https://neosql.unvus.com/ko/docs/database/dbms)를 참고하세요.
 
 ## 보안
 
@@ -50,7 +75,7 @@ Control 설정을 따릅니다. MCP 호스트 설정에 데이터베이스 인�
 
 - Node.js 20 이상.
 - 같은 머신에 설치된 NeoSQL Desktop.
-- Claude Code, Codex 등 stdio 서버를 실행할 수 있는 MCP 호스트.
+- Claude Code, Codex, Gemini CLI, Cursor 등 stdio 서버를 실행할 수 있는 MCP 호스트.
 - MCP 접근이 허용된 데이터베이스 연결과 스키마가 있는 NeoSQL 프로젝트.
 
 ## 빠른 시작
@@ -66,7 +91,19 @@ stdio MCP 서버이므로 터미널에서 직접 실행하면 입력을 기다�
 
 ## MCP 호스트 설정
 
-### Claude Code `.mcp.json`
+neosql-mcp는 Claude Code, Codex, Gemini CLI, Cursor에서 테스트했습니다. stdio 서버를
+실행할 수 있는 MCP 호스트라면 같은 명령과 인자를 사용할 수 있습니다.
+
+| 호스트      | 설정 파일                                                         |
+| ----------- | ----------------------------------------------------------------- |
+| Claude Code | 프로젝트의 `.mcp.json` 또는 사용자 홈의 `~/.claude.json`          |
+| Codex       | 프로젝트의 `.codex/config.toml` 또는 `~/.codex/config.toml`       |
+| Gemini CLI  | 프로젝트의 `.gemini/settings.json` 또는 `~/.gemini/settings.json` |
+| Cursor      | 프로젝트의 `.cursor/mcp.json` 또는 `~/.cursor/mcp.json`           |
+
+### Claude Code, Gemini CLI, Cursor
+
+세 호스트는 `mcpServers` 아래에 같은 JSON 형태를 사용합니다.
 
 ```json
 {
@@ -79,7 +116,7 @@ stdio MCP 서버이므로 터미널에서 직접 실행하면 입력을 기다�
 }
 ```
 
-### Codex `config.toml`
+### Codex
 
 ```toml
 [mcp_servers.neosql]
@@ -133,48 +170,44 @@ macOS와 Windows에서 Desktop이 설치돼 있지만 연결되지 않으면 앱
 
 NeoSQL 도구는 Desktop에서 현재 선택되어 로딩이 완료된 프로젝트를 사용합니다.
 `--project-id`를 지정하면 Node 프로세스가 이동과 대상 검증에 사용할 프로젝트 ID를
-보관합니다. 활성 프로젝트와 Default 데이터베이스 좌표는 여전히 Desktop이 관리합니다.
+보관합니다. 활성 프로젝트와 Default 연결 대상은 여전히 Desktop이 관리합니다.
 
-데이터베이스 도구의 좌표는 다음 두 방식 중 하나로 전달합니다.
+데이터베이스 도구의 연결 대상은 다음 두 방식 중 하나로 전달합니다.
 
 1. `connectionId`, `database`, `schema`를 모두 생략하면 활성 프로젝트의 NeoSQL MCP
    Access Control에서 선택한 Default를 사용합니다.
-2. `list-connections`가 반환한 MCP 접근 가능 좌표를 사용하려면 세 값을 모두 전달합니다.
+2. `list-connections`가 반환한 MCP 접근 가능 대상을 사용하려면 세 값을 모두 전달합니다.
    데이터베이스 계층이 없는 DBMS에는 `database: null`을 사용합니다.
 
-좌표 필드를 한두 개만 전달하면 유효하지 않습니다. 명시한 좌표가 유효하지 않더라도
+세 필드 중 한두 개만 전달하면 유효하지 않습니다. 명시한 대상이 유효하지 않더라도
 프로젝트 Default로 자동 대체하지 않습니다.
 
-세 필드로 구성된 명시적 좌표를 받는 도구:
-
-- `list-tables`
-- `get-table-details`
-- `erd-create-tables`
-- `erd-modify-tables`
-- `execute-query`
-- `generate-code`
+명시적 연결 대상을 받는 도구는 [제공 도구](#제공-도구) 표에 표시했습니다.
 
 ## 제공 도구
 
-| 도구                 | 용도                                                                                                                                                                        |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ping`               | 간단한 MCP 상태 확인을 위해 `pong`을 반환합니다.                                                                                                                            |
-| `get-mcp-session-id` | 이 프로세스가 upstream에 사용하는 세션 ID를 반환하는 진단 도구입니다.                                                                                                       |
-| `list-connections`   | 현재 프로젝트에서 MCP 접근이 허용된 NeoSQL 연결과 스키마를 조회합니다.                                                                                                      |
-| `list-tables`        | 프로젝트 Default 또는 명시한 좌표의 테이블을 조회합니다.                                                                                                                    |
-| `get-table-details`  | 컬럼, 키, 인덱스 등 테이블 메타데이터를 반환합니다.                                                                                                                         |
-| `get-context-help`   | 활성 프로젝트의 Default와 명시적 좌표 사용 방법을 안내합니다.                                                                                                               |
-| `erd-create-tables`  | 실제 데이터베이스를 변경하지 않고 ERD에 가상 테이블을 추가합니다.                                                                                                           |
-| `erd-modify-tables`  | 실제 데이터베이스를 변경하지 않고 ERD의 가상 테이블 모델을 수정합니다.                                                                                                      |
-| `execute-query`      | Default 또는 명시한 좌표를 사용해 DDL을 포함한 SQL을 실행합니다.                                                                                                            |
-| `generate-code`      | 지정한 테이블의 소스 파일을 생성·저장합니다. 프로젝트 설정에서 템플릿 팩, 필수 변수, 출력 폴더(Location)를 설정해야 하며, 별도 확인 창 없이 기존 파일을 덮어쓸 수 있습니다. |
+| 도구                 | 대상 | 용도                                                                                                                                                                        |
+| -------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ping`               |      | 간단한 MCP 상태 확인을 위해 `pong`을 반환합니다.                                                                                                                            |
+| `get-mcp-session-id` |      | 이 프로세스가 upstream에 사용하는 세션 ID를 반환하는 진단 도구입니다.                                                                                                       |
+| `list-connections`   |      | 현재 프로젝트에서 MCP 접근이 허용된 NeoSQL 연결과 스키마를 조회합니다.                                                                                                      |
+| `get-context-help`   |      | 활성 프로젝트의 Default와 명시적 대상 사용 방법을 안내합니다.                                                                                                               |
+| `list-tables`        | 예   | 테이블을 조회합니다.                                                                                                                                                        |
+| `get-table-details`  | 예   | 컬럼, 키, 인덱스 등 테이블 메타데이터를 반환합니다.                                                                                                                         |
+| `erd-create-tables`  | 예   | 실제 데이터베이스를 변경하지 않고 ERD에 가상 테이블을 추가합니다.                                                                                                           |
+| `erd-modify-tables`  | 예   | 실제 데이터베이스를 변경하지 않고 ERD의 가상 테이블 모델을 수정합니다.                                                                                                      |
+| `execute-query`      | 예   | DDL을 포함한 SQL을 실행합니다.                                                                                                                                              |
+| `generate-code`      | 예   | 지정한 테이블의 소스 파일을 생성·저장합니다. 프로젝트 설정에서 템플릿 팩, 필수 변수, 출력 폴더(Location)를 설정해야 하며, 별도 확인 창 없이 기존 파일을 덮어쓸 수 있습니다. |
+
+**대상** 열에 표시된 도구는 [실행 컨텍스트 결정](#실행-컨텍스트-결정)에서 설명한
+`connectionId`, `database`, `schema` 필드를 받습니다.
 
 ## 통신 방식
 
 `neosql-mcp`는 정해진 규칙으로 계산한 로컬 엔드포인트를 통해 NeoSQL Desktop과 통신합니다.
 경로는 다음과 같습니다.
 
-- macOS: `path.join(os.tmpdir(), 'neosql-mcp.sock')`
+- macOS: `getconf DARWIN_USER_TEMP_DIR`로 얻은 사용자별 임시 디렉토리의 `neosql-mcp.sock`
 - Windows: `\\.\pipe\neosql-mcp`
 
 ## 문제 해결
@@ -206,11 +239,11 @@ Desktop이 연결되지 않았고 설치가 확인되면 neosql-mcp가 앱 활�
 ### 실행 컨텍스트가 필요한 도구가 실패하는 경우
 
 Desktop에서 프로젝트를 선택하고 대상 연결과 스키마의 MCP 접근을 허용하세요.
-MCP Access Control에서 Default를 설정하고 좌표 필드를 모두 생략하거나,
+MCP Access Control에서 Default를 설정하고 대상 필드 세 개를 모두 생략하거나,
 `list-connections`가 반환한 `connectionId`, `databaseName`, `schemaName`을 각각
-`connectionId`, `database`, `schema`로 함께 전달하세요. 명시적 좌표를 사용하면
+`connectionId`, `database`, `schema`로 함께 전달하세요. 명시적 대상을 사용하면
 Default는 필요하지 않습니다. 데이터베이스 계층이 없으면 `database: null`을 사용하세요.
-좌표를 일부만 전달하면 유효하지 않습니다.
+대상을 일부만 전달하면 유효하지 않습니다.
 
 응답에서 로그인이나 사용자 조치를 요청하면 Desktop에서 해당 절차를 완료하세요.
 프로젝트 잠금 해제, 누락된 드라이버 처리, 안내 확인 등이 해당합니다.
@@ -227,6 +260,14 @@ MCP 호스트에서 `npx`에 접근할 수 있는지, Node.js 버전이 20 이�
 재시도하세요. 요청 도중 활성 프로젝트가 바뀌었다면 의도한 프로젝트로 돌아간 뒤 다시
 시도하세요.
 
+## 참고 자료
+
+- [NeoSQL 웹사이트](https://neosql.unvus.com)
+- [NeoSQL MCP 문서](https://neosql.unvus.com/ko/docs/mcp/intro)
+- [NeoSQL Desktop 설치](https://neosql.unvus.com/ko/docs/install)
+- [지원 DBMS 및 연결 가이드](https://neosql.unvus.com/ko/docs/database/dbms)
+- [NeoSQL MCP 개인정보 처리방침(영문)](https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md)
+
 ## 개발
 
 ```bash
@@ -235,20 +276,13 @@ npm run build
 npm test
 ```
 
-로컬 MCP 호스트에서 테스트하려면 빌드 후 실행 파일을 연결하세요.
+로컬 빌드를 MCP 호스트에서 테스트하려면 실행 파일을 연결하고, 끝나면 해제하세요.
 
 ```bash
 npm run build
 npm link
-ls -la $(which neosql-mcp)
-```
-
-로컬 테스트를 마치면 링크를 해제해 `neosql-mcp` 명령이 작업 폴더의 빌드를 사용하지
-않도록 하세요.
-
-```bash
+# ... MCP 호스트에서 테스트 ...
 npm unlink -g neosql-mcp
 ```
 
-사용자에게 보이는 동작, 옵션, 도구 목록, 설정 예시를 변경할 때는 같은 변경에서
-`README.md`와 `README.ko.md`를 함께 갱신하세요.
+전체 수동 검증 절차는 `docs/e2e-manual.md`를 참고하세요.
