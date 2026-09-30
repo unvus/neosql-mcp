@@ -74,6 +74,7 @@ for data processing, storage, retention, and deletion details.
 
 ## Prerequisites
 
+- macOS or Windows.
 - Node.js 20 or later.
 - NeoSQL Desktop installed on the same machine.
 - An MCP host that can launch stdio servers, such as Claude Code, Codex, Gemini CLI, or Cursor.
@@ -130,9 +131,9 @@ args = [
 
 ## CLI Options
 
-| Option                                     | Default | Purpose                                                                                                    |
-| ------------------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `--project-id=<id>` or `--project-id <id>` | Not set | Open the specified project before an app-dependent tool runs and require it to match the execution target. |
+| Option                                     | Default | Purpose                                                                                                        |
+| ------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `--project-id=<id>` or `--project-id <id>` | Not set | Open the specified project before an app-dependent tool runs and fail if the active project does not match it. |
 
 To target a specific project, add its project ID to the MCP host's arguments:
 
@@ -174,7 +175,7 @@ keep their existing result format and are never automatically resent.
 
 NeoSQL tools always use the project currently selected and fully loaded in NeoSQL
 Desktop. With `--project-id`, the Node process retains the requested project ID for
-navigation and target validation. Desktop still owns the active project and its
+navigation and project validation. Desktop still owns the active project and its
 Default connection target.
 
 Database tools accept a connection target in one of two forms:
@@ -244,7 +245,7 @@ implicitly undo or automatically retry the operation.
 
 ### Context-sensitive tools fail
 
-Select a project in Desktop and enable MCP access for the target connection and schema.
+Select a project in Desktop and enable MCP access for the connection and schema you intend to use.
 Either configure a Default in MCP Access Control and omit all three target fields, or
 run `list-connections` and pass its `connectionId`, `databaseName`, and `schemaName`
 together as `connectionId`, `database`, and `schema`. The explicit form does not require

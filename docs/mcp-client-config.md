@@ -20,6 +20,22 @@ npx -y neosql-mcp [--profile=<prod|dev|local|stage>] [--project-id=<id>]
 This file intentionally does not duplicate host-specific JSON/TOML snippets. Keep those
 in `README.md`.
 
+### Host config file locations
+
+The paths listed in the README host table come from each host's official documentation.
+User-level paths are also what NeoSQL Desktop's MCP client setup writes to
+(`app/src-electron/mcp-client-config/path-resolver.ts` in the main app).
+
+| Host        | Project scope           | User scope                | Source                                                                   |
+| ----------- | ----------------------- | ------------------------- | ------------------------------------------------------------------------ |
+| Claude Code | `.mcp.json`             | `~/.claude.json`          | https://code.claude.com/docs/en/mcp (scopes table)                       |
+| Codex       | `.codex/config.toml`    | `~/.codex/config.toml`    | https://developers.openai.com/codex/config-basic (trusted projects only) |
+| Gemini CLI  | `.gemini/settings.json` | `~/.gemini/settings.json` | https://geminicli.com/docs/tools/mcp-server/                             |
+| Cursor      | `.cursor/mcp.json`      | `~/.cursor/mcp.json`      | https://cursor.com/docs/context/mcp                                      |
+
+Codex loads the project-scoped file only after the project is marked trusted. Codex also
+honors `CODEX_HOME`, and Gemini CLI honors `GEMINI_CLI_HOME`, for the user-scope directory.
+
 ## Profiles
 
 `--profile` is an internal developer option. Keep profile options, examples, and
@@ -32,11 +48,11 @@ Non-production profiles are valid only when NeoSQL Desktop is listening with the
 profile.
 
 | Profile | macOS socket suffix | Windows pipe suffix |
-| --- | --- | --- |
-| `prod` | none | none |
-| `dev` | `-dev` | `-dev` |
-| `local` | `-local` | `-local` |
-| `stage` | `-stage` | `-stage` |
+| ------- | ------------------- | ------------------- |
+| `prod`  | none                | none                |
+| `dev`   | `-dev`              | `-dev`              |
+| `local` | `-local`            | `-local`            |
+| `stage` | `-stage`            | `-stage`            |
 
 If multiple valid `--profile=...` values are present, the last valid value wins. Invalid
 profile values are ignored and the previous valid profile is kept.
