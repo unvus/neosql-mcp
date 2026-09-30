@@ -39,6 +39,7 @@
 - MCPB/desktop extension 패키징. directory가 더 이상 받지 않는다(§3.5).
 - plugin skill, command, agent, hook. v1은 MCP 서버 선언만 담는다(D8).
 - 자체 marketplace(`marketplace.json`) 운영. 필요하면 별도 설계로 다룬다.
+- 공식 MCP Registry 게시. 별도 경로이며 `docs/mcp-registry.md`를 따른다.
 - neosql main app(electron-main, renderer, embedded-server) 변경과 Desktop의 plugin 설치 안내 개편.
   이번 작업은 현재 MCP의 plugin 등록에 집중한다. 등록 설명에 필요한 기존 동작만 소스에서
   확인한다(D11). 등록 과정에서 실제 수정 요구가 나오면 근거와 함께 별도 범위로 다룬다.

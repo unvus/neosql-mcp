@@ -1,0 +1,101 @@
+name: Publish to MCP Registry
+
+# Runs beside publish.yml on the same release tag. A failure here never affects the npm
+# release; rerun this workflow manually on the tag once the cause is fixed.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-mcp-registry:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Set the release version in server.json
+        env:
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const { version, mcpName } = JSON.parse(readFileSync('package.json', 'utf8'));
+          assert.equal(process.env.RELEASE_REF, `refs/tags/v${version}`);
+          const server = JSON.parse(readFileSync('server.json', 'utf8'));
+          assert.equal(server.name, mcpName);
+          server.version = version;
+          for (const pkg of server.packages) pkg.version = version;
+          writeFileSync('server.json', `${JSON.stringify(server, null, 2)}\n`);
+          NODE
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v4.1.2
+
+      - name: Install mcp-publisher
+        run: |
+          base="https://github.com/modelcontextprotocol/registry/releases/download/$MCP_PUBLISHER_VERSION"
+          archive=mcp-publisher_linux_amd64.tar.gz
+          curl -fsSL -o "$archive" "$base/$archive"
+          curl -fsSL -o "$archive.sigstore.json" "$base/$archive.sigstore.json"
+          cosign verify-blob "$archive" \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity-regexp='^https://github\.com/modelcontextprotocol/registry/\.github/workflows/' \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+          tar xzf "$archive" mcp-publisher
+
+      - name: Validate server.json
+        run: ./mcp-publisher validate
+
+      # The registry verifies ownership by reading mcpName from npm, which can lag the
+      # publish by minutes (189s observed for 1.8.4). Poll for that exact value.
+      - name: Wait for npm to serve mcpName
+        run: |
+          pkg="neosql-mcp@$(node -p "require('./package.json').version")"
+          expected="$(node -p "require('./package.json').mcpName")"
+          deadline=$((SECONDS + 900))
+          until [ "$(npm view "$pkg" mcpName --prefer-online 2>/dev/null)" = "$expected" ]; do
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::npm did not serve $pkg with mcpName $expected within 15 minutes"
+              exit 1
+            fi
+            echo "npm does not serve $pkg with mcpName yet; retrying in 30s"
+            sleep 30
+          done
+          echo "npm serves $pkg with mcpName $expected"
+
+      - name: Login to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      # The registry's own npm read may still trail ours. A rejected publish stores
+      # nothing, so retrying is safe.
+      - name: Publish to MCP Registry
+        run: |
+          deadline=$((SECONDS + 180))
+          until ./mcp-publisher publish; do
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::MCP Registry publish did not succeed within 3 minutes"
+              exit 1
+            fi
+            echo "Publish failed; retrying in 30s"
+            sleep 30
+          done

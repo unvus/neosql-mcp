@@ -465,6 +465,14 @@ refs/heads/plugin-release`의 종료 코드 **2**로 부재를 확인하고 fetc
 인증·네트워크 오류를 branch 부재로 취급하지 않는다. branch 보호 규칙 때문에 실패하면
 권한·규칙을 확인하며 force push로 우회하지 않는다.
 
+### MCP Registry 게시
+
+공식 MCP Registry 게시는 `v*` tag push로 `.github/workflows/publish-mcp-registry.yml`이
+`publish.yml`과 별도로 수행한다. 이 결과는 배포 완료 조건이 아니며, 실패해도 npm 패키지와
+MCP 동작에는 영향이 없다. root `server.json`의 버전은 자리표시 `0.0.0`이므로 release commit에서
+갱신하지 않는다. 설계, 대기·재시도 방식, 게시 확인, 실패 대응은 `docs/mcp-registry.md`를 따른다.
+실패하면 해당 tag로 이 workflow만 재실행하고 `publish.yml`은 재실행하지 않는다.
+
 ### npm 배포본 확인
 
 publish가 끝나면 registry와 실제 실행 경로를 확인한다.
@@ -568,3 +576,4 @@ env npm_config_cache=/private/tmp/neosql-mcp-npm-cache npm pack --dry-run
 - 공개 MCP host 설정: `README.md`
 - 내부 CLI option/profile/context mapping: `docs/mcp-client-config.md`
 - 수동 e2e 검증: `docs/e2e-manual.md`
+- 공식 MCP Registry 게시: `docs/mcp-registry.md`

@@ -395,3 +395,20 @@ plugin bundle, `npm version` 동기화와 publish 이후 branch 전진 workflow�
 macOS·Windows를 모두 검증하고, npm 배포 성공 후 기존 release commit으로 `plugin-release`를
 전진시킨다. 배포 없는 시험은 사람이 시작한 workflow가 임시 branch를 갱신한다.
 회사 제출 계정과 심사용 테스트 계정은 실제 필요한 단계에서 용도·권한·준비 항목을 안내한다.
+
+## 공식 MCP Registry 등록 · 2026-09-30
+
+공식 [MCP Registry](https://registry.modelcontextprotocol.io)(preview)에
+`io.github.unvus/neosql-mcp`로 게시한다. 공개 npm·GitHub를 수집하는 제3자 목록(mcprush 등)이
+추측한 정보 대신 공식 메타데이터를 쓰도록 하는 것이 목적이다. 신규 사용자 유입은 Desktop이
+필요한 패키지 특성상 제한적이라고 본다. Claude plugin directory와는 별개다.
+
+- 인증은 GitHub OIDC다. `unvus`는 개인 계정이므로 `io.github.unvus` namespace를 쓴다. 회사
+  도메인 namespace(DNS 인증)는 TXT 레코드와 CI 비밀키가 필요해 채택하지 않았다.
+- `server.json`의 버전은 자리표시로 두고 CI가 tag 버전을 넣는다. release commit 구성,
+  `sync-plugin-version.mjs`, release 스킬의 파일 확인은 바꾸지 않는다.
+- 게시는 `publish.yml`과 분리한 workflow가 맡는다. 배포 완료 판정은 기존대로 npm과
+  `plugin-release` 기준이며 registry 결과는 포함하지 않는다.
+- npm 조회 반영 지연은 고정 대기가 아니라 `mcpName` 조회 polling(최대 15분)과 publish
+  재시도(최대 3분)로 흡수한다. 게시 도구 `mcp-publisher`는 버전을 고정하고 서명을 검증한다.
+- 외부 요구사항, 결정 근거, 절차와 복구는 [Registry 등록 문서](docs/mcp-registry.md)를 따른다.

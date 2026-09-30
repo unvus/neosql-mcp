@@ -144,8 +144,12 @@ tag push는 배포의 시작일 뿐이다. GitHub Actions의 `publish` job이 np
 - `publish`는 성공했는데 `release-plugin`만 실패한 경우 npm 배포 자체는 끝난 상태다. 복구는
   `docs/npm-publish.md`의 "npm 성공 후 branch 갱신만 실패했을 때"를 따르고, 같은 버전의
   `publish` job을 재실행하지 않는다.
-- registry 반영이 workflow 성공보다 몇 분 늦을 수 있다. 그 사이 새 버전의 `npx` 실행이
+- npm registry 반영이 workflow 성공보다 몇 분 늦을 수 있다. 그 사이 새 버전의 `npx` 실행이
   실패하는 것은 허용된 공백이다.
+- 같은 tag가 `.github/workflows/publish-mcp-registry.yml`(공식 MCP Registry 게시)도 실행한다.
+  이 결과는 배포 완료 조건이 아니다. npm 반영을 기다리느라 publish workflow보다 늦게 끝날 수
+  있으므로 완료 보고에 진행 중·성공·실패와 run 링크를 참고로 덧붙인다. 실패했으면 임의로
+  재실행하지 않고 `docs/mcp-registry.md`의 "실패 대응"을 근거로 보고한다.
 
 완료 보고에는 이전·새 버전, 선택 근거 한 줄, version commit SHA와 tag, workflow run 링크와
-결과, npm에서 확인한 버전, plugin 브랜치 SHA 일치 여부를 넣는다.
+결과, npm에서 확인한 버전, plugin 브랜치 SHA 일치 여부, MCP Registry 게시 상태를 넣는다.

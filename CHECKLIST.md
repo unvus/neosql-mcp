@@ -280,3 +280,15 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 - [ ] Directory 제출 전 W6 및 데이터 처리 확인 작업 완료 (npm 릴리스와 별개)
 - [ ] W7: 회사 조직 제출, 필요한 시점에 계정·심사 환경 안내
 - [ ] W5b: 게시 후 공개 README의 설치 안내 추가
+
+## 공식 MCP Registry 등록 · 2026-09-30
+
+설계·운영 절차·검증 기록은 [Registry 등록 문서](docs/mcp-registry.md)를 따른다.
+
+- [x] 범위 합의: `io.github.unvus/neosql-mcp`, CI 버전 주입, 별도 workflow, 조건 polling
+- [x] `package.json#mcpName`, root `server.json`, `tests/registry/` 계약 검사 5개 red → green
+- [x] `publish-mcp-registry.yml` 작성, actionlint 1.7.12 통과
+  - 고정 `mcp-publisher v1.8.1`로 자리표시·주입 버전 `server.json` 모두 `validate` 통과.
+  - 로컬에서 버전 주입, tag 불일치 거부, `mcpName` 없는 `1.8.8` 대기 timeout, `mcpName`이
+    있는 패키지의 일치 판정을 실제 명령으로 확인.
+- [ ] 첫 게시: `mcpName`이 포함된 다음 릴리스에서 workflow 성공과 registry 조회 확인

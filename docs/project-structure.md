@@ -40,6 +40,7 @@ src/                            (프로덕션 코드만)
 
 tests/                          (모든 테스트 코드)
 ├── plugin/                     Claude plugin 배포 파일·gitignore·버전 계약
+├── registry/                   MCP Registry server.json·package mcpName 계약
 ├── scripts/                    유지보수 script의 임시 fixture child process 검증
 ├── cli/                        src/cli/ 미러링 (단위 테스트)
 │   └── cli-args.test.ts
@@ -62,6 +63,8 @@ plugins/neosql-mcp/                  Claude directory 배포 bundle (npm package
 ├── .claude-plugin/icon.png     directory 등록용 512×512 투명 PNG 아이콘 (원본은 assets/)
 ├── .mcp.json                   고정 버전 npx launcher, project ID 설정 없음
 └── README.md                   directory listing·사용·데이터 처리 안내
+server.json                     공식 MCP Registry 메타데이터. version은 0.0.0 자리표시이며
+                                publish-mcp-registry workflow가 tag 버전을 넣는다 (npm 배포 제외)
 scripts/                        repository 유지보수용 Node ESM script (npm 배포 제외)
 ├── sync-plugin-version.mjs     npm version lifecycle의 plugin 버전·pin 동기화
 └── wait-for-release.mjs        release 스킬이 tag push 뒤 Actions·npm 반영을 polling
