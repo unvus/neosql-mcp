@@ -1,7 +1,7 @@
 {
   "name": "neosql-mcp",
   "mcpName": "io.github.unvus/neosql-mcp",
-  "version": "1.8.10",
+  "version": "1.8.11",
   "description": "Local stdio MCP server that connects MCP hosts to NeoSQL Desktop on macOS and Windows for PostgreSQL, Supabase, MySQL, MariaDB, Oracle, SQL Server, SQLite, H2, and Databricks.",
   "type": "module",
   "license": "Apache-2.0",

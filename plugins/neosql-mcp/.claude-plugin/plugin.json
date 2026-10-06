@@ -1,7 +1,7 @@
 {
   "name": "neosql-mcp",
   "displayName": "NeoSQL MCP",
-  "version": "1.8.10",
+  "version": "1.8.11",
   "description": "Inspect schemas, run SQL, edit ERD models, and generate code for PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, SQLite, and more, using the connections already configured in NeoSQL Desktop.",
   "author": {
     "name": "Unvus Co., Ltd.",
