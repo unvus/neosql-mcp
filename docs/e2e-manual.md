@@ -21,8 +21,9 @@
 | P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
 | P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
 | P09 | Cowork의 Desktop 연결 세션 | Desktop 접근·자동 활성화 여부 기록 | macOS 1.8.4 ping·연결 목록·명시 좌표 SELECT 1 성공(2026-09-29). 1.8.3 소켓 경로 불일치 해소 확인. Windows Desktop Cowork 플러그인 사용 테스트 완료 사용자 보고(2026-09-29). Cowork 자동 활성화의 개별 결과는 미수집 |
-| P10 | 루트 marketplace: `claude plugin validate .`, `claude plugin marketplace add ./`, `claude plugin install neosql-mcp@neosql` | 검증 통과, `neosql-mcp@neosql` 1.8.9 enabled | macOS 2.1.287 통과(2026-10-06). in-place 설치본은 세션 시작 시 MCP 서버 미기동(함정 B), `/reload-plugins`·`claude mcp list`에서는 연결 |
+| P10 | 루트 marketplace: `claude plugin validate .`, `claude plugin marketplace add ./`, `claude plugin install neosql-mcp@neosql` | 검증 통과, `neosql-mcp@neosql` 1.8.9 enabled | macOS 2.1.287 통과(2026-10-06). manifest 미커밋 상태의 첫 설치본은 세션 시작 시 MCP 서버 미기동(함정 B), 커밋 후 재설치하자 3회 모두 기동 |
 | P11 | 사용자 경로 재현: 임시 marketplace에 `git-subdir`(GitHub `plugins/neosql-mcp`) 소스로 설치 후 저장소 밖에서 세션 시작 | `plugin:neosql-mcp:neosql` 세션 시작 시 연결 | macOS 2.1.287 `Successfully connected in 1319ms`, version 1.8.9(2026-10-06). 시험 marketplace·plugin 제거 완료 |
+| P12 | push 후 실제 사용자 명령 `claude plugin marketplace add unvus/neosql-mcp` → `claude plugin install neosql-mcp@neosql` | GitHub 소스 등록, cache 복사 설치, 세션 시작 시 연결 | macOS 2.1.287 통과(2026-10-06): Source GitHub, `readFromFolder` 없음, `Successfully connected in 1283ms`, version 1.8.9. SSH 22 차단 환경이라 `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` 사용 |
 
 기존 사용자 설정은 덮어쓰지 않고 격리한 환경에 필요한 NeoSQL 등록만 재현한다.
 실제 설정을 잠시 변경해야 하면 먼저 백업하고 종료 후 원복한다.
@@ -148,15 +149,22 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
 - 함정 B — in-place 설치본: 저장소 밖 세션에서도 `/mcp` ✗. `--debug` 로그에 해당 서버의
   `Starting connection` 기록이 없고 `claude plugin details`는 MCP 서버 1개를 인식한다. 수동 `neosql`을
   제거해도 동일해 중복 판정이 아니다. `/reload-plugins`, `claude --plugin-dir`, `claude mcp list`는
-  연결된다. 로컬 폴더 marketplace의 relative-path plugin(in-place 로드)에 한정된 현상이다.
+  연결된다. 이 설치본은 `marketplace.json`이 미커밋인 상태(HEAD `986b29c`)에서 만든 것이었고, 커밋
+  후(HEAD `bc23066`) uninstall → install 하자 세션 시작 시 3회 연속 연결됐다(1969·1374·1355ms).
+  원인은 미확정이다. 로컬 폴더 marketplace는 manifest를 커밋한 뒤 설치한다.
 - 사용자 경로(P11): 임시 marketplace의 `git-subdir` 소스로 GitHub `plugins/neosql-mcp`를 설치하자
   cache 복사본(`readFromFolder` 없음)이 세션 시작 시 `Successfully connected in 1319ms`로 연결됐다.
   수동 `neosql`과 plugin 서버가 동시에 연결됐다(P05 재확인).
+- push(`bc23066`) 후 실제 명령 `claude plugin marketplace add unvus/neosql-mcp` →
+  `claude plugin install neosql-mcp@neosql`로 GitHub 소스 등록·cache 복사 설치·세션 시작 시 1283ms
+  연결을 확인했다(P12). 같은 이름의 로컬 폴더 등록이 남아 있으면 `its source doesn't match its
+  extraKnownMarketplaces entry`로 거부되므로 먼저 `claude plugin marketplace remove neosql`로 제거한다.
 - 부수 관찰: 미고정 수동 설정 `npx -y neosql-mcp`가 npx 캐시에 따라 `1.8.8`·`1.8.9`를 오갔다.
   discord plugin의 `/mcp` ✗는 `--channels` 미지정 표시이며 로그상 연결 성공이다.
 - 정리: 시험 marketplace `neosql-gittest`와 그 plugin 제거, 일시 제거한 User `neosql` 복원
-  (`claude mcp get neosql` ✔ Connected), `neosql-mcp@neosql` 재활성화. 로컬 marketplace `neosql`과
-  `neosql-mcp@neosql`은 개발 머신에 유지한다.
+  (`claude mcp get neosql` ✔ Connected), `neosql-mcp@neosql` 재활성화. 개발 머신의 marketplace
+  `neosql`은 P12에서 GitHub 소스로 교체했다. 로컬 폴더로 되돌리려면 marketplace를 remove한 뒤
+  `claude plugin marketplace add <저장소 경로>`와 install을 다시 실행한다.
 - 미검증: Windows에서의 marketplace 설치, `@synced` 동기화(P07), P06·P08, 2.1.289 이상에서 함정 B 재확인.
 
 ## 기존 MCP host 검증

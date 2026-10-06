@@ -530,9 +530,10 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
   auto-update는 기본 off이므로 갱신은 `claude plugin update neosql-mcp@neosql` 또는 `/plugin`
   **Marketplaces** 탭에서 켠다. 수동 `.mcp.json` 등록과 함께 두면 서버가 둘 다 로드된다(§3.11, W6 재확인).
 - 검증 규칙: 저장소 안 cwd에서는 `npx -y neosql-mcp@<pin>`이 이름·버전이 일치하는 로컬 package를 선택해
-  실패하므로 저장소 밖에서 검증한다. 로컬 폴더로 추가한 marketplace의 plugin은 in-place 로드되어 2.1.287에서
-  세션 시작 시 MCP 서버가 기동되지 않았다. 실제 사용자 경로(GitHub → cache 복사)는 임시 marketplace에
-  `git-subdir` 소스로 재현해 검증한다(W6 결과).
+  실패하므로 저장소 밖에서 검증한다. 로컬 폴더 marketplace의 plugin은 `marketplace.json`이 **커밋된 상태**에서
+  설치(또는 재설치)한다. 미커밋 상태에서 설치한 in-place 설치본은 2.1.287에서 세션 시작 시 MCP 서버가
+  기동되지 않았고, 커밋 후 재설치하자 기동됐다(W6 결과, 원인 미확정). 실제 사용자 경로(GitHub → cache
+  복사)도 함께 검증한다(W6 결과).
 
 ## 6. 파일 설계
 
@@ -833,13 +834,19 @@ W6 재확인 결과 (2026-10-06, macOS, Claude Code 2.1.287, plugin·npm `1.8.9`
 - 함정 A — 저장소 cwd: Claude Code의 plugin 서버 로그와 재현 모두 `sh: neosql-mcp: command not found`.
   npx가 이름·버전이 일치하는 로컬 package를 선택한 것이다. 저장소 밖 cwd에서는 같은 명령이
   `serverInfo 1.8.9`로 응답했다. W1의 "배포본 검증은 저장소 밖에서 한다"와 같은 함정이다.
-- 함정 B — in-place 설치: 로컬 폴더 marketplace의 relative-path plugin(`Read from: plugins/neosql-mcp`)은
-  세션 시작 시 MCP 서버 시작 로그가 없고 `/mcp`에 ✗로 표시됐다. 같은 plugin이 `/reload-plugins`,
-  `claude --plugin-dir`, `claude mcp list`에서는 연결됐다. 2.1.289 CHANGELOG에 local folder marketplace
-  관련 수정이 있으나 세션 기동 문제와의 관계는 미확인이다(§11 #16).
+- 함정 B — in-place 설치본의 세션 기동: `marketplace.json`이 아직 커밋되지 않은 상태(HEAD `986b29c`)에서
+  설치한 로컬 폴더 marketplace의 plugin(`Read from: plugins/neosql-mcp`)은 세션 3회 모두 MCP 서버 시작
+  로그가 없고 `/mcp`에 ✗로 표시됐다. 같은 plugin이 `/reload-plugins`, `claude --plugin-dir`,
+  `claude mcp list`에서는 연결됐다. 파일을 커밋한 뒤(HEAD `bc23066`) uninstall → install 하자 세션 3회
+  모두 시작 시 연결됐다(1969·1374·1355ms). 원인은 미확정이며, 2.1.289 CHANGELOG의 "stale copy of a
+  plugin installed from a local folder marketplace" 수정과의 관련 가능성만 기록한다(§11 #16).
 - 사용자 경로: 임시 marketplace에 `{"source":"git-subdir","url":"https://github.com/unvus/neosql-mcp.git",
   "path":"plugins/neosql-mcp","ref":"main"}`로 설치하자(cache 복사, `readFromFolder` 없음) 세션 시작 시
   `Successfully connected in 1319ms`, version `1.8.9`였다. 시험 marketplace·plugin은 제거했다.
+- push 후 실제 사용자 명령(`claude plugin marketplace add unvus/neosql-mcp` →
+  `claude plugin install neosql-mcp@neosql`)으로 GitHub 소스 등록·cache 복사 설치·세션 시작 시 1283ms
+  연결을 확인했다. 같은 이름의 로컬 폴더 marketplace가 등록돼 있으면 `source doesn't match its
+  extraKnownMarketplaces entry`로 거부되므로 먼저 제거한다.
 - 기각한 가설: 중복 판정, 프로젝트 `disabledMcpServers`, plugin 전체 실패. discord plugin의 ✗는
   `--channels` 미지정 표시이며 실제로는 연결됐다.
 - directory 게시(2026-10-03) 뒤 제3자 계정의 Discover 노출을 확인했다. Windows 재확인, P06~P08,
@@ -961,13 +968,13 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 | 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 릴리스 B 전 | MCP 호출에 관련된 저장·전송·로그·보관·삭제만 확인. 제품 전체 조사나 구조 개편은 제외. 결과를 §4, §6.3, §10에 반영 (D11) |
 | 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
 | 15  | `claude-plugins-official` 등재 경로와 community mirror 미반영 사유 | 게시 후      | 공개 신청 경로 없음(§3.14). `directory@anthropic.com` 문의 초안 준비, 발송 대기 |
-| 16  | in-place marketplace plugin의 세션 시작 MCP 기동(함정 B)          | 2.1.289 이상 | `claude update` 후 로컬 폴더 marketplace 설치본으로 재확인 |
+| 16  | in-place marketplace plugin의 세션 시작 MCP 미기동(함정 B) 원인    | 2.1.289 이상 | 미커밋 manifest 상태의 설치본에서만 재현됨. `claude update` 후 같은 조건으로 재확인 |
 
 ## 12. 변경 이력
 
 - 2026-10-06: W7 directory 게시 확인(2026-10-03 Published, Listed in Claude Code·Cowork, 30일 installs 98).
   CLI·웹 노출 경로 확인(§3.14), 자체 marketplace 결정 D12와 §2 범위 변경, W6 macOS 재확인 결과
-  (중복 둘 다 로드, 함정 A·B, cache 복사 경로 정상), §11 #15·#16 추가.
+  (중복 둘 다 로드, 함정 A, 함정 B는 커밋 후 재설치로 해소, cache 복사 경로 정상), §11 #15·#16 추가.
 - 2026-09-28: 제출 전 명명 변경. `plugins/neosql` → `plugins/neosql-mcp`, plugin `name`은
   `neosql-mcp`, `displayName`은 `NeoSQL MCP`. 버전 hook·gitignore·workflow·테스트·사용 안내의
   plugin ID도 함께 변경했다. 내부 MCP server 키와 npm pin `neosql-mcp@1.8.1`은 동일하다.

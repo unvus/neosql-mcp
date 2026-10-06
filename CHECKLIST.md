@@ -277,7 +277,7 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     [구현 commit CI #42](https://github.com/unvus/neosql-mcp/actions/runs/36376995102)도 통과.
   - macOS 재확인(2026-10-06, Claude Code 2.1.287, `1.8.9`): 수동 `neosql`과 plugin 서버 둘 다 연결,
     중복 판정이 plugin을 가리지 않음. 함정 A(저장소 cwd에서 npx가 로컬 package 선택 → 실패),
-    함정 B(로컬 폴더 marketplace의 in-place 설치본은 세션 시작 시 MCP 미기동)를 기록.
+    함정 B(manifest 미커밋 상태의 in-place 설치본은 세션 시작 시 MCP 미기동, 커밋 후 재설치로 해소)를 기록.
     사용자 경로(GitHub → cache 복사)는 세션 시작 시 1319ms 연결 확인. 상세는 등록 설계 W6 결과와
     `docs/e2e-manual.md` P10·P11. Windows 재확인·P06~P08·`@synced` 동기화는 미검증.
 - [x] Plugin 포함 npm 릴리스: `1.8.2`, shrinkwrap 배포·ping·10개 tool 확인,
@@ -289,12 +289,15 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
   제3자 계정의 Discover 노출 확인(2026-10-06).
 - [x] 자체 marketplace(D12): 루트 `.claude-plugin/marketplace.json` 추가, `claude plugin validate .` 통과,
   로컬 폴더 추가·`neosql-mcp@neosql` 설치, cache 복사 경로(git-subdir) 세션 기동 확인 (2026-10-06)
-- [ ] marketplace manifest 테스트(`tests/plugin/`), README 3벌 설치 안내(W5b와 함께), 커밋·push 후
-  GitHub 경로(`claude plugin marketplace add unvus/neosql-mcp`) 재확인
+- [x] marketplace manifest 테스트 3개 green(전체 304), README 3벌 설치 안내, `4ee9aa8`·`bc23066` push.
+  push 후 실제 명령 `claude plugin marketplace add unvus/neosql-mcp` → `install neosql-mcp@neosql`로
+  GitHub 소스 등록·cache 복사 설치·세션 시작 시 1283ms 연결 확인 (2026-10-06, `docs/e2e-manual.md` P12)
 - [ ] `claude-plugins-official` 등재 경로·community mirror 미반영 문의 (`directory@anthropic.com`,
   초안 준비, 발송 대기)
-- [ ] 2.1.289 이상에서 로컬 폴더 marketplace 설치본의 세션 시작 MCP 기동(함정 B) 재확인
-- [ ] W5b: 게시 후 공개 README의 설치 안내 추가 (directory 추가 + marketplace 설치 두 경로)
+- [ ] 함정 B 원인 확인: 2.1.289 이상에서 미커밋 manifest 상태의 로컬 폴더 marketplace 설치본으로 세션 시작
+  MCP 기동 재확인
+- [x] W5b: 공개 README 3벌에 설치 안내 추가 — directory 추가 + marketplace 설치 두 경로, 수동 설정과의
+  중복·프로젝트 고정 시 비활성화(D10) 안내 (`4ee9aa8`)
 
 ## 공식 MCP Registry 등록 · 2026-09-30
 
