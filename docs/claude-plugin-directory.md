@@ -3,7 +3,9 @@
 `neosql-mcp`를 Anthropic plugin directory(claude.ai **Customize > Plugins**의 Discover,
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
-- 상태: W1 및 릴리스 A(`1.8.1`), W2~W5a 구현·원격 workflow 시험·조기 Portal Validate 완료(2026-09-28). W6 실사용 검증 대기. `PLAN.md`/`CHECKLIST.md`에서 이 문서를
+- 상태: W1 및 릴리스 A(`1.8.1`), W2~W5a 구현·원격 workflow 시험·조기 Portal Validate 완료(2026-09-28).
+  W7 directory 제출·게시 완료(`1.8.9`, 2026-10-03, portal **Published**, Listed in Claude Code·Cowork).
+  W6 macOS 재확인과 자체 marketplace(D12) 추가(2026-10-06). `PLAN.md`/`CHECKLIST.md`에서 이 문서를
   plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
 - 외부 요구사항 확인일: 2026-09-28
@@ -32,14 +34,17 @@
 - directory 정책을 충족하기 위한 MCP tool annotation 추가(`src/mcp/tools/`).
 - npm 릴리스 흐름과 plugin 버전 동기화, directory가 추적할 branch 운영.
 - developer portal 제출 절차와 제출 폼 답변 초안.
+- 저장소 루트의 자체 marketplace(`.claude-plugin/marketplace.json`)와 Claude Code CLI 설치 안내
+  (D12, 2026-10-06 추가).
 
 제외:
 
 - remote MCP connector 제출. `neosql-mcp`는 local stdio 서버이며 remote endpoint가 없다.
 - MCPB/desktop extension 패키징. directory가 더 이상 받지 않는다(§3.5).
 - plugin skill, command, agent, hook. v1은 MCP 서버 선언만 담는다(D8).
-- 자체 marketplace(`marketplace.json`) 운영. 필요하면 별도 설계로 다룬다.
 - 공식 MCP Registry 게시. 별도 경로이며 `docs/mcp-registry.md`를 따른다.
+- `claude-plugins-official`·`claude-community` 등재. Anthropic이 선별하며 공개 신청 경로가 없다(§3.14).
+  문의로만 진행한다(§11 #15).
 - neosql main app(electron-main, renderer, embedded-server) 변경과 Desktop의 plugin 설치 안내 개편.
   이번 작업은 현재 MCP의 plugin 등록에 집중한다. 등록 설명에 필요한 기존 동작만 소스에서
   확인한다(D11). 등록 과정에서 실제 수정 요구가 나오면 근거와 함께 별도 범위로 다룬다.
@@ -252,6 +257,36 @@ package 코드를 plugin에 번들해도 Hold가 없어지지 않을 수 있다.
 - manifest reference: https://code.claude.com/docs/en/plugins/manifest-reference
 - plugin MCP 서버: https://code.claude.com/docs/en/mcp
 - Software Directory Policy: https://support.claude.com/en/articles/13145358-anthropic-software-directory-policy
+
+### 3.14 CLI·웹 노출 경로 (2026-10-06 확인)
+
+directory 게시만으로는 Claude Code CLI의 `/plugin` Discover와 `claude.com/marketplace/plugins`에
+노출되지 않는다. 두 곳은 directory가 아니라 marketplace를 기준으로 동작한다.
+
+- Claude Code CLI: *"the Discover tab, which lists the plugins from your marketplaces"*. directory는
+  별개다: *"Anthropic's directory is separate from these marketplaces."* directory에서 추가한 plugin은
+  `<name>@synced`로 **Installed**에만 나타나고 Discover 검색에는 나타나지 않는다. platform-support
+  문서의 `/plugin directory`(v2.1.287 이상)는 2.1.287 빌드에서 인식되지 않아 Discover 탭으로 떨어졌다
+  (cli-reference: *"Any unrecognized first word after `/plugin` does the same"*).
+- `claude.com/marketplace/plugins`: `claude-plugins-official` 전수와 `knowledge-work-plugins`·
+  `claude-community`의 일부를 보여준다(실측). community 항목 중 노출 기준은 미확인이다. directory에만
+  있는 listing은 검색 결과와 직접 URL 모두 없다(404).
+- `claude-plugins-official` 등재: *"doesn't take submissions through the directory portal. If you work
+  with an Anthropic partner contact, ask them about an official-marketplace listing."* 저장소의
+  `close-external-prs.yml`은 비멤버 PR을 *"This repo only accepts contributions from Anthropic team
+  members"*로 자동 닫고 directory 제출 폼을 안내한다. 외부 소스 항목 262개 전부 commit sha 고정이며
+  `bump-plugin-shas.yml`이 매일 07:23 UTC에 자동 갱신한다. `.github/policy/prompt.md`는 등재 plugin의
+  보안·프라이버시 심사 기준이고, 어떤 plugin을 들여올지에 대한 기준 문서는 없다.
+- `claude-plugins-community`(2,284개): README는 directory 제출물이 내부 심사 파이프라인에서 nightly
+  동기화된다고 하지만, `marketplace.json` 변경 300커밋 중 제3자 신규 추가 커밋은 0건이다. neosql-mcp는
+  게시 3일 뒤에도 없다.
+- Verified 라벨: *"assessed automatically... There's no separate application for the Verified label"*.
+  문의 채널은 `directory@anthropic.com`이며 포털의 **Contact Anthropic**도 같은 주소의 mailto다.
+
+출처(2026-10-06 열람): code.claude.com/docs/en/plugins/{install,loading,anthropic-marketplaces,publish,
+marketplace-reference,security}, claude.com/docs/plugins/{overview,platform-support},
+claude.com/docs/directory/{publish,submission-status}, claude.com/docs/connectors/verification,
+github.com/anthropics/claude-plugins-{official,community}.
 
 ## 4. 현재 저장소 상태와 gap (1.8.0)
 
@@ -477,6 +512,27 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
   확인하지 않았다. 릴리스 B 전에 확인해 공개 항목에 반영한다(§11). tool별 로컬 저장, 원격
   전송, 로그, 보관·삭제 경로 중 MCP 호출과 관련된 부분을 확인한다. 제품 전체의 저장 구조
   개편이나 MCP와 무관한 기능 조사는 범위에 넣지 않는다.
+
+### D12. 저장소 루트에 자체 marketplace를 둔다 (2026-10-06)
+
+- 목적: Claude Code CLI 사용자가 claude.ai 계정 없이 명령만으로 설치하고, README에 설치 명령을 적기
+  위해서다. directory listing은 CLI `/plugin` Discover와 `claude.com/marketplace`에 노출되지 않는다(§3.14).
+  이 결정은 노출·신뢰도 목표에는 기여하지 않는다. 그 목표는 Anthropic 운영 marketplace 등재가 필요하고
+  공개 신청 경로가 없다.
+- 파일: `.claude-plugin/marketplace.json`(저장소 루트). marketplace `name`은 `neosql`, entry `name`은
+  plugin.json과 같은 `neosql-mcp`, `source`는 `./plugins/neosql-mcp`. install id는 `neosql-mcp@neosql`.
+  `neosql`은 예약 이름 목록에 없다. 심사·제출 폼 없이 push하면 게시된다
+  (*"Once the file is in the repository, the plugin is published, with no submission form."*).
+- directory 영향 없음: directory는 plugin 폴더만 읽는다(*"reads and scans only that folder"*).
+  `plugin-release` 전진 흐름과 포털 listing은 그대로다.
+- 사용자 안내: `claude plugin marketplace add unvus/neosql-mcp` → `claude plugin install neosql-mcp@neosql`,
+  또는 `/plugin install neosql-mcp --marketplace unvus/neosql-mcp`(v2.1.275 이상). 제3자 marketplace의
+  auto-update는 기본 off이므로 갱신은 `claude plugin update neosql-mcp@neosql` 또는 `/plugin`
+  **Marketplaces** 탭에서 켠다. 수동 `.mcp.json` 등록과 함께 두면 서버가 둘 다 로드된다(§3.11, W6 재확인).
+- 검증 규칙: 저장소 안 cwd에서는 `npx -y neosql-mcp@<pin>`이 이름·버전이 일치하는 로컬 package를 선택해
+  실패하므로 저장소 밖에서 검증한다. 로컬 폴더로 추가한 marketplace의 plugin은 in-place 로드되어 2.1.287에서
+  세션 시작 시 MCP 서버가 기동되지 않았다. 실제 사용자 경로(GitHub → cache 복사)는 임시 marketplace에
+  `git-subdir` 소스로 재현해 검증한다(W6 결과).
 
 ## 6. 파일 설계
 
@@ -768,6 +824,27 @@ W5b는 directory에 게시된 뒤에 한다.
 - 가능하면 Cowork 로컬 세션에서 확인한다(D6).
 - `docs/e2e-manual.md`에 plugin 시나리오를 추가한다.
 
+W6 재확인 결과 (2026-10-06, macOS, Claude Code 2.1.287, plugin·npm `1.8.9`):
+
+- 중복 설정: 수동 User scope `neosql`(`npx -y neosql-mcp`)과 plugin 서버가 **둘 다** 연결됐다
+  (`--plugin-dir` 세션과 cache 복사 설치 세션 모두). 수동 서버를 제거해도 plugin 서버의 기동 여부는
+  바뀌지 않았으므로 중복 판정이 plugin을 가리지 않는다. §3.11·D10 결론 유지.
+- 미고정 수동 설정은 npx 캐시에 따라 `1.8.8`과 `1.8.9`를 오갔다. 버전 고정(D3)의 실측 근거다.
+- 함정 A — 저장소 cwd: Claude Code의 plugin 서버 로그와 재현 모두 `sh: neosql-mcp: command not found`.
+  npx가 이름·버전이 일치하는 로컬 package를 선택한 것이다. 저장소 밖 cwd에서는 같은 명령이
+  `serverInfo 1.8.9`로 응답했다. W1의 "배포본 검증은 저장소 밖에서 한다"와 같은 함정이다.
+- 함정 B — in-place 설치: 로컬 폴더 marketplace의 relative-path plugin(`Read from: plugins/neosql-mcp`)은
+  세션 시작 시 MCP 서버 시작 로그가 없고 `/mcp`에 ✗로 표시됐다. 같은 plugin이 `/reload-plugins`,
+  `claude --plugin-dir`, `claude mcp list`에서는 연결됐다. 2.1.289 CHANGELOG에 local folder marketplace
+  관련 수정이 있으나 세션 기동 문제와의 관계는 미확인이다(§11 #16).
+- 사용자 경로: 임시 marketplace에 `{"source":"git-subdir","url":"https://github.com/unvus/neosql-mcp.git",
+  "path":"plugins/neosql-mcp","ref":"main"}`로 설치하자(cache 복사, `readFromFolder` 없음) 세션 시작 시
+  `Successfully connected in 1319ms`, version `1.8.9`였다. 시험 marketplace·plugin은 제거했다.
+- 기각한 가설: 중복 판정, 프로젝트 `disabledMcpServers`, plugin 전체 실패. discord plugin의 ✗는
+  `--channels` 미지정 표시이며 실제로는 연결됐다.
+- directory 게시(2026-10-03) 뒤 제3자 계정의 Discover 노출을 확인했다. Windows 재확인, P06~P08,
+  `@synced` 동기화 검증은 남아 있다.
+
 ### W7. 제출
 
 §9 절차를 따른다.
@@ -883,9 +960,14 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 | 11  | 첫 게시 뒤 게시 설정(자동 게시) 희망 여부                          | 게시 후      | reviewer가 결정                                                                                               |
 | 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 릴리스 B 전 | MCP 호출에 관련된 저장·전송·로그·보관·삭제만 확인. 제품 전체 조사나 구조 개편은 제외. 결과를 §4, §6.3, §10에 반영 (D11) |
 | 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
+| 15  | `claude-plugins-official` 등재 경로와 community mirror 미반영 사유 | 게시 후      | 공개 신청 경로 없음(§3.14). `directory@anthropic.com` 문의 초안 준비, 발송 대기 |
+| 16  | in-place marketplace plugin의 세션 시작 MCP 기동(함정 B)          | 2.1.289 이상 | `claude update` 후 로컬 폴더 marketplace 설치본으로 재확인 |
 
 ## 12. 변경 이력
 
+- 2026-10-06: W7 directory 게시 확인(2026-10-03 Published, Listed in Claude Code·Cowork, 30일 installs 98).
+  CLI·웹 노출 경로 확인(§3.14), 자체 marketplace 결정 D12와 §2 범위 변경, W6 macOS 재확인 결과
+  (중복 둘 다 로드, 함정 A·B, cache 복사 경로 정상), §11 #15·#16 추가.
 - 2026-09-28: 제출 전 명명 변경. `plugins/neosql` → `plugins/neosql-mcp`, plugin `name`은
   `neosql-mcp`, `displayName`은 `NeoSQL MCP`. 버전 hook·gitignore·workflow·테스트·사용 안내의
   plugin ID도 함께 변경했다. 내부 MCP server 키와 npm pin `neosql-mcp@1.8.1`은 동일하다.

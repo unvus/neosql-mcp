@@ -275,11 +275,26 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     (2026-09-29). Cowork 자동 활성화의 개별 결과는 미수집 (`docs/e2e-manual.md` P09).
     실제 host 검증과 구분한다. 시나리오 P01~P09는 `docs/e2e-manual.md`에 기록.
     [구현 commit CI #42](https://github.com/unvus/neosql-mcp/actions/runs/36376995102)도 통과.
+  - macOS 재확인(2026-10-06, Claude Code 2.1.287, `1.8.9`): 수동 `neosql`과 plugin 서버 둘 다 연결,
+    중복 판정이 plugin을 가리지 않음. 함정 A(저장소 cwd에서 npx가 로컬 package 선택 → 실패),
+    함정 B(로컬 폴더 marketplace의 in-place 설치본은 세션 시작 시 MCP 미기동)를 기록.
+    사용자 경로(GitHub → cache 복사)는 세션 시작 시 1319ms 연결 확인. 상세는 등록 설계 W6 결과와
+    `docs/e2e-manual.md` P10·P11. Windows 재확인·P06~P08·`@synced` 동기화는 미검증.
 - [x] Plugin 포함 npm 릴리스: `1.8.2`, shrinkwrap 배포·ping·10개 tool 확인,
   `plugin-release`가 release commit `13af326`을 가리킴
-- [ ] Directory 제출 전 W6 및 데이터 처리 확인 작업 완료 (npm 릴리스와 별개)
-- [ ] W7: 회사 조직 제출, 필요한 시점에 계정·심사 환경 안내
-- [ ] W5b: 게시 후 공개 README의 설치 안내 추가
+- [x] Directory 제출 전 W6 및 데이터 처리 확인 — 2026-10-03 제출·게시로 선행 조건 항목으로서는 종결.
+  §11의 미확인 데이터 처리 항목은 게시 후 갱신 대상으로 유지한다.
+- [x] W7: directory 제출·게시. portal 확인(2026-10-06): 제출 ≈2026-10-03, 보안 스캔·승인·**Published**
+  2026-10-03, Live `1.8.9`, Listed in Claude Code·Cowork, Auto-publish On, 30일 installs 98.
+  제3자 계정의 Discover 노출 확인(2026-10-06).
+- [x] 자체 marketplace(D12): 루트 `.claude-plugin/marketplace.json` 추가, `claude plugin validate .` 통과,
+  로컬 폴더 추가·`neosql-mcp@neosql` 설치, cache 복사 경로(git-subdir) 세션 기동 확인 (2026-10-06)
+- [ ] marketplace manifest 테스트(`tests/plugin/`), README 3벌 설치 안내(W5b와 함께), 커밋·push 후
+  GitHub 경로(`claude plugin marketplace add unvus/neosql-mcp`) 재확인
+- [ ] `claude-plugins-official` 등재 경로·community mirror 미반영 문의 (`directory@anthropic.com`,
+  초안 준비, 발송 대기)
+- [ ] 2.1.289 이상에서 로컬 폴더 marketplace 설치본의 세션 시작 MCP 기동(함정 B) 재확인
+- [ ] W5b: 게시 후 공개 README의 설치 안내 추가 (directory 추가 + marketplace 설치 두 경로)
 
 ## 공식 MCP Registry 등록 · 2026-09-30
 
