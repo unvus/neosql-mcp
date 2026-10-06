@@ -44,7 +44,7 @@
 - plugin skill, command, agent, hook. v1은 MCP 서버 선언만 담는다(D8).
 - 공식 MCP Registry 게시. 별도 경로이며 `docs/mcp-registry.md`를 따른다.
 - `claude-plugins-official`·`claude-community` 등재. Anthropic이 선별하며 공개 신청 경로가 없다(§3.14).
-  문의로만 진행한다(§11 #15).
+  공식 가이드된 신청 행동이 없으므로 별도 조치를 하지 않는다(§11 #15).
 - neosql main app(electron-main, renderer, embedded-server) 변경과 Desktop의 plugin 설치 안내 개편.
   이번 작업은 현재 MCP의 plugin 등록에 집중한다. 등록 설명에 필요한 기존 동작만 소스에서
   확인한다(D11). 등록 과정에서 실제 수정 요구가 나오면 근거와 함께 별도 범위로 다룬다.
@@ -281,7 +281,8 @@ directory 게시만으로는 Claude Code CLI의 `/plugin` Discover와 `claude.co
   동기화된다고 하지만, `marketplace.json` 변경 300커밋 중 제3자 신규 추가 커밋은 0건이다. neosql-mcp는
   게시 3일 뒤에도 없다.
 - Verified 라벨: *"assessed automatically... There's no separate application for the Verified label"*.
-  문의 채널은 `directory@anthropic.com`이며 포털의 **Contact Anthropic**도 같은 주소의 mailto다.
+  제출 상태 문의용으로 문서화된 채널은 `directory@anthropic.com`뿐이고(포털의 **Contact Anthropic**도
+  같은 주소의 mailto), official 등재를 신청하는 창구로 안내된 것은 아니다.
 
 출처(2026-10-06 열람): code.claude.com/docs/en/plugins/{install,loading,anthropic-marketplaces,publish,
 marketplace-reference,security}, claude.com/docs/plugins/{overview,platform-support},
@@ -967,7 +968,7 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 | 11  | 첫 게시 뒤 게시 설정(자동 게시) 희망 여부                          | 게시 후      | reviewer가 결정                                                                                               |
 | 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 릴리스 B 전 | MCP 호출에 관련된 저장·전송·로그·보관·삭제만 확인. 제품 전체 조사나 구조 개편은 제외. 결과를 §4, §6.3, §10에 반영 (D11) |
 | 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
-| 15  | `claude-plugins-official` 등재 경로와 community mirror 미반영 사유 | 게시 후      | 공개 신청 경로 없음(§3.14). `directory@anthropic.com` 문의 초안 준비, 발송 대기 |
+| 15  | `claude-plugins-official` 등재 경로와 community mirror 미반영 사유 | 게시 후      | 공개 신청 경로 없음(§3.14). 공식 가이드된 신청 행동이 없으므로 별도 조치 없이 directory 사용량 축적 후 노출 여부 재확인 |
 | 16  | in-place marketplace plugin의 세션 시작 MCP 미기동(함정 B) 원인    | 2.1.289 이상 | 미커밋 manifest 상태의 설치본에서만 재현됨. `claude update` 후 같은 조건으로 재확인 |
 
 ## 12. 변경 이력

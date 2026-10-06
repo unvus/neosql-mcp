@@ -400,7 +400,7 @@ macOS·Windows를 모두 검증하고, npm 배포 성공 후 기존 release comm
 Claude Code CLI의 `/plugin` Discover와 `claude.com/marketplace`에 노출되지 않으므로(두 곳은 marketplace
 기준, 등록 설계 §3.14) 2026-10-06에 저장소 루트 `.claude-plugin/marketplace.json`으로 자체 marketplace를
 추가해 CLI 설치 경로를 제공한다(D12). `claude-plugins-official` 등재는 Anthropic 선별이며 공개 신청
-경로가 없어 문의로 진행한다. plugin 검증은 저장소 밖 cwd와 cache 복사 경로에서 수행하고, 로컬 폴더
+경로가 없으며, 별도 신청 행동 없이 directory listing과 사용량으로 진행한다. plugin 검증은 저장소 밖 cwd와 cache 복사 경로에서 수행하고, 로컬 폴더
 marketplace는 manifest를 커밋한 뒤 설치한다(W6 재확인).
 
 ## 공식 MCP Registry 등록 · 2026-09-30
