@@ -257,7 +257,7 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     실제 `plugin-release`는 미생성, npm latest는 `1.8.1` 유지. 정식 tag 경로는 릴리스 B에서 확인.
 - [x] W5a: 구조·릴리스 문서와 plugin README 초안 준비
   - 최종 공개 전 W6 결과와 저장·전송 경로 확인 결과를 반영한다.
-- [ ] W6: macOS·Windows 및 plugin 동기화·중복 설정 검증
+- [x] W6: macOS·Windows 및 plugin 동기화·중복 설정 검증
   - macOS 사용자 검증(2026-09-28): plugin 연결·10개 tool 및 PostgreSQL 조회 화면 확인,
     Desktop 완전 종료 후 자동 실행 사용자 확인. 프로젝트 미선택 안내 후 선택·재호출 성공.
     사용자 MCP와 plugin이 함께 연결됨을 확인. 동기화·비활성화는 미검증.
@@ -279,21 +279,24 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     중복 판정이 plugin을 가리지 않음. 함정 A(저장소 cwd에서 npx가 로컬 package 선택 → 실패),
     함정 B(manifest 미커밋 상태의 in-place 설치본은 세션 시작 시 MCP 미기동, 커밋 후 재설치로 해소)를 기록.
     사용자 경로(GitHub → cache 복사)는 세션 시작 시 1319ms 연결 확인. 상세는 등록 설계 W6 결과와
-    `docs/e2e-manual.md` P10·P11. P06~P08·`@synced` 동기화는 미검증.
+    `docs/e2e-manual.md` P10·P11.
+  - macOS P06·P07 통과(2026-10-07): directory Add → `neosql-mcp@synced` 동기화·로드(1441ms), marketplace
+    설치본과 공존 시 "not loaded — takes precedence", 저장소별 `"neosql-mcp@synced": false` 비활성화,
+    project `--project-id` 정의 우선 spawn 확인. P08은 2026-09-29 Windows plugin 사용 보고로 통과
+    판정(plugin 배포 파일은 사용자가 바꿀 수 없음, 2026-10-07). W6 잔여 없음.
 - [x] Plugin 포함 npm 릴리스: `1.8.2`, shrinkwrap 배포·ping·10개 tool 확인,
   `plugin-release`가 release commit `13af326`을 가리킴
 - [x] Directory 제출 전 W6 및 데이터 처리 확인 — 2026-10-03 제출·게시로 선행 조건 항목으로서는 종결.
   §11의 미확인 데이터 처리 항목은 게시 후 갱신 대상으로 유지한다.
-- [x] W7: directory 제출·게시. portal 확인(2026-10-06): 제출 ≈2026-10-03, 보안 스캔·승인·**Published**
-  2026-10-03, Live `1.8.9`, Listed in Claude Code·Cowork, Auto-publish On, 30일 installs 98.
-  제3자 계정의 Discover 노출 확인(2026-10-06).
+- [x] W7: directory 제출·게시. portal 확인(2026-10-06): 제출 2026-09-29(`1.8.7`), `1.8.7`·`1.8.8`은 policy
+  hold, `1.8.9`는 reviewer 승인·policy 면제 후 **Published** 2026-10-03, Live `1.8.9`, Listed in
+  Claude Code·Cowork, Auto-publish On, 30일 installs 98. 제3자 계정의 Discover 노출 확인(2026-10-06).
+  상세는 등록 설계 §9.4.
 - [x] 자체 marketplace(D12): 루트 `.claude-plugin/marketplace.json` 추가, `claude plugin validate .` 통과,
   로컬 폴더 추가·`neosql-mcp@neosql` 설치, cache 복사 경로(git-subdir) 세션 기동 확인 (2026-10-06)
 - [x] marketplace manifest 테스트 3개 green(전체 304), README 3벌 설치 안내, `4ee9aa8`·`bc23066` push.
   push 후 실제 명령 `claude plugin marketplace add unvus/neosql-mcp` → `install neosql-mcp@neosql`로
   GitHub 소스 등록·cache 복사 설치·세션 시작 시 1283ms 연결 확인 (2026-10-06, `docs/e2e-manual.md` P12)
-- [ ] 함정 B 원인 확인: 2.1.289 이상에서 미커밋 manifest 상태의 로컬 폴더 marketplace 설치본으로 세션 시작
-  MCP 기동 재확인
 - [x] W5b: 공개 README 3벌에 설치 안내 추가 — directory 추가 + marketplace 설치 두 경로, 수동 설정과의
   중복·프로젝트 고정 시 비활성화(D10) 안내 (`4ee9aa8`)
 

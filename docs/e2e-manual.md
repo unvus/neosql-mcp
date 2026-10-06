@@ -17,9 +17,9 @@
 | P03 | 양 OS에서 Desktop 실행 중·종료 상태 각각 호출 | 정상 연결·필요 시 자동 활성화 | macOS 연결 화면 확인, 완전 종료 후 자동 실행 사용자 확인. 프로젝트 미선택 안내 후 선택·재호출 성공 화면 확인. Windows 미검증 |
 | P04 | plugin README의 schema·SQL·ERD·codegen 예시 4개 | 대상 샘플 프로젝트에 맞는 결과 | macOS 스키마 조회 화면 확인. 추가 일련 작업은 사용자 정상 동작 보고이며 SQL·ERD·codegen별 결과는 별도 미수집. Windows plugin MCP 사용 성공 사용자 보고, 개별 도구 결과는 미수집 |
 | P05 | Desktop이 생성한 수동 등록 + plugin (project ID 유/무 각각) | 중복 처리와 실제 호출 서버 확인 | macOS 사용자 등록과 plugin 동시 연결 화면 확인. 사용자 등록의 생성 경로·project ID 인자는 미확인. 2.1.287 재확인(2026-10-06): 수동 등록 유무와 무관하게 둘 다 연결, 중복 판정이 plugin을 가리지 않음 |
-| P06 | project ID를 고정한 수동 등록 + `neosql-mcp@inline: false` | 수동 서버만 사용, 프로젝트 고정 유지 | 미검증 |
-| P07 | claude.ai에 시험 zip 업로드·Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | 미검증 |
-| P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 미검증 |
+| P06 | project ID를 고정한 수동 등록 + plugin 비활성화(`neosql-mcp@neosql`·`neosql-mcp@synced`: false) | 수동 서버만 사용, 프로젝트 고정 유지 | macOS 2.1.287 통과(2026-10-07). 세션이 spawn한 프로세스가 `npm exec neosql-mcp --project-id=…`로 project 정의가 user 정의보다 우선. plugin 서버 미기동. 상세는 2026-10-07 절 |
+| P07 | directory에서 Add → Claude Code 동기화, `neosql-mcp@synced: false` | 실제 동기화 ID로 저장소별 비활성화 | macOS 2.1.287 통과(2026-10-07). `neosql-mcp@synced` 동기화·로드(1441ms)·저장소별 비활성화 확인. marketplace 설치본과 공존 시 synced는 "not loaded — takes precedence". 상세는 2026-10-07 절 |
+| P08 | Windows에서 공통 `.mcp.json`의 `command: npx` | 별도 OS wrapper 없이 정상 시작 | 통과 판정(2026-10-07). 2026-09-29 Windows 사용자 보고가 plugin 설치본으로 MCP 사용 성공이었고, plugin 배포 파일 `.mcp.json`은 사용자가 바꿀 수 없으므로 `command: npx`가 wrapper 없이 spawn된 것과 같다 |
 | P09 | Cowork의 Desktop 연결 세션 | Desktop 접근·자동 활성화 여부 기록 | macOS 1.8.4 ping·연결 목록·명시 좌표 SELECT 1 성공(2026-09-29). 1.8.3 소켓 경로 불일치 해소 확인. Windows Desktop Cowork 플러그인 사용 테스트 완료 사용자 보고(2026-09-29). Cowork 자동 활성화의 개별 결과는 미수집 |
 | P10 | 루트 marketplace: `claude plugin validate .`, `claude plugin marketplace add ./`, `claude plugin install neosql-mcp@neosql` | 검증 통과, `neosql-mcp@neosql` 1.8.9 enabled | macOS 2.1.287 통과(2026-10-06). manifest 미커밋 상태의 첫 설치본은 세션 시작 시 MCP 서버 미기동(함정 B), 커밋 후 재설치하자 3회 모두 기동 |
 | P11 | 사용자 경로 재현: 임시 marketplace에 `git-subdir`(GitHub `plugins/neosql-mcp`) 소스로 설치 후 저장소 밖에서 세션 시작 | `plugin:neosql-mcp:neosql` 세션 시작 시 연결 | macOS 2.1.287 `Successfully connected in 1319ms`, version 1.8.9(2026-10-06). 시험 marketplace·plugin 제거 완료 |
@@ -165,7 +165,41 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
   (`claude mcp get neosql` ✔ Connected), `neosql-mcp@neosql` 재활성화. 개발 머신의 marketplace
   `neosql`은 P12에서 GitHub 소스로 교체했다. 로컬 폴더로 되돌리려면 marketplace를 remove한 뒤
   `claude plugin marketplace add <저장소 경로>`와 install을 다시 실행한다.
-- 미검증: `@synced` 동기화(P07), P06·P08, 2.1.289 이상에서 함정 B 재확인.
+- P06·P07·P08은 아래 2026-10-07 절 참조. 함정 B의 원인은 우리 결정에 영향이 없어 추적하지 않는다.
+
+### macOS P06·P07 검증 (2026-10-07)
+
+- 환경: Claude Code `2.1.287`, plugin·npm `1.8.9`, marketplace `neosql`은 GitHub 소스(P12 상태).
+  검증은 headless `claude --debug -p` 세션의 debug 로그와 `claude plugin list`로 했고, 설정 변경은
+  `claude plugin disable/enable`과 임시 디렉토리의 파일로만 했으며 끝난 뒤 복원했다.
+- P07 — directory Add와 동기화: claude.ai **Customize › Plugins**에서 NeoSQL MCP **추가** →
+  "이 플러그인에는 로컬 MCP 서버가 포함되어 있습니다 … 서버: neosql" 동의 대화상자 → **계속** →
+  "NeoSQL MCP이(가) 설치되어 사용할 수 있습니다". 첫 시도(2026-10-06)는 이 대화상자에서 멈춰 Add가
+  완료되지 않았었다. 다음 터미널 세션 시작 뒤 `~/.claude/plugins/synced/<org>_<user>/<listing id>/`에
+  내려왔고, `claude plugin list`는 marketplace 설치본이 있는 상태에서
+  `⚠ "neosql-mcp@synced" from claude.ai not loaded — "neosql-mcp@neosql" on this machine has the same
+  name and takes precedence`를 표시했다(§3.11 이름 충돌 규칙 확인). `neosql-mcp@neosql`을 disable한
+  세션에서는 `plugin:neosql-mcp:neosql`이 `Successfully connected in 1441ms`, version `1.8.9`,
+  `neosql-mcp@synced ✔ loaded`였다. 이후 marketplace 설치본을 다시 enable했다.
+- P06 — project ID 고정 수동 등록 + plugin 비활성화: 임시 디렉토리에 `.mcp.json`
+  (`npx -y neosql-mcp --project-id=<id>`)과 `.claude/settings.local.json`
+  (`"neosql-mcp@neosql": false`, `"neosql-mcp@synced": false`, `enableAllProjectMcpServers: true`)을 두고
+  세션을 시작했다. debug 로그 `Found 7 plugins (4 enabled, 3 disabled)`, plugin 서버 언급 0, `neosql`만
+  연결. 세션 중 새로 뜬 프로세스는 `npm exec neosql-mcp --project-id=<id>`였으므로 user scope의
+  `npx -y neosql-mcp`보다 **project 정의가 우선** 실행됐다(문서의 Local > Project > User와 일치).
+  주의: 셸의 `claude mcp list`는 같은 디렉토리에서 user endpoint를 표시하고 "defined in multiple
+  scopes with different endpoints" 경고를 냈다. 세션이 실제로 쓰는 정의와 다르므로 P06 판정에는
+  프로세스 인자나 debug 로그를 쓴다. `--project-id` 값은 존재하지 않는 ID를 썼으므로 로드·우선순위만
+  확인한 것이고 프로젝트 이동은 검증하지 않았다.
+- 정리: 임시 디렉토리 삭제, `neosql-mcp@neosql` enabled 복원. `neosql-mcp@synced`는 계정에 남아 있다
+  (marketplace 설치본이 있는 머신에서는 not loaded).
+- 주의: `claude plugin enable/disable`은 cwd의 settings 파일에 그 plugin이 적혀 있으면 가장 구체적인
+  scope에 기록한다. 이번 검증에서 disable은 user 설정에, 복원 enable은 임시 디렉토리의 local 설정에
+  기록돼 user 설정의 `false`가 남았었다. 복원은 `--scope user`를 명시하고 다른 디렉토리에서
+  `claude plugin list`로 다시 확인한다.
+- P08 판정: 2026-09-29 Windows 사용자 보고는 plugin 설치본으로 MCP를 사용한 것이고, plugin 배포 파일
+  `.mcp.json`은 사용자가 바꿀 수 없으므로 `command: npx`가 wrapper 없이 spawn된 것과 같다. 당시 "설정
+  변경 여부 미수집"으로 유보했던 P08을 통과로 닫는다. W6 잔여 없음.
 
 ## 기존 MCP host 검증
 

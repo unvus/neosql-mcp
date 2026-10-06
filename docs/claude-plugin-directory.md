@@ -4,7 +4,7 @@
 웹사이트 이름은 Claude Marketplace)에 plugin bundle로 등록하기 위한 설계 문서다.
 
 - 상태: W1 및 릴리스 A(`1.8.1`), W2~W5a 구현·원격 workflow 시험·조기 Portal Validate 완료(2026-09-28).
-  W7 directory 제출·게시 완료(`1.8.9`, 2026-10-03, portal **Published**, Listed in Claude Code·Cowork).
+  W7 directory 제출(2026-09-29)·게시 완료(`1.8.9`, 2026-10-03, portal **Published**, Listed in Claude Code·Cowork).
   W6 macOS 재확인과 자체 marketplace(D12) 추가(2026-10-06). `PLAN.md`/`CHECKLIST.md`에서 이 문서를
   plugin 등록 설계의 단일 진실의 원천으로 참조한다.
 - 작성일: 2026-09-28
@@ -506,10 +506,10 @@ Policy §3.12는 MCP 서버의 모든 tool에 해당 annotation을 요구한다.
   불필요한 대화 데이터 수집을 금지하지만, 필요한 tool 인자가 로그에 남는다는 사실만으로
   그 위반이나 등록 거절이 확정된 것은 아니다. 현재 확인된 거절 사유는 없다. 실제 정책 위반이나
   심사 수정 요구가 확인되면 근거를 기록하고 별도 범위로 다룬다.
-- `execute-query` 외 tool(ERD 수정, 코드 생성 등)의 Desktop 측 저장·전송 경로는 아직 전부
-  확인하지 않았다. 릴리스 B 전에 확인해 공개 항목에 반영한다(§11). tool별 로컬 저장, 원격
-  전송, 로그, 보관·삭제 경로 중 MCP 호출과 관련된 부분을 확인한다. 제품 전체의 저장 구조
-  개편이나 MCP와 무관한 기능 조사는 범위에 넣지 않는다.
+- `execute-query` 외 tool(ERD 수정, 코드 생성 등)의 Desktop 측 저장·전송 경로는 2026-09-28에 확인해
+  plugin README의 데이터 처리 절에 공개했다(§12). MCP 호출과 관련된 로컬 저장, 원격 전송, 로그,
+  보관·삭제 경로만 다뤘고, 제품 전체의 저장 구조 개편이나 MCP와 무관한 기능 조사는 범위에 넣지
+  않는다.
 
 ### D12. 저장소 루트에 자체 marketplace를 둔다 (2026-10-06)
 
@@ -837,7 +837,7 @@ W6 재확인 결과 (2026-10-06, macOS, Claude Code 2.1.287, plugin·npm `1.8.9`
   로그가 없고 `/mcp`에 ✗로 표시됐다. 같은 plugin이 `/reload-plugins`, `claude --plugin-dir`,
   `claude mcp list`에서는 연결됐다. 파일을 커밋한 뒤(HEAD `bc23066`) uninstall → install 하자 세션 3회
   모두 시작 시 연결됐다(1969·1374·1355ms). 원인은 미확정이며, 2.1.289 CHANGELOG의 "stale copy of a
-  plugin installed from a local folder marketplace" 수정과의 관련 가능성만 기록한다(§11 #16).
+  plugin installed from a local folder marketplace" 수정과의 관련 가능성만 기록한다. 원인 확인은 우리 결정에 영향이 없어 추적하지 않는다.
 - 사용자 경로: 임시 marketplace에 `{"source":"git-subdir","url":"https://github.com/unvus/neosql-mcp.git",
   "path":"plugins/neosql-mcp","ref":"main"}`로 설치하자(cache 복사, `readFromFolder` 없음) 세션 시작 시
   `Successfully connected in 1319ms`, version `1.8.9`였다. 시험 marketplace·plugin은 제거했다.
@@ -847,8 +847,16 @@ W6 재확인 결과 (2026-10-06, macOS, Claude Code 2.1.287, plugin·npm `1.8.9`
   extraKnownMarketplaces entry`로 거부되므로 먼저 제거한다.
 - 기각한 가설: 중복 판정, 프로젝트 `disabledMcpServers`, plugin 전체 실패. discord plugin의 ✗는
   `--channels` 미지정 표시이며 실제로는 연결됐다.
-- directory 게시(2026-10-03) 뒤 제3자 계정의 Discover 노출을 확인했다. P06~P08과 `@synced` 동기화
-  검증은 남아 있다.
+- directory 게시(2026-10-03) 뒤 제3자 계정의 Discover 노출을 확인했다.
+- 2026-10-07 추가: P07 — directory **Add**(로컬 MCP 서버 동의 대화상자 포함) 뒤 터미널 세션 시작 시
+  `neosql-mcp@synced`가 동기화됐다. 같은 이름의 marketplace 설치본이 있으면 synced는
+  `not loaded — … takes precedence`로 표시되고, 설치본을 disable하면 synced 서버가 1441ms에 연결됐다.
+  저장소별 `"neosql-mcp@synced": false`로 비활성화된다. P06 — project `.mcp.json`의
+  `--project-id` 정의가 user scope 정의보다 우선 spawn되고(`npm exec neosql-mcp --project-id=…`),
+  plugin은 settings로 비활성화된다. 셸 `claude mcp list`는 user endpoint를 표시하므로 세션 판정에는
+  쓰지 않는다. P08은 2026-09-29 Windows plugin 사용 보고로 통과 처리했다(plugin 배포 파일은 사용자가
+  바꿀 수 없으므로 `command: npx`가 그대로 spawn된 것이다). W6 잔여 없음. 상세는
+  `docs/e2e-manual.md` 2026-10-07 절.
 
 ### W7. 제출
 
@@ -919,24 +927,47 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
   심사 시 배포 tarball에 lockfile이 포함됐다는 근거를 제공한다.
 - 정식 directory 제출·게시는 하지 않았다. W6와 미완료 데이터 처리 확인은 계속 남아 있다.
 
+### 9.4 제출·게시 기록 (2026-10-06 포털 확인)
+
+developer portal의 개요·Listing·Review·버전·설정 탭을 읽어 확인했다(변경 없음).
+
+- 제출: 2026-09-29, 조직 `unvus`, Repository `unvus/neosql-mcp`, Plugin path `plugins/neosql-mcp`,
+  추적 branch `plugin-release`, GitHub push webhook 설정.
+- 버전 이력: `1.8.7`(c0ec519)·`1.8.8`(59085b4)은 scan passed 뒤 `Held by directory policy`로 검토 중 상태로
+  남았다. `1.8.9`(f5998bd)는 `Approved by a reviewer` → `A reviewer waived a policy rule` → scan passed with
+  policy warnings → ready to publish → 게시(UTC 2026-10-02, KST 10-03) → Serving. §9.3의
+  `LAUNCHER_PACKAGE_REVIEW` hold는 reviewer 면제로 해소됐다. 추가 자료 요청 기록은 없다.
+- `1.8.9` 경고 2건(조치 불필요): `Unrecognized field in plugin.json` — `privacyPolicyUrl`, *"The plugin
+  directory reads 'privacyPolicyUrl' for the listing; Claude Code itself ignores it at load"*;
+  `Runs a local program for an MCP server` — D3에서 수용한 local MCP 서버 항목이며 hold가 아닌 warning이다.
+- Listing: 표시 이름·plugin 이름·설명·아이콘·작성자·홈페이지·저장소·처리방침(`PRIVACY.md`)·라이선스·
+  키워드가 `plugin.json`과 일치. 지원은 `github.com/unvus/neosql-mcp/issues`. 문서·이용약관은 값 없음.
+- 설정: Listed on Claude Code·Cowork(Claude apps는 *"Nothing in this plugin runs here"*), 자동 게시 ON,
+  **This plugin collects or transmits user data** ON(listing에 표시), 연락처 `unvus.io@gmail.com`
+  (*"never shown publicly"* — README의 공개 지원 주소 `contact@unvus.com`과 용도가 다르다).
+- Data handling 4문항의 제출 답변 원문은 포털에서 재열람되지 않는다. 검증 가능한 공개값은 위 플래그와
+  처리방침 링크다. §10은 초안으로 유지한다.
+- 개요: 30일 installs 98(2026-10-06), 설치 경로의 64%가 claude.ai Plugin page.
+
 ## 10. Data handling 답변 초안
 
 답변은 현재 구현과 실제 운영 정책에 따라 작성한다. 저장·전송 여부를 새로 결정하는 설계 논의가
-아니다. 확인된 SQL·ERD 저장과 요청 본문 로그는 그대로 기재한다. 보관 기간처럼 아직 확인하지
-않은 사실만 §11의 확인 작업으로 남기며, 코드에서 확인할 수 없는 운영 정보는 담당자에게 확인한다.
+아니다. 확인된 SQL·ERD 저장과 요청 본문 로그는 그대로 기재한다. 제출은 완료됐고(§9.4),
+포털에서 재열람되는 공개값은 데이터 수집·전송 플래그와 처리방침 링크뿐이므로 이 표는 초안으로 유지한다.
 
 | 질문                                             | 답변 초안                                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 개인 데이터를 읽거나 저장하는가                  | 사용자가 요청할 때만 NeoSQL Desktop에 구성된 DB에서 schema와 쿼리 결과를 읽어 대화로 반환한다. DB에 개인 데이터가 있으면 결과에 포함될 수 있다. Node 중계는 결과를 저장하지 않는다. Desktop은 실행한 SQL과 MCP ERD를 저장하고, MCP 요청 본문을 Desktop 로그에 기록한다 |
-| 선언한 connector 외의 서비스로 데이터를 보내는가 | Node 중계는 보내지 않는다. 같은 머신의 Desktop과 local IPC로만 통신하고, 시작할 때 `npx`가 npm registry에서 package를 내려받는다. 계정 프로젝트에서는 Desktop이 실행한 SQL 문과 새 MCP ERD를 NeoSQL 서비스에 저장한다(§11의 전수 확인 결과를 더한다)                                                    |
-| 데이터를 얼마나 보관하는가                       | Node 중계는 tool 인자와 결과를 보관하지 않고, 로컬 로그에 운영 메타데이터와 오류만 남긴다. Desktop이 저장하는 SQL·ERD의 보관·삭제 경로, 로그 보관 기간, NeoSQL 서비스 보관 정책은 §11에서 릴리스 B 전에 확정한다                     |
+| 선언한 connector 외의 서비스로 데이터를 보내는가 | Node 중계는 보내지 않는다. 같은 머신의 Desktop과 local IPC로만 통신하고, 시작할 때 `npx`가 npm registry에서 package를 내려받는다. 계정 프로젝트에서는 Desktop이 실행한 SQL 문과 새 MCP ERD를 NeoSQL 서비스에 저장한다(전수 확인 결과는 plugin README의 데이터 처리 절에 공개, §12 2026-09-28)                                                    |
+| 데이터를 얼마나 보관하는가                       | Node 중계는 tool 인자와 결과를 보관하지 않고, 로컬 로그에 운영 메타데이터와 오류만 남긴다. Desktop이 저장하는 SQL·ERD의 보관·삭제 경로, 로그 보관 기간, NeoSQL 서비스 보관 정책은 plugin README가 NeoSQL 서비스 개인정보 처리방침 링크와 함께 공개한다                     |
 | 18세 미만 대상인가                               | 아니다                                                                                                                                                                                                                                                                                     |
 
 ## 11. 미결 사항
 
-이 목록에는 설계 결정과 사실 확인 작업이 함께 있다. 데이터 처리 관련 항목은 기존 동작·운영
-정책을 확인해 제출 답변을 완성하는 작업이며, 사용자에게 새로운 저장·보관 방식을 선택받는
-논의가 아니다. 이미 확인한 저장·전송·로그 동작은 D11과 §10에 기록하고 재논의하지 않는다.
+현재 미결 사항은 없다. 제출(2026-09-29)·게시(2026-10-03)로 종결된 항목(#1·3·5·6·7·8·10·11·13·14)은
+§9.4에 근거를 두고 2026-10-06에 제거했고, 알아내도 우리 결정·문서·사용자에 영향이 없는 #15(official
+등재 경로·community mirror 미반영 사유)·#16(함정 B 원인)은 2026-10-06·07에 제거했다. 관찰 기록은 §3.14와
+W6 결과에 남아 있다. 이미 확인한 저장·전송·로그 동작은 D11과 §10에 기록하고 재논의하지 않는다.
 
 합의된 제출·시험 운영 기준(2026-09-28):
 
@@ -953,25 +984,18 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 - W4 시험은 수동으로 시작한 workflow가 임시 branch를 갱신하는 방식으로 확정했다.
   첫 게시 후 자동 게시 사용 여부는 그 시점에 결정한다.
 
-| #   | 항목                                                               | 필요 시점    | 비고                                                                                                          |
-| --- | ------------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| 1   | 사용할 회사 관리 claude.ai 조직과 계정 확인                         | 실제 계정 사용 시점 | 회사 소유 원칙은 확정. W6/W7 각 단계의 용도·권한·필요 항목을 설명하고 해당 시점에 확인 |
-| 3   | 개인정보 처리방침과 MCP 제출 설명 대조                             | 릴리스 B 전 | 공개 URL `https://neosql.unvus.com/en/privacy` 확인 완료. 현재 구현에 따른 제출 설명과 대조 |
-| 5   | reviewer 테스트 환경의 구체적인 준비 항목                           | 제출 준비 시점 | 별도 계정·샘플 데이터 원칙은 확정. 필요한 기능·라이선스·접속 조건을 정리한 뒤 사용자에게 안내 |
-| 6   | plugin 이름 `neosql-mcp` 사용 가능 여부                             | 변경 후 확인 완료, W7 재검증 | `main@c18f298` 이름·게시자 검사 통과(§9.2). 최종 B commit의 W7 검증 필요 |
-| 7   | Windows에서 `npx` command 직접 실행 검증과 오류 수정              | W6, 릴리스 B 전 | 실패 원인을 수정하고 macOS·Windows 모두 재검증. Windows 지원 제외로 우회하지 않음 |
-| 8   | Cowork 로컬 세션 동작                                              | W6           | UDS 경로와 Desktop 활성화                                                                                     |
-| 10  | 로그 파일 위치·보관·rotation 정책 (Node 중계와 Desktop)            | 릴리스 B 전 | Data handling 답변과 README 공개 항목에 필요                                                                  |
-| 11  | 첫 게시 뒤 게시 설정(자동 게시) 희망 여부                          | 게시 후      | reviewer가 결정                                                                                               |
-| 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 릴리스 B 전 | MCP 호출에 관련된 저장·전송·로그·보관·삭제만 확인. 제품 전체 조사나 구조 개편은 제외. 결과를 §4, §6.3, §10에 반영 (D11) |
-| 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
-| 16  | in-place marketplace plugin의 세션 시작 MCP 미기동(함정 B) 원인    | 2.1.289 이상 | 미커밋 manifest 상태의 설치본에서만 재현됨. `claude update` 후 같은 조건으로 재확인 |
-
 ## 12. 변경 이력
 
 - 2026-10-06: W7 directory 게시 확인(2026-10-03 Published, Listed in Claude Code·Cowork, 30일 installs 98).
   CLI·웹 노출 경로 확인(§3.14), 자체 marketplace 결정 D12와 §2 범위 변경, W6 macOS 재확인 결과
   (중복 둘 다 로드, 함정 A, 함정 B는 커밋 후 재설치로 해소, cache 복사 경로 정상), §11 #16 추가.
+- 2026-10-06: 포털 Listing·Review·버전·설정 탭 확인 결과를 §9.4에 기록(9/29 제출, `1.8.9` reviewer
+  승인·policy 면제 후 게시, 경고 2건, 추적 branch `plugin-release`, 자동 게시 ON). 제출·게시로 종결된
+  §11 #1·3·5·6·7·8·10·11·13·14를 제거하고, §10과 D11의 §11 참조를 공개된 README·§12 근거로 바꿨다.
+- 2026-10-07: W6 P06·P07 macOS 검증 통과(directory Add·`@synced` 동기화·이름 충돌 처리·저장소별
+  비활성화, project 정의 우선 spawn). P08은 9/29 Windows plugin 사용 보고로 통과 판정. W6 완료.
+- 2026-10-07: §11 #16(함정 B 원인 확인) 제거 — 원인을 알아도 사용자 경로·설치 규칙·코드가 바뀌지 않는다.
+  §11은 미결 없음.
 - 2026-09-28: 제출 전 명명 변경. `plugins/neosql` → `plugins/neosql-mcp`, plugin `name`은
   `neosql-mcp`, `displayName`은 `NeoSQL MCP`. 버전 hook·gitignore·workflow·테스트·사용 안내의
   plugin ID도 함께 변경했다. 내부 MCP server 키와 npm pin `neosql-mcp@1.8.1`은 동일하다.
