@@ -5,6 +5,12 @@ Claude Desktop Cowork. Inspect schemas, run SQL, edit virtual ERD models, and ge
 source files using your project's templates. This plugin starts the version-pinned `neosql-mcp` npm package
 with `npx`; NeoSQL Desktop performs the database and project operations.
 
+## Supported databases
+
+PostgreSQL, Supabase, MySQL, MariaDB, Oracle, SQL Server, SQLite, H2, and Databricks.
+Connections are configured in NeoSQL Desktop, so the plugin works with every DBMS that
+Desktop supports.
+
 ## Requirements
 
 - macOS or Windows, with Node.js 20 or later and `npx` available on Claude's PATH.

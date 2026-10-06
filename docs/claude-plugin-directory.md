@@ -557,7 +557,7 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
   "name": "neosql-mcp",
   "displayName": "NeoSQL MCP",
   "version": "X.Y.Z",
-  "description": "Use the database connections you already configured in NeoSQL Desktop from Claude: inspect schemas, run SQL, edit ERD models, and generate code through a local MCP server.",
+  "description": "Inspect schemas, run SQL, edit ERD models, and generate code for PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, SQLite, and more, using the connections already configured in NeoSQL Desktop.",
   "author": { "name": "Unvus Co., Ltd.", "url": "https://neosql.unvus.com" },
   "homepage": "https://neosql.unvus.com/en/docs/mcp/intro",
   "repository": "https://github.com/unvus/neosql-mcp",
@@ -587,6 +587,8 @@ plugin 폴더에는 `package.json`, lockfile, `.npmrc`, 이미지, 실행 파일
 영어로 작성한다. 코드 블록 밖의 단어가 40개 이상이어야 한다.
 
 1. 한 문단 소개: NeoSQL Desktop에 구성된 연결을 Claude에서 쓰는 local MCP 서버.
+   이어서 지원 DBMS 한 줄(root README의 전체 목록과 동일). description은 기능 → 대표 DBMS 6개 +
+   and more → Desktop 경유 순서로 쓰고, README가 전체 목록을 맡는다(2026-10-07).
 2. Requirements: macOS 또는 Windows, Node.js 20 이상과 PATH의 `npx`, 같은 머신에 설치된 NeoSQL
    Desktop, MCP 접근이 허용된 연결과 schema. macOS와 Windows 모두 W6 검증을 통과해야 한다.
    directory에서 설치한 plugin을 terminal Claude Code로 동기화하려면 v2.1.273 이상과
@@ -996,6 +998,9 @@ W6 결과에 남아 있다. 이미 확인한 저장·전송·로그 동작은 D1
   비활성화, project 정의 우선 spawn). P08은 9/29 Windows plugin 사용 보고로 통과 판정. W6 완료.
 - 2026-10-07: §11 #16(함정 B 원인 확인) 제거 — 원인을 알아도 사용자 경로·설치 규칙·코드가 바뀌지 않는다.
   §11은 미결 없음.
+- 2026-10-07: plugin description을 기능 → 대표 DBMS → Desktop 경유 순서로 바꾸고 plugin README에
+  지원 DBMS 절 추가. official DB 계열 plugin 52개 조사(길이 중앙값 184자, 51%가 DBMS 명시, 전부 기능
+  서술로 시작)와 목록 화면 65~75자 절단 관찰을 근거로 한다. 다음 릴리스에서 listing에 반영된다.
 - 2026-09-28: 제출 전 명명 변경. `plugins/neosql` → `plugins/neosql-mcp`, plugin `name`은
   `neosql-mcp`, `displayName`은 `NeoSQL MCP`. 버전 hook·gitignore·workflow·테스트·사용 안내의
   plugin ID도 함께 변경했다. 내부 MCP server 키와 npm pin `neosql-mcp@1.8.1`은 동일하다.
