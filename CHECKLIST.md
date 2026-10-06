@@ -292,7 +292,6 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 - [x] marketplace manifest 테스트 3개 green(전체 304), README 3벌 설치 안내, `4ee9aa8`·`bc23066` push.
   push 후 실제 명령 `claude plugin marketplace add unvus/neosql-mcp` → `install neosql-mcp@neosql`로
   GitHub 소스 등록·cache 복사 설치·세션 시작 시 1283ms 연결 확인 (2026-10-06, `docs/e2e-manual.md` P12)
-- [ ] `claude-plugins-official`·community mirror 노출 여부 재확인 (공개 신청 경로 없음, 등록 설계 §3.14·§11 #15)
 - [ ] 함정 B 원인 확인: 2.1.289 이상에서 미커밋 manifest 상태의 로컬 폴더 marketplace 설치본으로 세션 시작
   MCP 기동 재확인
 - [x] W5b: 공개 README 3벌에 설치 안내 추가 — directory 추가 + marketplace 설치 두 경로, 수동 설정과의

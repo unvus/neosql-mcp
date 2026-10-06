@@ -43,8 +43,7 @@
 - MCPB/desktop extension 패키징. directory가 더 이상 받지 않는다(§3.5).
 - plugin skill, command, agent, hook. v1은 MCP 서버 선언만 담는다(D8).
 - 공식 MCP Registry 게시. 별도 경로이며 `docs/mcp-registry.md`를 따른다.
-- `claude-plugins-official`·`claude-community` 등재. Anthropic이 선별하며 공개 신청 경로가 없다
-  (§3.14, §11 #15).
+- `claude-plugins-official`·`claude-community` 등재. Anthropic이 선별하며 공개 신청 경로가 없다(§3.14).
 - neosql main app(electron-main, renderer, embedded-server) 변경과 Desktop의 plugin 설치 안내 개편.
   이번 작업은 현재 MCP의 plugin 등록에 집중한다. 등록 설명에 필요한 기존 동작만 소스에서
   확인한다(D11). 등록 과정에서 실제 수정 요구가 나오면 근거와 함께 별도 범위로 다룬다.
@@ -966,14 +965,13 @@ runtime 소스 변경은 없다. 위 두 항목은 문서상 경로를 실행 �
 | 11  | 첫 게시 뒤 게시 설정(자동 게시) 희망 여부                          | 게시 후      | reviewer가 결정                                                                                               |
 | 13  | `execute-query` 외 tool의 Desktop 측 저장·전송 경로 전수 확인      | 릴리스 B 전 | MCP 호출에 관련된 저장·전송·로그·보관·삭제만 확인. 제품 전체 조사나 구조 개편은 제외. 결과를 §4, §6.3, §10에 반영 (D11) |
 | 14  | NeoSQL 서비스의 SQL·ERD 등 MCP 관련 데이터 보관 정책              | 릴리스 B 전 | §10의 보관 답변에 필요. 확인된 원격 저장 데이터 전체를 포함                                                    |
-| 15  | `claude-plugins-official` 등재 경로와 community mirror 미반영 사유 | 게시 후      | 공개 신청 경로 없음(§3.14). mirror 미반영 사유 미확인. 시간을 두고 노출 여부 재확인 |
 | 16  | in-place marketplace plugin의 세션 시작 MCP 미기동(함정 B) 원인    | 2.1.289 이상 | 미커밋 manifest 상태의 설치본에서만 재현됨. `claude update` 후 같은 조건으로 재확인 |
 
 ## 12. 변경 이력
 
 - 2026-10-06: W7 directory 게시 확인(2026-10-03 Published, Listed in Claude Code·Cowork, 30일 installs 98).
   CLI·웹 노출 경로 확인(§3.14), 자체 marketplace 결정 D12와 §2 범위 변경, W6 macOS 재확인 결과
-  (중복 둘 다 로드, 함정 A, 함정 B는 커밋 후 재설치로 해소, cache 복사 경로 정상), §11 #15·#16 추가.
+  (중복 둘 다 로드, 함정 A, 함정 B는 커밋 후 재설치로 해소, cache 복사 경로 정상), §11 #16 추가.
 - 2026-09-28: 제출 전 명명 변경. `plugins/neosql` → `plugins/neosql-mcp`, plugin `name`은
   `neosql-mcp`, `displayName`은 `NeoSQL MCP`. 버전 hook·gitignore·workflow·테스트·사용 안내의
   plugin ID도 함께 변경했다. 내부 MCP server 키와 npm pin `neosql-mcp@1.8.1`은 동일하다.
