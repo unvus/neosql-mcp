@@ -129,6 +129,50 @@ args = [
 ]
 ```
 
+## Install as a Claude Plugin
+
+Claude Code and Claude Desktop Cowork can also load neosql-mcp as a plugin instead of the
+manual `mcpServers` entry above. The plugin runs a version-pinned package, so new versions
+arrive with plugin updates rather than depending on the local `npx` cache.
+
+### From the Claude directory
+
+In claude.ai or the Claude desktop app, open **Customize › Plugins › Discover**, search for
+**NeoSQL MCP**, and select **Add**. The plugin is saved to your claude.ai account and loads in
+Claude Code as `neosql-mcp@synced` the next time you start a session signed in to that
+account (Claude Code 2.1.273 or later). Claude Chat does not run this local MCP server.
+
+### From the marketplace in this repository
+
+If you use Claude Code without a claude.ai login, or want to install from a terminal or a
+script, add this repository as a plugin marketplace and install the plugin from it:
+
+```bash
+claude plugin marketplace add unvus/neosql-mcp
+claude plugin install neosql-mcp@neosql
+```
+
+Inside a session, `/plugin install neosql-mcp --marketplace unvus/neosql-mcp` does both
+steps. Marketplace plugins do not auto-update by default; run
+`claude plugin update neosql-mcp@neosql`, or enable auto-update for the `neosql` marketplace
+in `/plugin`.
+
+### Using the plugin with a manual configuration
+
+A manual `neosql` entry and the plugin are separate servers in Claude Code, so keeping both
+shows every tool twice. Check `/mcp` to see which servers are active and disable one of
+them. To pin a project with `--project-id`, keep the manual configuration and disable the
+plugin for that repository in `.claude/settings.local.json`, using `neosql-mcp@synced` for
+a directory install or `neosql-mcp@neosql` for a marketplace install:
+
+```json
+{
+  "enabledPlugins": {
+    "neosql-mcp@synced": false
+  }
+}
+```
+
 ## CLI Options
 
 | Option                                     | Default | Purpose                                                                                                        |

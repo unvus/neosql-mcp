@@ -63,6 +63,8 @@ plugins/neosql-mcp/                  Claude directory 배포 bundle (npm package
 ├── .claude-plugin/icon.png     directory 등록용 512×512 투명 PNG 아이콘 (원본은 assets/)
 ├── .mcp.json                   고정 버전 npx launcher, project ID 설정 없음
 └── README.md                   directory listing·사용·데이터 처리 안내
+.claude-plugin/marketplace.json  저장소 루트 marketplace manifest (name `neosql`, entry `./plugins/neosql-mcp`).
+                                Claude Code CLI 설치 경로용이며 directory 스캔 범위 밖 (설계 D12)
 server.json                     공식 MCP Registry 메타데이터. version은 0.0.0 자리표시이며
                                 publish-mcp-registry workflow가 tag 버전을 넣는다 (npm 배포 제외)
 scripts/                        repository 유지보수용 Node ESM script (npm 배포 제외)
@@ -101,7 +103,8 @@ dist/   tsup 빌드 산출물 (편집 금지)
   않고 root의 영문·한국어 README로 연결한다.
 - 사용자-facing 동작, CLI 옵션, 도구 목록, 설정 예시를 변경하면 같은 변경에서
   root 두 README를 함께 갱신하고 plugin에 해당하는 설명도 plugin README에 반영한다.
-  plugin 공개 설치 안내는 directory 게시 후 root README에 추가한다.
+  plugin 공개 설치 안내는 directory 게시(2026-10-03) 후 root README에 추가한다. directory 추가와
+  자체 marketplace 설치(D12) 두 경로를 함께 적는다.
   내부 개발 문서는 기존처럼 `docs/`에 둔다.
 
 `tests/scripts/`는 script를 직접 import하지 않고 임시 디렉터리에 복사한 뒤 Node로 실행한다.
@@ -184,3 +187,4 @@ tests ─► src          (테스트는 항상 ../../src/... 로 import)
 - 2026-04-29: `src/` 평면 → `cli/mcp/upstream/infra` 4분할, `src/` ↔ `tests/` 분리 도입.
 - 2026-04-29: Phase 2-1 채널 인프라(`http-client`, `sse-parser`)와 9개 MCP tool 시그니처, mock UDS 통합 테스트 추가.
 - 2026-05-11: Phase 3-1 Desktop readiness/activation 모듈 추가.
+- 2026-10-06: 루트 `.claude-plugin/marketplace.json` 추가 (Claude Code CLI 설치용 자체 marketplace, D12).

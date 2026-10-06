@@ -1,0 +1,6 @@
+{
+  "name": "neosql",
+  "owner": { "name": "Unvus Co., Ltd.", "url": "https://neosql.unvus.com" },
+  "description": "NeoSQL plugins for Claude Code",
+  "plugins": [{ "name": "neosql-mcp", "source": "./plugins/neosql-mcp" }]
+}

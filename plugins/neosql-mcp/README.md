@@ -38,11 +38,26 @@ and transaction settings apply. ERD tools change virtual models; they do not app
 those changes to the database. Code generation writes files under the configured
 project location and can overwrite existing files.
 
+## Install from the terminal
+
+Adding this plugin from the Claude directory saves it to your claude.ai account. Claude
+Code users who prefer a terminal install, or who do not sign in with a claude.ai account,
+can add the repository's plugin marketplace instead:
+
+```bash
+claude plugin marketplace add unvus/neosql-mcp
+claude plugin install neosql-mcp@neosql
+```
+
+Marketplace installs do not auto-update by default; run
+`claude plugin update neosql-mcp@neosql` to pick up a new version.
+
 ## Fixed project configuration in Claude Code
 
 If a repository needs a fixed project ID, keep its manual MCP configuration and
-disable the directory plugin for that repository. In `.claude/settings.local.json`,
-merge this setting with your existing settings:
+disable the plugin for that repository. In `.claude/settings.local.json`, merge this
+setting with your existing settings, using `neosql-mcp@synced` for a directory install
+or `neosql-mcp@neosql` for a marketplace install:
 
 ```json
 {

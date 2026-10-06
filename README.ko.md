@@ -128,6 +128,50 @@ args = [
 ]
 ```
 
+## Claude 플러그인으로 설치
+
+Claude Code와 Claude Desktop Cowork에서는 위의 수동 `mcpServers` 설정 대신 neosql-mcp를
+플러그인으로 사용할 수 있습니다. 플러그인은 버전이 고정된 패키지를 실행하므로 새 버전은 로컬
+`npx` 캐시에 의존하지 않고 플러그인 업데이트로 전달됩니다.
+
+### Claude directory에서 추가
+
+claude.ai 또는 Claude 데스크톱 앱에서 **Customize › Plugins › Discover**를 열고 **NeoSQL MCP**를
+검색한 뒤 **Add**를 선택하세요. 플러그인은 claude.ai 계정에 저장되며, 같은 계정으로 로그인한
+Claude Code 세션을 다음에 시작할 때 `neosql-mcp@synced`로 로드됩니다(Claude Code 2.1.273 이상).
+Claude Chat은 이 로컬 MCP 서버를 실행하지 않습니다.
+
+### 이 저장소의 marketplace에서 설치
+
+claude.ai 로그인 없이 Claude Code를 사용하거나 터미널·스크립트로 설치하려면, 이 저장소를
+플러그인 marketplace로 추가하고 플러그인을 설치하세요.
+
+```bash
+claude plugin marketplace add unvus/neosql-mcp
+claude plugin install neosql-mcp@neosql
+```
+
+세션 안에서는 `/plugin install neosql-mcp --marketplace unvus/neosql-mcp` 한 번으로 두 단계를
+처리합니다. marketplace 플러그인은 기본적으로 자동 업데이트되지 않으므로
+`claude plugin update neosql-mcp@neosql`을 실행하거나 `/plugin`에서 `neosql` marketplace의
+자동 업데이트를 켜세요.
+
+### 수동 설정과 함께 사용할 때
+
+Claude Code에서 수동 `neosql` 설정과 플러그인은 별개의 서버이므로 둘 다 두면 모든 도구가 두 벌
+표시됩니다. `/mcp`에서 활성 서버를 확인하고 하나를 비활성화하세요. `--project-id`로 프로젝트를
+고정하려면 수동 설정을 유지하고 해당 저장소의 `.claude/settings.local.json`에서 플러그인을
+끄세요. directory 설치는 `neosql-mcp@synced`, marketplace 설치는 `neosql-mcp@neosql`을
+사용합니다.
+
+```json
+{
+  "enabledPlugins": {
+    "neosql-mcp@synced": false
+  }
+}
+```
+
 ## CLI 옵션
 
 | 옵션                                         | 기본값 | 용도                                                                                             |
