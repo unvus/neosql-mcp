@@ -165,7 +165,8 @@ icon 경고 1건과 policy hold 3건의 근거는 [등록 설계 §9.1](claude-p
   (`claude mcp get neosql` ✔ Connected), `neosql-mcp@neosql` 재활성화. 개발 머신의 marketplace
   `neosql`은 P12에서 GitHub 소스로 교체했다. 로컬 폴더로 되돌리려면 marketplace를 remove한 뒤
   `claude plugin marketplace add <저장소 경로>`와 install을 다시 실행한다.
-- 미검증: Windows에서의 marketplace 설치, `@synced` 동기화(P07), P06·P08, 2.1.289 이상에서 함정 B 재확인.
+- 미검증: `@synced` 동기화(P07), P06·P08, 2.1.289 이상에서 함정 B 재확인. Windows marketplace 설치는
+  plugin 폴더·`.mcp.json`·npm 패키지가 불변이라 별도 재검증 대상에서 제외한다.
 
 ## 기존 MCP host 검증
 

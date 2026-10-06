@@ -279,7 +279,8 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     중복 판정이 plugin을 가리지 않음. 함정 A(저장소 cwd에서 npx가 로컬 package 선택 → 실패),
     함정 B(manifest 미커밋 상태의 in-place 설치본은 세션 시작 시 MCP 미기동, 커밋 후 재설치로 해소)를 기록.
     사용자 경로(GitHub → cache 복사)는 세션 시작 시 1319ms 연결 확인. 상세는 등록 설계 W6 결과와
-    `docs/e2e-manual.md` P10·P11. Windows 재확인·P06~P08·`@synced` 동기화는 미검증.
+    `docs/e2e-manual.md` P10·P11. P06~P08·`@synced` 동기화는 미검증(Windows 재검증은 metadata 변경뿐이라
+    불필요).
 - [x] Plugin 포함 npm 릴리스: `1.8.2`, shrinkwrap 배포·ping·10개 tool 확인,
   `plugin-release`가 release commit `13af326`을 가리킴
 - [x] Directory 제출 전 W6 및 데이터 처리 확인 — 2026-10-03 제출·게시로 선행 조건 항목으로서는 종결.

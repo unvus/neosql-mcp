@@ -850,8 +850,9 @@ W6 재확인 결과 (2026-10-06, macOS, Claude Code 2.1.287, plugin·npm `1.8.9`
   extraKnownMarketplaces entry`로 거부되므로 먼저 제거한다.
 - 기각한 가설: 중복 판정, 프로젝트 `disabledMcpServers`, plugin 전체 실패. discord plugin의 ✗는
   `--channels` 미지정 표시이며 실제로는 연결됐다.
-- directory 게시(2026-10-03) 뒤 제3자 계정의 Discover 노출을 확인했다. Windows 재확인, P06~P08,
-  `@synced` 동기화 검증은 남아 있다.
+- directory 게시(2026-10-03) 뒤 제3자 계정의 Discover 노출을 확인했다. P06~P08과 `@synced` 동기화
+  검증은 남아 있다. 이번 변경은 marketplace metadata 추가뿐이라(plugin 폴더·`.mcp.json`·npm 패키지
+  불변) Windows 실행 경로 재검증은 필요하지 않다.
 
 ### W7. 제출
 
