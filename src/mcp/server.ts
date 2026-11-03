@@ -18,6 +18,8 @@ import { registerGetContextHelpTool } from './tools/context/get-context-help.js'
 import { registerExecuteQueryTool } from './tools/sql/execute-query.js';
 import { registerErdCreateTablesTool } from './tools/erd/erd-create-tables.js';
 import { registerErdModifyTablesTool } from './tools/erd/erd-modify-tables.js';
+import { registerListProjectsTool } from './tools/project/list-projects.js';
+import { registerCreateProjectTool } from './tools/project/create-project.js';
 import { mcpSessionId } from './session.js';
 import { registerGetMcpSessionIdTool } from './tools/get-mcp-session-id.js';
 import type { PostRpc, UpstreamToolDeps } from './tools/shared.js';
@@ -71,8 +73,8 @@ const createDesktopReadyChecker =
   (opts: CreateServerOptions, profile: Profile, socketPath: string) =>
   (context?: PreparationContext) =>
     defaultEnsureDesktopReady({
+      // The call resolves its target (input projectId or --project-id) and passes it here.
       ...context,
-      ...(opts.projectId === undefined ? {} : { projectId: opts.projectId }),
       socketPath,
       profile,
       ...(opts.desktopHealthTimeoutMs === undefined
@@ -94,6 +96,8 @@ const createDesktopFocusRequester = (opts: CreateServerOptions, profile: Profile
 const registerTools = (server: McpServer, upstreamDeps: UpstreamToolDeps): void => {
   registerPingTool(server);
   registerGetMcpSessionIdTool(server, mcpSessionId);
+  registerListProjectsTool(server, upstreamDeps);
+  registerCreateProjectTool(server, upstreamDeps);
   registerGenerateCodeTool(server, upstreamDeps);
   registerListConnectionsTool(server, upstreamDeps);
   registerListTablesTool(server, upstreamDeps);

@@ -5,6 +5,7 @@ import type { ProgressNotification } from '@modelcontextprotocol/sdk/types.js';
 import { preparationPayload, progressMessages } from './preparation-messages.js';
 import type { DesktopReadyResult, PreparationContext } from '../../upstream/desktop-readiness.js';
 import { logger } from '../../infra/logger.js';
+import { resolveProjectTarget } from './context/project-target.js';
 
 export interface ToolTextResult {
   [key: string]: unknown;
@@ -63,10 +64,25 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     mapResult?: (result: TResult) => ToolTextResult;
     /** Opt-in override for operation-specific errors, before lifecycle defaults. */
     mapOperationErrorResult?: ErrorResultMapper;
+    /**
+     * 'project' (default): the target project must be open and ready.
+     * 'app': only NeoSQL Desktop must be ready; no project target or navigation.
+     */
+    preparation?: 'project' | 'app';
+    /** Per-call target from the tool input, resolved against --project-id. */
+    projectId?: string;
   } = {},
 ): Promise<ToolTextResult> => {
   const request = opts.request;
   request?.signal.throwIfAborted();
+  const appOnly = opts.preparation === 'app';
+  let targetProjectId: string | undefined;
+  if (!appOnly) {
+    const target = resolveProjectTarget(deps.projectId, opts.projectId);
+    if (!target.ok) return jsonToolErrorResult(target.payload);
+    targetProjectId = target.projectId;
+  }
+  const readyState = appOnly ? 'app_ready' : 'ready';
   const diagnostic = { component: 'McpProgress', traceId: randomUUID(), method, pid: process.pid };
   const startedAt = performance.now();
   const progressToken = request?._meta?.progressToken;
@@ -85,6 +101,8 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     // Preparation has its own terminal results; operation errors below keep their existing mapping.
     const desktopReady = await deps.ensureDesktopReady({
       ...(request ? { signal: request.signal } : {}),
+      ...(appOnly ? { appOnly: true } : {}),
+      ...(targetProjectId === undefined ? {} : { projectId: targetProjectId }),
       onState: async (state) => {
         request?.signal.throwIfAborted();
         if (progressToken === undefined) {
@@ -124,7 +142,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     preparationDeadline = desktopReady.deadline;
     if (desktopReady.deadline !== undefined && performance.now() >= desktopReady.deadline) {
       return jsonToolErrorResult(
-        preparationPayload({ status: 'readiness_timeout', lastState: 'ready' }),
+        preparationPayload({ status: 'readiness_timeout', lastState: readyState }),
       );
     }
   }
@@ -133,12 +151,12 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     const prepared = await opts.prepareRpc?.();
     request?.signal.throwIfAborted();
     if (preparationDeadline !== undefined && performance.now() >= preparationDeadline)
-      return jsonToolErrorResult(preparationPayload({ status: 'readiness_timeout', lastState: 'ready' }));
+      return jsonToolErrorResult(preparationPayload({ status: 'readiness_timeout', lastState: readyState }));
     const params: UpstreamToolParams<TInput> = {
       sessionId: deps.sessionId,
       input,
       ...prepared?.params,
-      ...(deps.projectId === undefined ? {} : { context: { expectedProjectId: deps.projectId } }),
+      ...(targetProjectId === undefined ? {} : { context: { expectedProjectId: targetProjectId } }),
     };
     const timeoutMs = prepared?.timeoutMs ?? opts.timeoutMs;
     const rpcOpts = timeoutMs === undefined ? undefined : { timeoutMs };
@@ -250,7 +268,7 @@ const requestDesktopFocusWithoutBlockingResponse = (deps: UpstreamToolDeps): voi
   }
 };
 
-const jsonToolErrorResult = (payload: unknown): ToolTextResult => ({
+export const jsonToolErrorResult = (payload: unknown): ToolTextResult => ({
   isError: true,
   content: [{ type: 'text', text: JSON.stringify(payload) }],
 });

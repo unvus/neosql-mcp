@@ -6,6 +6,7 @@ import {
   type UpstreamToolDeps,
 } from '../shared.js';
 import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
+import { projectTargetInputShape, splitProjectTarget } from '../context/project-target.js';
 import { alterTableDefSchema } from './input-models.js';
 
 export type ErdModifyTablesDeps = UpstreamToolDeps;
@@ -27,22 +28,25 @@ export const registerErdModifyTablesTool = (server: McpServer, deps: ErdModifyTa
         'Alterations may rename tables, update comments and primary keys, and add, modify, or remove ' +
         'columns, indexes, foreign keys, and UNIQUE / CHECK / EXCLUSION constraints. ' +
         'For table comments, use remarksOperation.modify=true when an empty string is intentional. ' +
-        'Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
+        'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
+        'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed.',
       inputSchema: {
         alterations: z
           .array(alterTableDefSchema)
           .describe('Virtual table alterations to apply to the ERD model.'),
         ...coordinateInputShape,
+        ...projectTargetInputShape,
       },
     },
     async (args, request) => {
       validateCoordinateInput(args);
-      const database = normalizeOptionalNullableString(args.database);
+      const { projectId, input } = splitProjectTarget(args);
+      const database = normalizeOptionalNullableString(input.database);
       return callUpstreamTool(
         deps,
         'erd-modify-tables',
-        { ...args, ...(database === undefined ? {} : { database }) },
-        { request, timeoutMs: 60_000 },
+        { ...input, ...(database === undefined ? {} : { database }) },
+        { ...(projectId === undefined ? {} : { projectId }), request, timeoutMs: 60_000 },
       );
     },
   );

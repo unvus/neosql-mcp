@@ -21,6 +21,7 @@ src/                            (프로덕션 코드만)
 │       ├── code-generation/
 │       ├── context/
 │       ├── erd/                 ERD 전용 가상 테이블 생성·수정
+│       ├── project/             프로젝트 목록·로컬 프로젝트 생성 (앱 전용 준비)
 │       ├── schema/
 │       └── sql/
 ├── upstream/    electron-main HTTP 채널 (UDS / Named Pipe)

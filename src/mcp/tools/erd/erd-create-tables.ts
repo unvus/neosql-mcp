@@ -6,6 +6,7 @@ import {
   type UpstreamToolDeps,
 } from '../shared.js';
 import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
+import { projectTargetInputShape, splitProjectTarget } from '../context/project-target.js';
 import { tableDefSchema } from './input-models.js';
 
 export type ErdCreateTablesDeps = UpstreamToolDeps;
@@ -27,22 +28,27 @@ export const registerErdCreateTablesTool = (server: McpServer, deps: ErdCreateTa
         'Each definition may include columns, primary keys, foreign keys, indexes, and table-level ' +
         'constraints (UNIQUE / CHECK / EXCLUSION). Tables that fail validation or conflict with an ' +
         'existing model are skipped and reported; successful tables remain pending ERD changes. ' +
-        'Provide connectionId, database, and schema together, or omit all three to use the active project Default.',
+        'Works on designOnly connections (no database connection info), so it can draft an initial schema ' +
+        'before any database exists. ' +
+        'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
+        'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed.',
       inputSchema: {
         tableDefinitions: z
           .array(tableDefSchema)
           .describe('Virtual table definitions to add to the ERD.'),
         ...coordinateInputShape,
+        ...projectTargetInputShape,
       },
     },
     async (args, request) => {
       validateCoordinateInput(args);
-      const database = normalizeOptionalNullableString(args.database);
+      const { projectId, input } = splitProjectTarget(args);
+      const database = normalizeOptionalNullableString(input.database);
       return callUpstreamTool(
         deps,
         'erd-create-tables',
-        { ...args, ...(database === undefined ? {} : { database }) },
-        { request, timeoutMs: 60_000 },
+        { ...input, ...(database === undefined ? {} : { database }) },
+        { ...(projectId === undefined ? {} : { projectId }), request, timeoutMs: 60_000 },
       );
     },
   );

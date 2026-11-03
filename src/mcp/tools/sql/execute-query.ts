@@ -9,6 +9,7 @@ import {
   type UpstreamToolDeps,
 } from '../shared.js';
 import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
+import { projectTargetInputShape, splitProjectTarget } from '../context/project-target.js';
 
 export type ExecuteQueryDeps = UpstreamToolDeps;
 
@@ -27,6 +28,7 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
       description:
         'Execute a SQL query on the database through NeoSQL. ' +
         'Supports SELECT, INSERT, UPDATE, DELETE, EXPLAIN, and DDL statements. ' +
+        'Not available for designOnly connections (no database connection info). ' +
         'DDL (CREATE, ALTER, DROP, TRUNCATE, ...) is subject to a NeoSQL-side approval gate: ' +
         'depending on the user policy it may run immediately, require the user to confirm a dialog in NeoSQL, ' +
         'or be rejected outright — the error message states which. ' +
@@ -37,6 +39,7 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
         'or an expired confirmation (retry at most once). Never retry DDL in a loop. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
+        'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed. ' +
         'When a NeoSQL tool response indicates `autoCommit: false`, treat it as a user-configured safety policy. ' +
         'Do not arbitrarily finalize or cancel the open transaction, or attempt to bypass or change this policy.\n\n' +
         'You may execute transaction-control SQL only when the user has explicitly instructed when the transaction should be committed or rolled back.\n\n' +
@@ -52,16 +55,19 @@ export const registerExecuteQueryTool = (server: McpServer, deps: ExecuteQueryDe
             'The SQL statement to execute. DDL is allowed but passes the NeoSQL approval gate.',
           ),
         ...coordinateInputShape,
+        ...projectTargetInputShape,
       },
     },
     async (args, request) => {
       validateCoordinateInput(args);
-      const database = normalizeOptionalNullableString(args.database);
+      const { projectId, input } = splitProjectTarget(args);
+      const database = normalizeOptionalNullableString(input.database);
       return callUpstreamTool(
         deps,
         'execute-query',
-        { ...args, ...(database === undefined ? {} : { database }) },
+        { ...input, ...(database === undefined ? {} : { database }) },
         {
+          ...(projectId === undefined ? {} : { projectId }),
           request,
           timeoutMs: 60_000,
           stringifyResult: jacksonPrettyJsonStringify,

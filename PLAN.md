@@ -224,6 +224,9 @@ NeoSQL runtime context의 원본은 MCP client나 Node process가 아니라 NeoS
 - `--project`, `--default-connection`, `--default-database`, `--default-schema`는 기존
   설정 기동 호환을 위해 오류·경고 없이 무시한다.
 - Node는 선택적 설정 projectId만 보유하며 화면 상태·기본 DB 좌표를 복제하거나 좌표를 병합하지 않는다. 미지정은 현재 활성 프로젝트를 따른다.
+- 프로젝트 도구는 선택 입력 `projectId`로 호출 단위 대상을 받는다. 대상은 입력 `projectId` →
+  `--project-id` → 활성 프로젝트 순이며, `--project-id`와 다른 입력은 Node가 `project_conflict`로
+  거부한다. `list-projects`·`create-project`는 프로젝트 없이 앱 준비만 확인하는 앱 수준 도구다.
 - DB 도구는 `connectionId`, `database`, `schema`를 모두 명시하거나 모두 생략한다.
   `database: null`은 database 계층이 없는 DBMS의 유효한 명시 값이다.
 - 좌표는 도구 입력의 존재 여부를 유지해 upstream `params.input`으로 전달한다.

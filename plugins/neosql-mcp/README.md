@@ -27,8 +27,10 @@ Claude Code and Claude Desktop Cowork on macOS and Windows.
 
 ## Use it
 
-Select the intended project in NeoSQL Desktop before asking Claude to use a tool.
-The plugin follows that project and does not provide a project ID setting. Database
+Select the intended project in NeoSQL Desktop before asking Claude to use a tool,
+or ask Claude to list your projects and pick one; Desktop opens the chosen project.
+For a new design, Claude can create a local project with a design-only connection
+after you approve it in Desktop. The plugin does not provide a project ID setting. Database
 credentials stay in Desktop's connection configuration; the plugin does not ask you
 to enter credentials in Claude.
 
@@ -38,6 +40,7 @@ Example requests:
 - "Inspect the orders table, then query orders created in the last week."
 - "Add a status column to the customers table in my ERD model."
 - "Generate code for customers using this project's configured templates."
+- "Create a new PostgreSQL project for a blog app and draw an initial ERD."
 
 SQL execution can modify real databases. Desktop's MCP permissions, DDL approval,
 and transaction settings apply. ERD tools change virtual models; they do not apply

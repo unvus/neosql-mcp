@@ -77,6 +77,8 @@ describe('createServer', () => {
       new Set([
         'ping',
         'get-mcp-session-id',
+        'list-projects',
+        'create-project',
         'generate-code',
         'list-connections',
         'list-tables',
@@ -92,6 +94,8 @@ describe('createServer', () => {
     expect(Object.fromEntries(toolTitles)).toMatchObject({
       ping: 'Ping',
       'get-mcp-session-id': 'Get MCP Session ID',
+      'list-projects': 'List Projects',
+      'create-project': 'Create Project',
       'generate-code': 'Generate Code',
       'list-connections': 'List Connections',
       'list-tables': 'List Tables',
@@ -105,7 +109,7 @@ describe('createServer', () => {
     expect(toolNames.has('modify-tables')).toBe(false);
   });
 
-  it('declares readOnlyHint true for the six read-only tools', async () => {
+  it('declares readOnlyHint true for the seven read-only tools', async () => {
     await connectClientToServer();
     const { tools } = await client!.listTools();
     const readOnlyTools = tools.filter((tool) => tool.annotations?.readOnlyHint === true);
@@ -115,6 +119,7 @@ describe('createServer', () => {
       'get-mcp-session-id',
       'get-table-details',
       'list-connections',
+      'list-projects',
       'list-tables',
       'ping',
     ]);
@@ -138,13 +143,16 @@ describe('createServer', () => {
     }
   });
 
-  it('declares readOnlyHint false and destructiveHint false for erd-create-tables', async () => {
-    await connectClientToServer();
-    const { tools } = await client!.listTools();
-    const tool = tools.find((candidate) => candidate.name === 'erd-create-tables');
+  it.each(['erd-create-tables', 'create-project'])(
+    'declares readOnlyHint false and destructiveHint false for %s',
+    async (toolName) => {
+      await connectClientToServer();
+      const { tools } = await client!.listTools();
+      const tool = tools.find((candidate) => candidate.name === toolName);
 
-    expect(tool?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
-  });
+      expect(tool?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
+    },
+  );
 
   it('declares openWorldHint false for every tool', async () => {
     await connectClientToServer();
@@ -270,6 +278,7 @@ describe('createServer', () => {
     expect(tool?.description).toBe(
       'Execute a SQL query on the database through NeoSQL. ' +
         'Supports SELECT, INSERT, UPDATE, DELETE, EXPLAIN, and DDL statements. ' +
+        'Not available for designOnly connections (no database connection info). ' +
         'DDL (CREATE, ALTER, DROP, TRUNCATE, ...) is subject to a NeoSQL-side approval gate: ' +
         'depending on the user policy it may run immediately, require the user to confirm a dialog in NeoSQL, ' +
         'or be rejected outright — the error message states which. ' +
@@ -280,6 +289,7 @@ describe('createServer', () => {
         'or an expired confirmation (retry at most once). Never retry DDL in a loop. ' +
         'SELECT and EXPLAIN return result rows (up to 200 rows). ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
+        'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed. ' +
         'When a NeoSQL tool response indicates `autoCommit: false`, treat it as a user-configured safety policy. ' +
         'Do not arbitrarily finalize or cancel the open transaction, or attempt to bypass or change this policy.\n\n' +
         'You may execute transaction-control SQL only when the user has explicitly instructed when the transaction should be committed or rolled back.\n\n' +
@@ -321,6 +331,42 @@ describe('createServer', () => {
     expect(erdModifySchema.properties).not.toHaveProperty('executeImmediately');
   });
 
+  it('accepts an optional projectId on every project tool and none on app-level tools', async () => {
+    await connectClientToServer();
+    const result = await client!.listTools();
+    const projectIdDescription =
+      'NeoSQL project ID from list-projects or create-project. NeoSQL Desktop opens the project if needed. Omit it to use the project configured with --project-id, or the project currently open in NeoSQL Desktop.';
+
+    for (const toolName of [
+      'list-connections',
+      'list-tables',
+      'get-table-details',
+      'erd-create-tables',
+      'erd-modify-tables',
+      'execute-query',
+      'generate-code',
+    ]) {
+      const schema = inputSchemaFor(result.tools, toolName);
+      expect(propertySchema(schema, 'projectId').description, toolName).toBe(projectIdDescription);
+      expect(requiredFields(schema), toolName).not.toContain('projectId');
+    }
+    for (const toolName of ['list-projects', 'create-project']) {
+      expect(inputSchemaFor(result.tools, toolName).properties ?? {}, toolName).not.toHaveProperty(
+        'projectId',
+      );
+    }
+  });
+
+  it('requires name and dataSource for create-project', async () => {
+    await connectClientToServer();
+    const result = await client!.listTools();
+
+    expect(requiredFields(inputSchemaFor(result.tools, 'create-project')).sort()).toEqual([
+      'dataSource',
+      'name',
+    ]);
+  });
+
   it('rejects partial coordinate tuples for every database tool', async () => {
     await connectClientToServer();
     const cases = [
@@ -348,6 +394,7 @@ describe('createServer', () => {
 
 interface JsonSchema {
   additionalProperties?: boolean;
+  description?: string;
   anyOf?: JsonSchema[];
   items?: JsonSchema;
   minItems?: number;

@@ -271,3 +271,51 @@ describe('지정 프로젝트 준비', () => {
     expect(signal?.aborted).toBe(true);
   });
 });
+
+describe('app-only preparation', () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] }));
+  afterEach(() => {
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it.each([
+    status('not_selected', null),
+    status('loading'),
+    status('failed', 'A', 'initialization_failed'),
+    status('authentication_required'),
+  ])('returns ready once the renderer responds, whatever the project state (%j)', async (response) => {
+    const opts = setup([response]);
+    const result = await ensureDesktopReady({ ...opts, appOnly: true });
+    expect(result).toMatchObject({ status: 'ready', deadline: expect.any(Number) });
+    expect(opts.queryStatus).toHaveBeenCalledOnce();
+    expect(opts.onState.mock.calls.flat()).toEqual(['app_ready']);
+  });
+  it('never navigates, even when a projectId is also given', async () => {
+    const navigate = vi.fn();
+    const opts = setup([status('ready', 'A')]);
+    expect(
+      await ensureDesktopReady({ ...opts, appOnly: true, projectId: 'B', openProject: navigate }),
+    ).toMatchObject({ status: 'ready' });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+  it('still activates the app and waits for the renderer', async () => {
+    const opts = setup([
+      absent(),
+      absent(),
+      absent(),
+      { app: 'neosql', profile: 'prod', renderer: 'not_ready', project: null },
+      status('not_selected', null),
+    ]);
+    expect(await finish(ensureDesktopReady({ ...opts, appOnly: true }))).toMatchObject({
+      status: 'ready',
+    });
+    expect(opts.requestActivation).toHaveBeenCalledOnce();
+    expect(opts.onState.mock.calls.flat()).toEqual([
+      'activation_requesting',
+      'activation_requested',
+      'renderer_loading',
+      'app_ready',
+    ]);
+  });
+});

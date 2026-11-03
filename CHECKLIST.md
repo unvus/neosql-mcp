@@ -311,3 +311,15 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
   - 로컬에서 버전 주입, tag 불일치 거부, `mcpName` 없는 `1.8.8` 대기 timeout, `mcpName`이
     있는 패키지의 일치 판정을 실제 명령으로 확인.
 - [x] 첫 게시: `1.8.9` (2026-10-01 KST), OIDC namespace·registry 조회 확인. 상세는 문서 §7
+
+## 프로젝트 목록·생성과 호출 단위 프로젝트 대상 · 2026-11-03
+
+본체 계약은 [upstream RPC contract](docs/upstream-rpc-contract.md)의 `list-projects`·`create-project`와
+Common Params를 따른다. 본체(`../neosql`) 구현과 짝을 이룬다.
+
+- [x] 앱 전용 준비(`appOnly`, `app_ready`): Renderer 응답 시 프로젝트 상태와 무관하게 준비 완료, 이동 없음
+- [x] `list-projects`: 앱 결과에 `configuredProjectId` 추가
+- [x] `create-project`: 입력 trim, 90초, `--project-id` 지정 시 거부, 앱 오류를 `not_created`/`failed`/`outcome_unknown`으로 변환
+- [x] 프로젝트 도구 7개에 선택 입력 `projectId`: context.expectedProjectId 전달, input 제거, `--project-id`와 충돌 시 `project_conflict`
+- [x] `project_not_selected` 안내에 `list-projects`·`projectId` 추가, `get-context-help`·README 3벌 갱신
+- [ ] 실제 Desktop과 host에서 목록 → 생성 → `erd-create-tables` 흐름 수동 확인

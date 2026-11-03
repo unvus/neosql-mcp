@@ -34,7 +34,12 @@ describe('get-context-help tool', () => {
       activeProject: {
         source: 'NeoSQL Desktop',
         description:
-          'Tools always use the project currently selected and fully loaded in NeoSQL Desktop.',
+          'Tools use the projectId passed to the tool, else the project configured with --project-id, else the project currently open in NeoSQL Desktop. NeoSQL Desktop opens a target project when needed and runs the tool after it is fully loaded.',
+      },
+      projectSelection: {
+        tools: ['list-projects', 'create-project'],
+        description:
+          'When no project is open or configured, call list-projects and pass the chosen projectId to other tools. To start a new design, call create-project (a local project with one designOnly connection as the Default) and pass the returned projectId. With --project-id, tools accept only that project.',
       },
       defaultContext: {
         location: 'NeoSQL project MCP Access Control',

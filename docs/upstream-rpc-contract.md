@@ -84,11 +84,16 @@ Error response:
 
 ```ts
 interface UpstreamToolParams<TInput> {
-  context?: { expectedProjectId: string }; // --project-id 지정 시에만
+  context?: { expectedProjectId: string }; // 이번 호출의 대상 프로젝트가 있을 때만 (아래 참조)
   sessionId: string;
   input: TInput;
 }
 ```
+
+대상 프로젝트는 도구 입력 `projectId`, 없으면 `--project-id`다. 둘 다 있고 값이 다르면
+Node가 `project_conflict`(requestSent:false)로 끝내고 앱을 호출하지 않는다. Node는
+`projectId`를 `params.input`에서 제거해 `context.expectedProjectId`로만 보낸다.
+`list-projects`·`create-project`는 대상 프로젝트가 없으며 context를 보내지 않는다.
 
 Node responsibility:
 
@@ -219,6 +224,10 @@ type OpenProjectResult = {
 - 이동 RPC 전송은 원래 작업의 requestSent로 계산하지 않는다. 원래 작업 직전에도
   취소·기한을 확인하고 한 번만 전송한다.
 
+`list-projects`·`create-project`는 앱 전용 준비를 쓴다. 설치 확인·OS 실행·Renderer 대기는
+같고, Renderer가 응답하면 프로젝트 상태와 관계없이 `app_ready`로 끝낸다. 프로젝트 이동·
+대상 비교를 하지 않으며 `--project-id`가 있어도 이동하지 않는다.
+
 상태 메시지·사유 매핑·익명 local 및 배포 지원 범위는
 [런타임 수명 계약](../../neosql/docs/mcp/runtime-lifecycle.html#navigation)을 따른다.
 
@@ -227,6 +236,8 @@ type OpenProjectResult = {
 | MCP tool             | RPC method           | Electron 호출 | Timeout |
 | -------------------- | -------------------- | ------------- | ------: |
 | (internal only)     | `get-runtime-status` | yes           |      1s |
+| `list-projects`      | `list-projects`      | yes           |     30s |
+| `create-project`     | `create-project`     | yes           |     90s |
 | `list-connections`   | `list-connections`   | yes           |     30s |
 | `list-tables`        | `list-tables`        | yes           |     30s |
 | `get-table-details`  | `get-table-details`  | yes           |     30s |
@@ -246,6 +257,64 @@ type OpenProjectResult = {
 다룬다. `ping`, `get-mcp-session-id`, `get-context-help`는 Node-local tool이다.
 `generate-code`는 준비 확인 후 내부 정책 조회와 생성 RPC를 순서대로 호출한다.
 
+## `list-projects`
+
+Input: `{}`. 앱 전용 준비 후 `{ sessionId, input: {} }`를 보낸다.
+
+```ts
+type ListProjectsResult = {
+  projects: Array<{
+    projectId: string;
+    name: string;
+    projectType: 'local' | 'account';
+    lastAccessedDt: string | null;
+    active: boolean; // 지금 Desktop에 열린 프로젝트
+  }>;
+  activeProjectId: string | null; // 대시보드면 null
+  accountProjects: 'included' | 'signed_out' | 'unavailable';
+};
+```
+
+Node는 앱 결과 최상위에 `configuredProjectId: string | null`(`--project-id`)을 더해 반환한다.
+
+## `create-project`
+
+Input: `{ name: string; dataSource: string }`. Node는 빈 값을 거부하고 앞뒤 공백을 제거해
+보낸다. DBMS 이름 검증은 앱이 한다(대소문자 무시). `--project-id`가 있으면 Node가
+`project_conflict`(requestSent:false)로 끝내고 앱을 호출하지 않는다.
+
+앱은 미저장 변경 검사 → NeoSQL 확인창(45초) → 현재 프로젝트 이탈 → 로컬 프로젝트와
+설계 전용 커넥션 1개(MCP Default) 생성 → 새 프로젝트로 이동 순서로 처리한다.
+
+```ts
+type CreateProjectResult = {
+  status: 'created';
+  projectId: string;
+  name: string;
+  projectType: 'local';
+  dataSource: string;
+  connection: {
+    connectionId: string;
+    name: string;
+    databaseName: string | null;
+    schemaName: string;
+    designOnly: true;
+  };
+  navigated: boolean; // false면 생성만 됨. 다음 도구 호출의 projectId로 이동한다.
+};
+```
+
+| 앱 error kind    | 의미                                      | Node 결과                                   |
+| ---------------- | ----------------------------------------- | ------------------------------------------- |
+| `invalid-params` | 이름 또는 DBMS 오류                       | `{ status: 'not_created', reason, message }` |
+| `unavailable`    | 미저장 변경, 다른 확인창 대기, 확인 만료  | `{ status: 'not_created', reason, message }` |
+| `forbidden`      | 사용자가 거절                             | `{ status: 'not_created', reason, message }` |
+| `handler-error`  | 생성 중 실패(일부 생성 가능)              | `{ status: 'failed', message, nextAction }`  |
+| `timeout`·HTTP timeout | 결과 불명                           | `{ status: 'outcome_unknown', message, nextAction }` |
+
+모두 `isError: true`이며 Node는 재시도하지 않는다. 결과가 불명하면 `list-projects`로
+생성 여부를 확인하라고 안내한다.
+
 ## Database Coordinate Contract
 
 현재 MCP tool인 `list-tables`, `get-table-details`, `erd-create-tables`,
@@ -260,8 +329,8 @@ type OpenProjectResult = {
 - 명시 좌표가 무효여도 프로젝트 Default로 fallback하지 않는다.
 
 Electron main은 이전 Node 패키지 호환을 위해 기존 `params.context` fallback을 당분간
-허용한다. 새 Node는 DB 좌표를 context에 넣지 않지만, --project-id 지정 시
-context.expectedProjectId를 별도로 보낸다. Renderer는 어떤 경로로 들어온
+허용한다. 새 Node는 DB 좌표를 context에 넣지 않지만, 대상 프로젝트(입력 projectId 또는
+--project-id)가 있으면 context.expectedProjectId를 별도로 보낸다. Renderer는 어떤 경로로 들어온
 요청이든 같은 전체 좌표/Default 및 MCP 정책 검증을 수행한다.
 
 ## `list-connections`

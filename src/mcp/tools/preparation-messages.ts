@@ -13,6 +13,7 @@ export const progressMessages: Record<PreparationState, string> = {
   project_navigation: 'Requesting navigation to the configured project.',
   target_loading: 'Waiting for the configured project to become ready.',
   project_loading: 'Loading the selected project.',
+  app_ready: 'NeoSQL Desktop is ready. Proceeding with the requested operation.',
   ready: 'The project is ready. Proceeding with the requested operation.',
 };
 const failureMessages: Record<PreparationFailureStatus, [string, string]> = {
@@ -33,8 +34,8 @@ const failureMessages: Record<PreparationFailureStatus, [string, string]> = {
     'Open the app manually, then run the tool again.',
   ],
   project_not_selected: [
-    'NeoSQL Desktop is ready. Select a project in the app, then run the tool again.',
-    'Select a project, then run the tool again.',
+    'No project is open in NeoSQL Desktop. Call list-projects and pass a projectId, or select a project in the app, then run the tool again.',
+    'Call list-projects and pass a projectId, or select a project in NeoSQL Desktop, then run the tool again.',
   ],
   project_load_failed: [
     'Failed to load the project. Check the error in NeoSQL Desktop.',
@@ -88,6 +89,7 @@ const lastStage: Record<PreparationState, string> = {
   project_navigation: 'requesting project navigation',
   target_loading: 'waiting for the configured project',
   project_loading: 'loading the selected project',
+  app_ready: 'confirming app readiness before starting the operation',
   ready: 'confirming readiness before starting the operation',
 };
 export const preparationPayload = (result: Exclude<DesktopReadyResult, { status: 'ready' }>) => {

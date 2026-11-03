@@ -186,10 +186,12 @@ To target a specific project, add its project ID to the MCP host's arguments:
 ```
 
 Replace `<your-project-id>` with the target project's ID, not its display name.
-Without this option, tools use the project selected in Desktop. With it, an
-app-dependent tool can switch the Desktop window to the requested project before
-running. Connecting the MCP host, listing tools, or calling `ping`,
-`get-mcp-session-id`, or `get-context-help` does not switch projects.
+Without this option, tools use the `projectId` passed to the tool, or the project
+selected in Desktop. With it, an app-dependent tool can switch the Desktop window to
+the requested project before running; a tool call with a different `projectId` is
+rejected, and `create-project` is unavailable. Connecting the MCP host, listing tools,
+or calling `ping`, `get-mcp-session-id`, `get-context-help`, `list-projects`, or
+`create-project` does not switch to the configured project.
 
 Save or discard unsaved changes in Desktop if they prevent navigation. Sign-in,
 project access, and other required confirmations are still handled in Desktop.
@@ -217,10 +219,15 @@ keep their existing result format and are never automatically resent.
 
 ## Context Resolution
 
-NeoSQL tools always use the project currently selected and fully loaded in NeoSQL
-Desktop. With `--project-id`, the Node process retains the requested project ID for
-navigation and project validation. Desktop still owns the active project and its
-Default connection target.
+Each NeoSQL tool call works on one project: the `projectId` passed to the tool, else
+the project set with `--project-id`, else the project currently open in NeoSQL Desktop.
+When the target is not open, Desktop opens it first, and the tool runs once the project
+is fully loaded. Desktop still owns the active project and its Default connection target.
+
+If no project is open and none is configured, call `list-projects` and pass the chosen
+`projectId`. To start a new design, call `create-project`: after you approve it in
+Desktop, it creates a local project with one design-only connection set as the Default
+and opens it. Pass the returned `projectId` to later tools such as `erd-create-tables`.
 
 Database tools accept a connection target in one of two forms:
 
@@ -241,6 +248,8 @@ Tools that accept an explicit connection target are marked in
 | -------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ping`               |        | Returns `pong` for a lightweight MCP health check.                                                                                                                                                                                                               |
 | `get-mcp-session-id` |        | Diagnostic tool that returns the upstream session id used by this process.                                                                                                                                                                                       |
+| `list-projects`      |        | Lists the projects you can open in Desktop. Works without an open project.                                                                                                                                                                                       |
+| `create-project`     |        | Creates a local project with one design-only connection for a new design, after you approve it in Desktop.                                                                                                                                                       |
 | `list-connections`   |        | Lists MCP-enabled NeoSQL connections and schemas for the current project.                                                                                                                                                                                        |
 | `get-context-help`   |        | Explains active-project Default and explicit target usage.                                                                                                                                                                                                       |
 | `list-tables`        | Yes    | Lists tables.                                                                                                                                                                                                                                                    |
@@ -251,7 +260,8 @@ Tools that accept an explicit connection target are marked in
 | `generate-code`      | Yes    | Generates and saves source files for specified tables using template packs configured in Project Settings. Requires template packs, required variables, and an output folder (Location). May overwrite existing files without an additional confirmation dialog. |
 
 Tools marked **Target** accept the `connectionId`, `database`, and `schema` fields
-described in [Context Resolution](#context-resolution).
+described in [Context Resolution](#context-resolution). `list-connections` and every
+**Target** tool also accept an optional `projectId`.
 
 ## Transport
 
@@ -289,7 +299,8 @@ implicitly undo or automatically retry the operation.
 
 ### Context-sensitive tools fail
 
-Select a project in Desktop and enable MCP access for the connection and schema you intend to use.
+Select a project in Desktop, or pass a `projectId` from `list-projects`, and enable MCP
+access for the connection and schema you intend to use.
 Either configure a Default in MCP Access Control and omit all three target fields, or
 run `list-connections` and pass its `connectionId`, `databaseName`, and `schemaName`
 together as `connectionId`, `database`, and `schema`. The explicit form does not require

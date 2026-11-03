@@ -13,9 +13,10 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
         openWorldHint: false,
       },
       description:
-        'Explain how NeoSQL resolves the active project and database coordinates. ' +
+        'Explain how NeoSQL resolves the target project and database coordinates. ' +
         'Use the project Default by omitting all coordinates, or use list-connections to discover ' +
-        'an explicit connectionId/database/schema tuple.',
+        'an explicit connectionId/database/schema tuple. ' +
+        'Use list-projects or create-project to choose a project when none is open.',
       inputSchema: {},
     },
     async () =>
@@ -24,7 +25,12 @@ export const registerGetContextHelpTool = (server: McpServer): void => {
         activeProject: {
           source: 'NeoSQL Desktop',
           description:
-            'Tools always use the project currently selected and fully loaded in NeoSQL Desktop.',
+            'Tools use the projectId passed to the tool, else the project configured with --project-id, else the project currently open in NeoSQL Desktop. NeoSQL Desktop opens a target project when needed and runs the tool after it is fully loaded.',
+        },
+        projectSelection: {
+          tools: ['list-projects', 'create-project'],
+          description:
+            'When no project is open or configured, call list-projects and pass the chosen projectId to other tools. To start a new design, call create-project (a local project with one designOnly connection as the Default) and pass the returned projectId. With --project-id, tools accept only that project.',
         },
         defaultContext: {
           location: 'NeoSQL project MCP Access Control',

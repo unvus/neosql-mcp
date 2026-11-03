@@ -8,6 +8,7 @@ import {
   type ToolTextResult,
 } from '../shared.js';
 import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
+import { projectTargetInputShape, splitProjectTarget } from '../context/project-target.js';
 import { HttpClientError } from '../../../upstream/http-client.js';
 
 export type GenerateCodeDeps = UpstreamToolDeps;
@@ -44,6 +45,7 @@ export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDe
         'Generate and save source files for tableNames using the active project template packs. ' +
         'In NeoSQL Project Settings, configure template packs, required variables, and the project root folder (Location); enable MCP access for the target connection/schema. ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
+        'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed. ' +
         'Files are saved without an additional NeoSQL confirmation dialog, following template install settings; existing files may be overwritten or marker text replaced. ' +
         'Missing configuration returns needs-configuration without generating files. Complete the settings and request again. ' +
         'Returns actual file paths, skips, and failures, not generated source text. Inspect files in your IDE or Git diff.',
@@ -57,17 +59,20 @@ export const registerGenerateCodeTool = (server: McpServer, deps: GenerateCodeDe
             'Table names to generate; even one table must be an array. Project template packs are used automatically.',
           ),
         ...coordinateInputShape,
+        ...projectTargetInputShape,
       },
     },
     async (args, request) => {
       validateCoordinateInput(args);
-      const database = normalizeOptionalNullableString(args.database);
+      const { projectId, input } = splitProjectTarget(args);
+      const database = normalizeOptionalNullableString(input.database);
       let policyLoaded = false;
       return callUpstreamTool(
         deps,
         'generate-code',
-        { ...args, ...(database === undefined ? {} : { database }) },
+        { ...input, ...(database === undefined ? {} : { database }) },
         {
+          ...(projectId === undefined ? {} : { projectId }),
           request,
           prepareRpc: async () => {
             const policy = policySchema.parse(

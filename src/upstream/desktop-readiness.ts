@@ -20,6 +20,7 @@ export type PreparationState =
   | 'project_navigation'
   | 'target_loading'
   | 'project_loading'
+  | 'app_ready'
   | 'ready';
 export type PreparationFailureStatus =
   | 'installation_not_found'
@@ -51,9 +52,15 @@ export type DesktopInstallationChecker = (
 export interface PreparationContext {
   signal?: AbortSignal;
   onState?: (state: PreparationState) => Promise<void> | void;
+  /** Project this call targets: compared, opened once if needed, then waited on. */
+  projectId?: string;
+  /**
+   * Only NeoSQL Desktop and its renderer must be ready. No project needs to be open, and
+   * projectId is ignored, so app-level tools (list/create projects) never navigate.
+   */
+  appOnly?: boolean;
 }
 export interface EnsureDesktopReadyOptions extends PreparationContext {
-  projectId?: string;
   openProject?: (opts: PostRpcOptions) => Promise<unknown>;
   socketPath: string;
   profile: Profile;
@@ -180,6 +187,11 @@ export const ensureDesktopReady = async (
         await emit('renderer_loading');
         await wait();
         continue;
+      }
+      if (opts.appOnly) {
+        await emit('app_ready');
+        check();
+        return { status: 'ready', deadline };
       }
       const project = response.project;
       if (opts.projectId !== undefined) {

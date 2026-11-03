@@ -507,3 +507,70 @@ describe('target operation dispatch boundary', () => {
     expect(postRpc).toHaveBeenCalledOnce();
   });
 });
+
+describe('per-call project target', () => {
+  const readyDeps = (overrides: Partial<UpstreamToolDeps> = {}) => {
+    const postRpc = vi.fn().mockResolvedValue({});
+    const ensureDesktopReady = vi.fn(async () => ({ status: 'ready' as const }));
+    return { postRpc, ensureDesktopReady, deps: { sessionId: 's', postRpc, ensureDesktopReady, ...overrides } };
+  };
+
+  it('prepares and sends the operation for the per-call projectId', async () => {
+    const { postRpc, ensureDesktopReady, deps } = readyDeps();
+    await callUpstreamTool(deps, 'list-tables', {}, { projectId: 'B' });
+    expect(ensureDesktopReady).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'B' }));
+    expect(postRpc).toHaveBeenCalledWith(
+      'list-tables',
+      { sessionId: 's', input: {}, context: { expectedProjectId: 'B' } },
+      undefined,
+    );
+  });
+  it('accepts a per-call projectId equal to --project-id', async () => {
+    const { postRpc, deps } = readyDeps({ projectId: 'B' });
+    const result = await callUpstreamTool(deps, 'list-tables', {}, { projectId: 'B' });
+    expect(result.isError).toBeUndefined();
+    expect(postRpc).toHaveBeenCalledWith(
+      'list-tables',
+      expect.objectContaining({ context: { expectedProjectId: 'B' } }),
+      undefined,
+    );
+  });
+  it('rejects a per-call projectId that differs from --project-id without contacting the app', async () => {
+    const { postRpc, ensureDesktopReady, deps } = readyDeps({ projectId: 'A' });
+    const result = await callUpstreamTool(deps, 'erd-create-tables', {}, { projectId: 'B' });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0]!.text)).toEqual({
+      status: 'project_conflict',
+      message:
+        "This NeoSQL MCP server is configured for project 'A' (--project-id), so it cannot target project 'B'. The operation was not sent.",
+      nextAction:
+        "Omit projectId or pass 'A'. To work in other projects, remove --project-id from the MCP client configuration.",
+      requestSent: false,
+    });
+    expect(ensureDesktopReady).not.toHaveBeenCalled();
+    expect(postRpc).not.toHaveBeenCalled();
+  });
+  it('uses app-only preparation without a project target or expected project', async () => {
+    const { postRpc, ensureDesktopReady, deps } = readyDeps({ projectId: 'A' });
+    await callUpstreamTool(deps, 'list-projects', {}, { preparation: 'app' });
+    expect(ensureDesktopReady).toHaveBeenCalledOnce();
+    const context = (ensureDesktopReady.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(context).toMatchObject({ appOnly: true });
+    expect(context).not.toHaveProperty('projectId');
+    expect(postRpc).toHaveBeenCalledWith('list-projects', { sessionId: 's', input: {} }, undefined);
+  });
+  it('reports the app readiness stage when app-only preparation runs out of time', async () => {
+    const postRpc = vi.fn();
+    const result = await callUpstreamTool(
+      { postRpc, sessionId: 's', ensureDesktopReady: async () => ({ status: 'ready', deadline: performance.now() - 1 }) },
+      'list-projects',
+      {},
+      { preparation: 'app' },
+    );
+    expect(JSON.parse(result.content[0]!.text)).toMatchObject({
+      status: 'readiness_timeout',
+      message: expect.stringContaining('confirming app readiness before starting the operation'),
+    });
+    expect(postRpc).not.toHaveBeenCalled();
+  });
+});

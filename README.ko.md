@@ -185,10 +185,11 @@ Claude Code에서 수동 `neosql` 설정과 플러그인은 별개의 서버이�
 ```
 
 `<your-project-id>`를 대상 프로젝트의 ID로 바꾸세요. 표시 이름이 아닌 ID를 사용합니다.
-옵션을 생략하면 Desktop에서 선택한 프로젝트를 사용합니다. 지정하면 앱에 의존하는 도구를
-실행하기 전에 Desktop 창이 요청한 프로젝트로 이동할 수 있습니다. MCP 호스트 연결,
-도구 목록 조회, `ping`, `get-mcp-session-id`, `get-context-help` 호출만으로는 프로젝트를
-전환하지 않습니다.
+옵션을 생략하면 도구에 전달한 `projectId`, 없으면 Desktop에서 선택한 프로젝트를 사용합니다.
+지정하면 앱에 의존하는 도구를 실행하기 전에 Desktop 창이 요청한 프로젝트로 이동할 수
+있습니다. 이때 다른 `projectId`를 전달한 도구 호출은 거부되고 `create-project`는 사용할 수
+없습니다. MCP 호스트 연결, 도구 목록 조회, `ping`, `get-mcp-session-id`, `get-context-help`,
+`list-projects`, `create-project` 호출만으로는 지정한 프로젝트로 전환하지 않습니다.
 
 저장하지 않은 변경사항이 이동을 막으면 Desktop에서 저장하거나 폐기하세요. 로그인,
 프로젝트 접근 권한, 기타 필수 확인은 Desktop에서 처리합니다. 준비 중 프로젝트가 바뀌거나
@@ -213,9 +214,15 @@ macOS와 Windows에서 Desktop이 설치돼 있지만 연결되지 않으면 앱
 
 ## 실행 컨텍스트 결정
 
-NeoSQL 도구는 Desktop에서 현재 선택되어 로딩이 완료된 프로젝트를 사용합니다.
-`--project-id`를 지정하면 Node 프로세스가 이동과 프로젝트 검증에 사용할 프로젝트 ID를
-보관합니다. 활성 프로젝트와 Default 연결 대상은 여전히 Desktop이 관리합니다.
+NeoSQL 도구는 호출마다 프로젝트 하나를 대상으로 합니다. 도구에 전달한 `projectId`,
+없으면 `--project-id`로 지정한 프로젝트, 둘 다 없으면 Desktop에서 현재 열린 프로젝트입니다.
+대상이 열려 있지 않으면 Desktop이 먼저 열고, 로딩이 완료된 뒤 도구를 실행합니다.
+활성 프로젝트와 Default 연결 대상은 여전히 Desktop이 관리합니다.
+
+열린 프로젝트도 지정한 프로젝트도 없으면 `list-projects`로 목록을 보고 고른 `projectId`를
+전달하세요. 새 설계를 시작하려면 `create-project`를 호출합니다. Desktop에서 승인하면 설계
+전용 연결 하나를 Default로 지정한 로컬 프로젝트를 만들고 엽니다. 반환된 `projectId`를
+`erd-create-tables` 같은 이후 도구에 전달하세요.
 
 데이터베이스 도구의 연결 대상은 다음 두 방식 중 하나로 전달합니다.
 
@@ -235,6 +242,8 @@ NeoSQL 도구는 Desktop에서 현재 선택되어 로딩이 완료된 프로젝
 | -------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ping`               |           | 간단한 MCP 상태 확인을 위해 `pong`을 반환합니다.                                                                                                                            |
 | `get-mcp-session-id` |           | 이 프로세스가 upstream에 사용하는 세션 ID를 반환하는 진단 도구입니다.                                                                                                       |
+| `list-projects`    |       | Desktop에서 열 수 있는 프로젝트 목록을 조회합니다. 열린 프로젝트가 없어도 동작합니다.                                                                                                                      |
+| `create-project`   |       | 새 설계용으로 설계 전용 연결 하나가 있는 로컬 프로젝트를 만듭니다. Desktop에서 승인해야 합니다.                                                                                                                |
 | `list-connections`   |           | 현재 프로젝트에서 MCP 접근이 허용된 NeoSQL 연결과 스키마를 조회합니다.                                                                                                      |
 | `get-context-help`   |           | 활성 프로젝트의 Default와 명시적 대상 사용 방법을 안내합니다.                                                                                                               |
 | `list-tables`        | 예        | 테이블을 조회합니다.                                                                                                                                                        |
@@ -245,7 +254,8 @@ NeoSQL 도구는 Desktop에서 현재 선택되어 로딩이 완료된 프로젝
 | `generate-code`      | 예        | 지정한 테이블의 소스 파일을 생성·저장합니다. 프로젝트 설정에서 템플릿 팩, 필수 변수, 출력 폴더(Location)를 설정해야 하며, 별도 확인 창 없이 기존 파일을 덮어쓸 수 있습니다. |
 
 **연결 대상** 열에 표시된 도구는 [실행 컨텍스트 결정](#실행-컨텍스트-결정)에서 설명한
-`connectionId`, `database`, `schema` 필드를 받습니다.
+`connectionId`, `database`, `schema` 필드를 받습니다. `list-connections`와 **연결 대상**
+도구는 선택 필드 `projectId`도 받습니다.
 
 ## 통신 방식
 
@@ -283,7 +293,8 @@ Desktop이 연결되지 않았고 설치가 확인되면 neosql-mcp가 앱 활�
 
 ### 실행 컨텍스트가 필요한 도구가 실패하는 경우
 
-Desktop에서 프로젝트를 선택하고 사용할 연결과 스키마의 MCP 접근을 허용하세요.
+Desktop에서 프로젝트를 선택하거나 `list-projects`가 반환한 `projectId`를 전달하고,
+사용할 연결과 스키마의 MCP 접근을 허용하세요.
 MCP Access Control에서 Default를 설정하고 대상 필드 세 개를 모두 생략하거나,
 `list-connections`가 반환한 `connectionId`, `databaseName`, `schemaName`을 각각
 `connectionId`, `database`, `schema`로 함께 전달하세요. 명시적 대상을 사용하면
