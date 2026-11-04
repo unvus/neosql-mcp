@@ -228,6 +228,9 @@ If no project is open and none is configured, call `list-projects` and pass the 
 `projectId`. To start a new design, call `create-project`: after you approve it in
 Desktop, it creates a local project with one design-only connection set as the Default
 and opens it. Pass the returned `projectId` to later tools such as `erd-create-tables`.
+If the host sends a cancellation while the creation confirmation is pending, it is
+forwarded to Desktop to close the dialog. Cancellation does not roll back a project
+whose creation has already started; check `list-projects` before retrying.
 
 Database tools accept a connection target in one of two forms:
 

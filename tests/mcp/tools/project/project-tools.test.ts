@@ -84,7 +84,7 @@ describe('project tools', () => {
       expect(postRpc).toHaveBeenCalledWith(
         'create-project',
         { sessionId: 's', input: { name: 'Blog', dataSource: 'PostgreSQL' } },
-        { timeoutMs: 90_000 },
+        { timeoutMs: 90_000, signal: expect.any(AbortSignal) },
       );
       expect(ensureDesktopReady).toHaveBeenCalledWith(expect.objectContaining({ appOnly: true }));
     });

@@ -16,7 +16,7 @@ export interface ToolTextResult {
 export type PostRpc = <T = unknown>(
   method: string,
   params?: unknown,
-  opts?: { timeoutMs?: number },
+  opts?: { timeoutMs?: number; signal?: AbortSignal },
 ) => Promise<T>;
 
 export type JsonStringifier = (payload: unknown) => string;
@@ -69,6 +69,8 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
      * 'app': only NeoSQL Desktop must be ready; no project target or navigation.
      */
     preparation?: 'project' | 'app';
+    /** Forward cancellation only when the upstream operation supports it. */
+    cancelOperation?: boolean;
     /** Per-call target from the tool input, resolved against --project-id. */
     projectId?: string;
   } = {},
@@ -159,7 +161,13 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
       ...(targetProjectId === undefined ? {} : { context: { expectedProjectId: targetProjectId } }),
     };
     const timeoutMs = prepared?.timeoutMs ?? opts.timeoutMs;
-    const rpcOpts = timeoutMs === undefined ? undefined : { timeoutMs };
+    const signal = opts.cancelOperation ? request?.signal : undefined;
+    const rpcOpts = timeoutMs === undefined && signal === undefined
+      ? undefined
+      : {
+          ...(timeoutMs === undefined ? {} : { timeoutMs }),
+          ...(signal === undefined ? {} : { signal }),
+        };
     logger.debug({ ...diagnostic, event: 'operation_started' }, 'Preparation diagnostics');
     const result = await deps.postRpc<TResult>(method, params, rpcOpts);
     logger.debug(
@@ -172,6 +180,7 @@ export const callUpstreamTool = async <TResult = unknown, TInput = unknown>(
     );
     return opts.mapResult ? opts.mapResult(result) : jsonTextResult(result, opts.stringifyResult);
   } catch (err) {
+    if (opts.cancelOperation) request?.signal.throwIfAborted();
     const operationError = opts.mapOperationErrorResult?.(err);
     if (operationError !== undefined) return operationError;
     const desktopLifecycleError = desktopLifecycleErrorResult(err, deps);

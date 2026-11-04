@@ -60,6 +60,7 @@ export const registerCreateProjectTool = (server: McpServer, deps: CreateProject
         {
           request,
           preparation: 'app',
+          cancelOperation: true,
           timeoutMs: 90_000,
           mapOperationErrorResult: mapCreateProjectError,
         },

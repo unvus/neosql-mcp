@@ -1,10 +1,11 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import http from 'node:http';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../src/mcp/server.js';
 import { activationTargetForProfile } from '../../src/upstream/app-activation.js';
 import { startMockRpcServer, type MockRpcRequest } from '../helpers/mock-uds-server.js';
-import { makeTestSocketPath, removeSocketFile } from '../helpers/socket.js';
+import { closeServer, listen, makeTestSocketPath, removeSocketFile } from '../helpers/socket.js';
 
 interface ToolCase {
   name: string;
@@ -75,6 +76,46 @@ describe('round-trip integration', () => {
     cleanups.push(() => client.close());
     return client;
   };
+
+  it('closes the pending creation HTTP request when the MCP host cancels', async () => {
+    const socketPath = makeTestSocketPath();
+    let creationResponse: http.ServerResponse | undefined;
+    let closedBeforeResponse = false;
+    let creations = 0;
+    const upstream = http.createServer((req, res) => {
+      let body = '';
+      req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      req.on('end', () => {
+        const rpc = JSON.parse(body) as { id: number; method: string };
+        if (rpc.method === 'create-project') {
+          creations++;
+          creationResponse = res;
+          res.on('close', () => { closedBeforeResponse = !res.writableEnded; });
+          return;
+        }
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ jsonrpc: '2.0', id: rpc.id, result: {
+          app: 'neosql', profile: 'prod', renderer: 'responsive',
+          project: { state: 'not_selected', projectId: null },
+        } }));
+      });
+    });
+    await listen(upstream, socketPath);
+    cleanups.push(async () => { await closeServer(upstream); removeSocketFile(socketPath); });
+    const client = await setupClientServer(socketPath);
+    const controller = new AbortController();
+    const reason = new Error('Host canceled creation');
+    const result = client.callTool({
+      name: 'create-project', arguments: { name: 'Blog', dataSource: 'PostgreSQL' },
+    }, undefined, { signal: controller.signal }).catch((error: unknown) => error);
+    await vi.waitFor(() => expect(creationResponse).toBeDefined());
+
+    controller.abort(reason);
+
+    expect(await result).toMatchObject({ message: expect.stringContaining(reason.message) });
+    await vi.waitFor(() => expect(closedBeforeResponse).toBe(true));
+    expect(creations).toBe(1);
+  });
 
   it('roundtrips code generation policy and preserves partial installation results', async () => {
     const socketPath = makeTestSocketPath();

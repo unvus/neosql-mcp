@@ -34,6 +34,10 @@ after you approve it in Desktop. The plugin does not provide a project ID settin
 credentials stay in Desktop's connection configuration; the plugin does not ask you
 to enter credentials in Claude.
 
+When the host sends a cancellation while project creation confirmation is pending,
+Desktop closes the dialog. Creation that has already started is not rolled back;
+check the project list before retrying.
+
 Example requests:
 
 - "List the tables in my default schema and explain their relationships."

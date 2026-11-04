@@ -283,6 +283,10 @@ Input: `{ name: string; dataSource: string }`. Node는 빈 값을 거부하고 �
 보낸다. DBMS 이름 검증은 앱이 한다(대소문자 무시). `--project-id`가 있으면 Node가
 `project_conflict`(requestSent:false)로 끝내고 앱을 호출하지 않는다.
 
+`create-project`는 MCP 요청의 취소 신호를 HTTP 요청까지 전달한다. 취소 시 연결을 닫으면
+본체가 `mcp-rpc:cancel` IPC로 확인창과 생성 전 후속 작업을 중단한다. 이미 시작된 생성은
+롤백을 보장하지 않는다. 다른 작업 RPC는 이 취소 전달을 기본으로 활성화하지 않는다.
+
 앱은 미저장 변경 검사 → NeoSQL 확인창(45초) → 현재 프로젝트 이탈 → 로컬 프로젝트와
 설계 전용 커넥션 1개(MCP Default) 생성 → 새 프로젝트로 이동 순서로 처리한다.
 

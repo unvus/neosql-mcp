@@ -574,3 +574,37 @@ describe('per-call project target', () => {
     expect(postRpc).not.toHaveBeenCalled();
   });
 });
+
+
+describe('operation cancellation', () => {
+  it('propagates opted-in cancellation without mapping it to an operation failure', async () => {
+    const controller = new AbortController();
+    const reason = new Error('Creation canceled');
+    const mapOperationErrorResult = vi.fn();
+    const postRpc = vi.fn(async (_method: string, _params: unknown, opts?: { signal?: AbortSignal }) => {
+      expect(opts?.signal).toBe(controller.signal);
+      controller.abort(reason);
+      throw reason;
+    });
+
+    await expect(callUpstreamTool({ sessionId: 's', postRpc }, 'create-project', {}, {
+      preparation: 'app',
+      cancelOperation: true,
+      request: { signal: controller.signal, sendNotification: async () => {} },
+      mapOperationErrorResult,
+    })).rejects.toBe(reason);
+    expect(mapOperationErrorResult).not.toHaveBeenCalled();
+    expect(postRpc).toHaveBeenCalledOnce();
+  });
+
+  it('does not forward the cancellation signal to operations without opt-in', async () => {
+    const postRpc = vi.fn().mockResolvedValue({});
+    await callUpstreamTool({ sessionId: 's', postRpc }, 'execute-query', {}, {
+      request: { signal: new AbortController().signal, sendNotification: async () => {} },
+      timeoutMs: 60_000,
+    });
+    expect(postRpc).toHaveBeenCalledWith('execute-query', { sessionId: 's', input: {} }, {
+      timeoutMs: 60_000,
+    });
+  });
+});

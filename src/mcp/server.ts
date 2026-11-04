@@ -61,11 +61,16 @@ const createUpstreamToolDeps = (
 
 const createPostRpc =
   (socketPath: string): PostRpc =>
-  <T = unknown>(method: string, params?: unknown, rpcOpts?: { timeoutMs?: number }): Promise<T> =>
+  <T = unknown>(
+    method: string,
+    params?: unknown,
+    rpcOpts?: { timeoutMs?: number; signal?: AbortSignal },
+  ): Promise<T> =>
     defaultPostRpc<T>({
       socketPath,
       method,
       params,
+      ...(rpcOpts?.signal === undefined ? {} : { signal: rpcOpts.signal }),
       ...(rpcOpts?.timeoutMs === undefined ? {} : { timeoutMs: rpcOpts.timeoutMs }),
     });
 
