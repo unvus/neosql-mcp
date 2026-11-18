@@ -71,6 +71,11 @@ window to the front.
 
 The Claude plugin runs the default profile, so it cannot reach NeoSQLEnterprise.
 
+NeoSQLEnterprise does not use npx. Its build embeds a single-file bundle (`npm run build:bundle` →
+`bundle/neosql-mcp.cjs`, all dependencies inlined, CommonJS) and the app's MCP client setup registers the
+app's own executable with `ELECTRON_RUN_AS_NODE=1` to run it. Customer PCs then need neither Node.js nor
+npm access, and the server version always matches the app. The bundle is not published to npm.
+
 `test` exists only for this repository's spawn tests: it gives the mock upstream server a
 socket path that no real NeoSQL Desktop ever listens on. Do not use it with a Desktop build.
 

@@ -4,6 +4,7 @@
 .env.local
 node_modules/
 dist/
+bundle/
 coverage/
 *.log
 .DS_Store

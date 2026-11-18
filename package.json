@@ -43,6 +43,7 @@
   "scripts": {
     "version": "node scripts/sync-plugin-version.mjs && git add plugins/neosql-mcp",
     "build": "tsup",
+    "build:bundle": "tsup --config tsup.bundle.config.ts",
     "dev": "tsup --watch",
     "test": "npm run test:unit && npm run test:integration",
     "test:watch": "vitest",

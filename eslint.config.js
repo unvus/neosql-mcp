@@ -33,7 +33,7 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: ['dist/**', 'bundle/**', 'node_modules/**'],
   },
   prettier,
 ];

@@ -319,6 +319,7 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
 - [x] `--profile=enterprise` 파싱, socket suffix `-enterprise`, 로그 폴더 `NeoSqlMcpEnterprise`
 - [x] 앱 이름 `NeoSQLEnterprise`·app id `com.unvus.neosql.enterprise`로 설치 감지(macOS `.app`, Windows NSIS GUID)
 - [x] activation URL 없음: macOS `open -a` 만, Windows 설치 실행 파일 직접 실행(`spawn` 으로 요청 확인), 그 밖의 OS 는 실패
+- [x] 앱에 넣을 한 파일 번들(`npm run build:bundle` → `bundle/neosql-mcp.cjs`, CJS · 의존성 포함). Node 와 Electron(`ELECTRON_RUN_AS_NODE=1`)에서 initialize · tools/list · ping 확인
 - [ ] 실제 NeoSQLEnterprise 빌드(macOS·Windows)와 host 로 미실행 → 실행 → 도구 호출 수동 확인
 
 ## 프로젝트 목록·생성과 호출 단위 프로젝트 대상 · 2026-11-03
