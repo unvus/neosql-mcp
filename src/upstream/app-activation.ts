@@ -46,6 +46,8 @@ export interface RequestAppActivationOptions {
   readMcpConfigFile?: McpConfigFileReader;
   pathExists?: ActivationPathExists;
   launcher?: ProcessLauncher;
+  /** The environment the launch starts from (defaults to this process's). */
+  env?: NodeJS.ProcessEnv;
   /** Finds the Windows executable of a build without a URL scheme. */
   checkInstallation?: (
     opts: DetectDesktopInstallationOptions,
@@ -64,6 +66,16 @@ interface ActivationCommand {
   windowsHide: boolean;
 }
 
+/**
+ * The environment for the process that wakes the desktop app. NeoSQLEnterprise runs this server with its own executable in
+ * Node mode (`ELECTRON_RUN_AS_NODE=1`). A child inherits that variable, so the app started directly on Windows would also
+ * run as Node and exit at once instead of opening its window. Drop it for every launch: no launcher needs it.
+ */
+export const activationEnv = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv => {
+  const { ELECTRON_RUN_AS_NODE: _runAsNode, ...rest } = env;
+  return rest;
+};
+
 export const requestAppActivation = async (
   opts: RequestAppActivationOptions,
 ): Promise<ActivationResult> => {
@@ -80,6 +92,7 @@ export const requestAppActivation = async (
       detached: true,
       stdio: 'ignore',
       windowsHide: activationCommand.windowsHide,
+      env: activationEnv(opts.env ?? process.env),
     });
     child.unref();
 

@@ -275,8 +275,10 @@ describe('app activation', () => {
       'C:\\Users\\shock\\AppData\\Local\\Programs\\neosql-enterprise\\NeoSQLEnterprise.exe';
     const launched: Array<{ command: string; args: string[]; windowsHide: boolean | undefined }> =
       [];
+    const launchedEnv: Array<NodeJS.ProcessEnv | undefined> = [];
     const launcher: ProcessLauncher = (command, args, options) => {
       launched.push({ command, args, windowsHide: options.windowsHide });
+      launchedEnv.push(options.env);
       const child = new EventEmitter() as ReturnType<ProcessLauncher>;
       child.unref = () => undefined;
       // The first instance keeps running, so only the spawn event arrives.
@@ -299,12 +301,16 @@ describe('app activation', () => {
         };
       },
       launcher,
+      // This server runs inside NeoSQLEnterprise's executable in Node mode.
+      env: { ELECTRON_RUN_AS_NODE: '1', PATH: 'C:\\Windows' },
     });
 
     expect(result).toMatchObject({
       status: 'requested',
       target: { productName: 'NeoSQLEnterprise' },
     });
+    // The app inheriting it would start as Node and exit instead of opening its window.
+    expect(launchedEnv).toEqual([{ PATH: 'C:\\Windows' }]);
     expect(checkedProfiles).toEqual(['enterprise']);
     // windowsHide would also hide the window of a GUI app started directly.
     expect(launched).toEqual([{ command: executablePath, args: [], windowsHide: false }]);
