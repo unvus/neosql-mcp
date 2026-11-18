@@ -312,6 +312,15 @@ Evidence: [cross-repo completion](../neosql/docs/manual-test/mcp-runtime-lifecyc
     있는 패키지의 일치 판정을 실제 명령으로 확인.
 - [x] 첫 게시: `1.8.9` (2026-10-01 KST), OIDC namespace·registry 조회 확인. 상세는 문서 §7
 
+## NeoSQLEnterprise profile · 2026-11-18
+
+설계는 [PLAN](PLAN.md)의 같은 절을 따른다. 본체(`../neosql`)의 엔터프라이즈 빌드 프로필과 짝을 이룬다.
+
+- [x] `--profile=enterprise` 파싱, socket suffix `-enterprise`, 로그 폴더 `NeoSqlMcpEnterprise`
+- [x] 앱 이름 `NeoSQLEnterprise`·app id `com.unvus.neosql.enterprise`로 설치 감지(macOS `.app`, Windows NSIS GUID)
+- [x] activation URL 없음: macOS `open -a` 만, Windows 설치 실행 파일 직접 실행(`spawn` 으로 요청 확인), 그 밖의 OS 는 실패
+- [ ] 실제 NeoSQLEnterprise 빌드(macOS·Windows)와 host 로 미실행 → 실행 → 도구 호출 수동 확인
+
 ## 프로젝트 목록·생성과 호출 단위 프로젝트 대상 · 2026-11-03
 
 본체 계약은 [upstream RPC contract](docs/upstream-rpc-contract.md)의 `list-projects`·`create-project`와

@@ -43,6 +43,14 @@ describe('app activation', () => {
     });
   });
 
+  it('resolves the enterprise target without an activation URL because the app registers no deep links', () => {
+    expect(activationTargetForProfile('enterprise')).toEqual({
+      profile: 'enterprise',
+      productName: 'NeoSQLEnterprise',
+      appId: 'com.unvus.neosql.enterprise',
+    });
+  });
+
   it('requests macOS activation with open -a and the profile product name and URL scheme', async () => {
     const launched: Array<{ command: string; args: string[]; detached: boolean | undefined }> = [];
     const launcher: ProcessLauncher = (command, args, options) => {
@@ -200,6 +208,140 @@ describe('app activation', () => {
         args: ['-a', 'NeoSQLStage', 'neosql-stage://mcp/activate'],
       },
     ]);
+  });
+
+  it('opens the macOS enterprise app by name without a URL', async () => {
+    const launched: Array<{ command: string; args: string[] }> = [];
+    const launcher: ProcessLauncher = (command, args) => {
+      launched.push({ command, args });
+      const child = new EventEmitter() as ReturnType<ProcessLauncher>;
+      child.unref = () => undefined;
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
+      return child;
+    };
+
+    const result = await requestAppActivation({
+      profile: 'enterprise',
+      platform: 'darwin',
+      homeDir: '/Users/shock',
+      readMcpConfigFile: missingMcpConfigFile,
+      pathExists: async (candidate) => candidate === '/Applications/NeoSQLEnterprise.app',
+      launcher,
+    });
+
+    expect(result).toMatchObject({
+      status: 'requested',
+      target: { productName: 'NeoSQLEnterprise' },
+    });
+    expect(launched).toEqual([{ command: 'open', args: ['-a', 'NeoSQLEnterprise'] }]);
+  });
+
+  it('opens the recorded macOS enterprise app path without a URL', async () => {
+    const launched: Array<{ command: string; args: string[] }> = [];
+    const launcher: ProcessLauncher = (command, args) => {
+      launched.push({ command, args });
+      const child = new EventEmitter() as ReturnType<ProcessLauncher>;
+      child.unref = () => undefined;
+      queueMicrotask(() => {
+        child.emit('spawn');
+        child.emit('exit', 0, null);
+      });
+      return child;
+    };
+
+    const result = await requestAppActivation({
+      profile: 'enterprise',
+      platform: 'darwin',
+      homeDir: '/Users/shock',
+      readMcpConfigFile: async (filePath) => {
+        expect(filePath).toBe(path.join('/Users/shock', '.neosql-enterprise', 'mcp-config.json'));
+        return JSON.stringify({ appPath: '/Volumes/Work/NeoSQLEnterprise.app' });
+      },
+      pathExists: async (candidate) => candidate === '/Volumes/Work/NeoSQLEnterprise.app',
+      launcher,
+    });
+
+    expect(result.status).toBe('requested');
+    expect(launched).toEqual([
+      { command: 'open', args: ['-a', '/Volumes/Work/NeoSQLEnterprise.app'] },
+    ]);
+  });
+
+  it('launches the installed Windows enterprise executable and reports requested once it spawns', async () => {
+    const executablePath =
+      'C:\\Users\\shock\\AppData\\Local\\Programs\\neosql-enterprise\\NeoSQLEnterprise.exe';
+    const launched: Array<{ command: string; args: string[]; windowsHide: boolean | undefined }> =
+      [];
+    const launcher: ProcessLauncher = (command, args, options) => {
+      launched.push({ command, args, windowsHide: options.windowsHide });
+      const child = new EventEmitter() as ReturnType<ProcessLauncher>;
+      child.unref = () => undefined;
+      // The first instance keeps running, so only the spawn event arrives.
+      queueMicrotask(() => child.emit('spawn'));
+      return child;
+    };
+    const checkedProfiles: string[] = [];
+
+    const result = await requestAppActivation({
+      profile: 'enterprise',
+      platform: 'win32',
+      checkInstallation: async (opts) => {
+        checkedProfiles.push(opts.profile);
+        return {
+          status: 'installed',
+          platform: 'win32',
+          target: activationTargetForProfile('enterprise'),
+          executablePath,
+          checkedRegistryKey: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\x',
+        };
+      },
+      launcher,
+    });
+
+    expect(result).toMatchObject({
+      status: 'requested',
+      target: { productName: 'NeoSQLEnterprise' },
+    });
+    expect(checkedProfiles).toEqual(['enterprise']);
+    // windowsHide would also hide the window of a GUI app started directly.
+    expect(launched).toEqual([{ command: executablePath, args: [], windowsHide: false }]);
+  });
+
+  it('reports request_failed without launching when the Windows enterprise app is not installed', async () => {
+    const launcher = vi.fn();
+
+    const result = await requestAppActivation({
+      profile: 'enterprise',
+      platform: 'win32',
+      checkInstallation: async () => ({
+        status: 'not_installed',
+        platform: 'win32',
+        target: activationTargetForProfile('enterprise'),
+        checkedRegistryKey: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\x',
+        reason: 'registry_missing',
+        installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+      }),
+      launcher,
+    });
+
+    expect(result).toMatchObject({ status: 'request_failed', target: { profile: 'enterprise' } });
+    expect(launcher).not.toHaveBeenCalled();
+  });
+
+  it('reports request_failed without launching an enterprise app on an unsupported platform', async () => {
+    const launcher = vi.fn();
+
+    const result = await requestAppActivation({
+      profile: 'enterprise',
+      platform: 'linux',
+      launcher,
+    });
+
+    expect(result).toMatchObject({ status: 'request_failed', target: { profile: 'enterprise' } });
+    expect(launcher).not.toHaveBeenCalled();
   });
 
   it('requests Windows activation through the registered profile URL scheme', async () => {

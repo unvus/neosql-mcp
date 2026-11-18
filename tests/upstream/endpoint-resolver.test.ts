@@ -14,6 +14,7 @@ const PROFILE_SUFFIXES: Array<[Profile, string]> = [
   ['dev', '-dev'],
   ['local', '-local'],
   ['stage', '-stage'],
+  ['enterprise', '-enterprise'],
   ['test', '-test'],
 ];
 const DARWIN_TEMP_DIR = '/var/folders/ab/cd/T/';

@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { observe } from './observation.js';
 import { promisify } from 'node:util';
-import { activationTargetForProfile, type ActivationPlatform } from './app-activation.js';
+import type { ActivationPlatform } from './app-activation.js';
+import { activationTargetForProfile } from './profile-names.js';
 import type { Profile } from './endpoint-resolver.js';
 import {
   readRecordedAppPath,

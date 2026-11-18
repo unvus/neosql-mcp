@@ -6,10 +6,12 @@ import path from 'node:path';
  * - `prod`: 배포 빌드 (suffix 없음)
  * - `dev`/`local`/`stage`: non-prod 환경. socket 은 profile 별로 분리되어
  *   서로 다른 모드의 데스크톱 앱이 같은 머신에서 충돌 없이 공존할 수 있다.
+ * - `enterprise`: NeoSQLEnterprise(고객 서버 설치형) 배포 빌드. 이름 · socket 규칙은 다른 non-prod 와 같고,
+ *   딥링크를 등록하지 않는다(profile-names.ts).
  * - `test`: 이 저장소의 spawn 테스트 전용. 실제 Desktop 은 이 profile 로 실행되지 않으므로
  *   테스트 mock 서버가 실사용 socket 과 충돌하지 않는다.
  */
-export type Profile = 'prod' | 'dev' | 'local' | 'stage' | 'test';
+export type Profile = 'prod' | 'dev' | 'local' | 'stage' | 'enterprise' | 'test';
 
 export const HTTP_PATH = '/mcp/rpc';
 

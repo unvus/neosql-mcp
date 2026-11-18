@@ -8,7 +8,7 @@
 src/                            (프로덕션 코드만)
 ├── cli/         바이너리 진입점 + CLI 인자 파싱
 │   ├── cli.ts                  package.json#bin 타깃
-│   └── cli-args.ts             --profile prod, dev, local, stage 인자 파싱
+│   └── cli-args.ts             --profile prod, dev, local, stage, enterprise 인자 파싱
 │   └── check-desktop-installation.ts
 │                               npm run check:desktop-installation 으로 실행하는
 │                               macOS/Windows 설치 감지 진단 CLI
@@ -33,7 +33,7 @@ src/                            (프로덕션 코드만)
 │   ├── health-check.ts         socket path connect 시도
 │   ├── http-client.ts          JSON-RPC over HTTP POST 클라이언트
 │   ├── mcp-config-record.ts    NeoSQL Desktop 이 기록한 appPath hint 읽기
-│   ├── profile-names.ts        profile → protocol/package name 산출
+│   ├── profile-names.ts        profile → protocol/package name, 앱 이름·app id·activation URL
 │   └── sse-parser.ts           GET SSE 채널용 event-stream 파서
 └── infra/       횡단 관심사
     ├── log-path.ts             Electron-style OS별 로그 경로 계산

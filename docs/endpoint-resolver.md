@@ -18,7 +18,7 @@ path.join(execFileSync('/usr/bin/getconf', ['DARWIN_USER_TEMP_DIR']).trim(), `ne
 
 - `suffix`:
   - prod 빌드(npm 배포본 / `npx neosql-mcp`): `''`
-  - non-prod profile(`--profile=dev|local|stage`): `'-' + profile`
+  - non-prod profile(`--profile=dev|local|stage|enterprise`): `'-' + profile`
 - `getconf DARWIN_USER_TEMP_DIR` 은 env 와 무관하게 user-isolated 경로(`/var/folders/.../T/`)를 반환하므로 다른 사용자와 충돌하지 않는다.
 - `os.tmpdir()` 은 TMPDIR 에 의존한다. MCP host(MCP SDK 기본 env 등)가 TMPDIR 을 빼고 실행하면 `/tmp` 가 되어 앱과 경로가 어긋나므로 사용하지 않는다.
 - Linux 는 NeoSQL Desktop 지원 대상이 아니므로 public support 범위에서 제외한다.
@@ -35,7 +35,7 @@ path.join(execFileSync('/usr/bin/getconf', ['DARWIN_USER_TEMP_DIR']).trim(), `ne
 
 ## profile 인지
 
-- mcp 측: CLI 인자에서 `--profile=<prod|dev|local|stage>` 값으로 구분 (`parseCliArgs`).
+- mcp 측: CLI 인자에서 `--profile=<prod|dev|local|stage|enterprise>` 값으로 구분 (`parseCliArgs`).
   - default `prod`.
   - 충돌 시 마지막 유효 profile 값 우선.
   - 알 수 없는 인자는 무시.

@@ -103,6 +103,7 @@ describe('desktop installation detection', () => {
     expect(windowsNsisUninstallGuid('dev')).toBe('e2fc7451-e33b-52fb-ad6e-90987868f2e4');
     expect(windowsNsisUninstallGuid('stage')).toBe('8ca05a6c-d77c-53a8-96f8-a66895be5391');
     expect(windowsNsisUninstallGuid('local')).toBe('507e3cc9-4de0-5788-b852-f143471d08d0');
+    expect(windowsNsisUninstallGuid('enterprise')).toBe('5d57238a-24bc-51ba-b709-92628327882e');
   });
 
   it('builds the HKCU NSIS uninstall registry key for Windows profiles', () => {
@@ -201,6 +202,29 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
       displayName: 'NeoSQL 0.0.2',
       displayIcon: `"${executablePath}",0`,
       installGuideUrl: 'https://neosql.unvus.com/ko/docs/install',
+    });
+  });
+
+  it('checks the NeoSQLEnterprise app bundle for the enterprise profile', async () => {
+    const result = await detectDesktopInstallation({
+      profile: 'enterprise',
+      platform: 'darwin',
+      homeDir: '/Users/shock',
+      pathExists: async () => false,
+      readMcpConfigFile: missingMcpConfigFile,
+    });
+
+    expect(result).toMatchObject({
+      status: 'not_installed',
+      target: {
+        profile: 'enterprise',
+        productName: 'NeoSQLEnterprise',
+        appId: 'com.unvus.neosql.enterprise',
+      },
+      checkedExecutablePaths: [
+        '/Applications/NeoSQLEnterprise.app/Contents/MacOS/NeoSQLEnterprise',
+        '/Users/shock/Applications/NeoSQLEnterprise.app/Contents/MacOS/NeoSQLEnterprise',
+      ],
     });
   });
 

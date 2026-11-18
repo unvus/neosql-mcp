@@ -118,10 +118,10 @@ TCP loopback 대신 **Unix Domain Socket (POSIX) / Named Pipe (Windows)** 를 �
 - **Windows**: `\\.\pipe\neosql-mcp` + suffix
 - `suffix` (profile 구분):
   - prod (npm 배포본): 빈 문자열
-  - non-prod: `-${profile}` (`-dev`, `-local`, `-stage`)
+  - non-prod: `-${profile}` (`-dev`, `-local`, `-stage`, `-enterprise`)
   - `test`: `-test`. 이 저장소의 spawn 테스트 전용 profile. Desktop 은 이 profile 로 실행되지
     않으므로 테스트 mock 서버가 실사용 socket 과 충돌하지 않는다.
-  - mcp 는 `--profile=<prod|dev|local|stage>` CLI 인자로 profile 인지. electron 도 해당 profile 실행 시 동일 suffix 로 listen 한다는 전제 (본체 작업 시 확정).
+  - mcp 는 `--profile=<prod|dev|local|stage|enterprise>` CLI 인자로 profile 인지. electron 도 해당 profile 실행 시 동일 suffix 로 listen 한다는 전제 (본체 작업 시 확정).
 
 ### 산출물
 
@@ -374,6 +374,20 @@ Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 
 - **인증·권한** — JWT/OAuth 처리, projectId 별 권한 체크 위치.
 - **안정화·UX** — 구조화 로그 확장, CLI 옵션, lazy launch, E2E 시나리오 테스트.
 
+
+## NeoSQLEnterprise profile · 2026-11-18
+
+NeoSQLEnterprise 는 고객 서버에 붙는 데스크톱 배포 빌드다(본체 `VITE_PROFILE=enterprise`,
+`../neosql/docs/build/profile-identifiers.md`). 제품 이름, socket suffix, app id, 설정 폴더는 다른 profile 과
+같은 규칙(`NeoSQLEnterprise`, `-enterprise`, `com.unvus.neosql.enterprise`, `~/.neosql-enterprise`)이고, 한 가지가 다르다.
+
+- 앱이 URL scheme 을 등록하지 않으므로 activation 은 딥링크 대신 앱을 직접 실행한다. macOS 는 `open -a`
+  에 URL 없이, Windows 는 HKCU NSIS Uninstall registry 의 실행 파일을 직접 실행한다(`windowsHide` 끔 — GUI 창도
+  숨겨진다). 앱 자신이 실행 중으로 남으므로 Windows 직접 실행은 종료 코드가 아니라 `spawn` 을 요청 성공으로 본다.
+  이미 실행 중이면 본체의 single-instance 처리(`second-instance`)가 창을 앞으로 가져온다.
+
+Claude plugin 은 기본 profile(prod)만 실행하므로 엔터프라이즈 앱에 붙지 않는다. 엔터프라이즈 사용자는 앱의 MCP 클라이언트
+설정이나 직접 설정(`--profile=enterprise`)으로 연결한다.
 
 ## Optional project targeting · 2026-09-20
 

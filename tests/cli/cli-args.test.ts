@@ -24,6 +24,10 @@ describe('parseCliArgs', () => {
     expect(parseCliArgs(['--profile=dev', '--profile=testing'])).toEqual({ profile: 'dev' });
   });
 
+  it('accepts the enterprise profile for NeoSQLEnterprise Desktop', () => {
+    expect(parseCliArgs(['--profile=enterprise'])).toEqual({ profile: 'enterprise' });
+  });
+
   it('accepts the test profile used by spawn tests', () => {
     expect(parseCliArgs(['--profile=test'])).toEqual({ profile: 'test' });
   });

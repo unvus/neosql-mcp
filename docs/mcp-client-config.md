@@ -14,7 +14,7 @@ work to NeoSQL Desktop over the local UDS/Named Pipe upstream channel.
 The CLI syntax, including internal developer options, is:
 
 ```bash
-npx -y neosql-mcp [--profile=<prod|dev|local|stage|test>] [--project-id=<id>]
+npx -y neosql-mcp [--profile=<prod|dev|local|stage|enterprise|test>] [--project-id=<id>]
 ```
 
 This file intentionally does not duplicate host-specific JSON/TOML snippets. Keep those
@@ -47,13 +47,29 @@ The default profile is `prod`. Do not add `--profile=prod` to public setup examp
 Non-production profiles are valid only when NeoSQL Desktop is listening with the same
 profile.
 
-| Profile | macOS socket suffix | Windows pipe suffix |
-| ------- | ------------------- | ------------------- |
-| `prod`  | none                | none                |
-| `dev`   | `-dev`              | `-dev`              |
-| `local` | `-local`            | `-local`            |
-| `stage` | `-stage`            | `-stage`            |
-| `test`  | `-test`             | `-test`             |
+| Profile      | macOS socket suffix | Windows pipe suffix |
+| ------------ | ------------------- | ------------------- |
+| `prod`       | none                | none                |
+| `dev`        | `-dev`              | `-dev`              |
+| `local`      | `-local`            | `-local`            |
+| `stage`      | `-stage`            | `-stage`            |
+| `enterprise` | `-enterprise`       | `-enterprise`       |
+| `test`       | `-test`             | `-test`             |
+
+`enterprise` targets NeoSQLEnterprise, the released desktop build that connects to a
+customer-installed NeoSQL server. Its users get the option from the app: NeoSQLEnterprise's MCP
+client setup writes `--profile=enterprise` into the host config, and the NeoSQL user guide shows it
+for manual setup. The public READMEs still leave it out.
+
+The product name (`NeoSQLEnterprise`), app id (`com.unvus.neosql.enterprise`), config directory
+(`~/.neosql-enterprise`), and socket suffix follow the usual rule. One thing differs: the app
+registers no URL scheme, so activation launches the app instead of opening
+`neosql-enterprise://mcp/activate`: `open -a NeoSQLEnterprise` (or the recorded app path) on macOS,
+and the executable from the NSIS uninstall registry on Windows. A start while the app is running
+reaches the running instance (macOS app activation, Electron `second-instance`), which brings the
+window to the front.
+
+The Claude plugin runs the default profile, so it cannot reach NeoSQLEnterprise.
 
 `test` exists only for this repository's spawn tests: it gives the mock upstream server a
 socket path that no real NeoSQL Desktop ever listens on. Do not use it with a Desktop build.
@@ -62,7 +78,7 @@ If multiple valid `--profile=...` values are present, the last valid value wins.
 profile values are ignored and the previous valid profile is kept.
 
 The selected profile also sets the logger threshold: `local`/`dev` use `debug`,
-while `stage`/`prod` use `info`. Omitting the profile therefore uses `info`.
+while `stage`/`prod`/`enterprise` use `info`. Omitting the profile therefore uses `info`.
 `LOG_LEVEL` is ignored, including when set to `debug`, `trace`, or `silent`.
 The logger uses `info` before profile configuration. File destinations and the
 stderr fallback use the same threshold; stdout remains reserved for MCP.

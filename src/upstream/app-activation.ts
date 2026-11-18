@@ -8,17 +8,19 @@ import {
   type McpConfigFileReader,
   type ReadRecordedAppPathOptions,
 } from './mcp-config-record.js';
+import {
+  detectDesktopInstallation,
+  type DesktopInstallationResult,
+  type DetectDesktopInstallationOptions,
+} from './desktop-installation.js';
 import { observe } from './observation.js';
-import { protocolSchemeForProfile } from './profile-names.js';
+import { activationTargetForProfile, type ActivationTarget } from './profile-names.js';
 
-export interface ActivationTarget {
-  profile: Profile;
-  productName: string;
-  appId: string;
-  activationUrl: ActivationUrl;
-}
-
-export type ActivationUrl = `${string}://mcp/activate`;
+export {
+  activationTargetForProfile,
+  type ActivationTarget,
+  type ActivationUrl,
+} from './profile-names.js';
 export type ActivationStatus = 'requested' | 'request_failed';
 
 export interface ActivationResult {
@@ -44,38 +46,23 @@ export interface RequestAppActivationOptions {
   readMcpConfigFile?: McpConfigFileReader;
   pathExists?: ActivationPathExists;
   launcher?: ProcessLauncher;
+  /** Finds the Windows executable of a build without a URL scheme. */
+  checkInstallation?: (
+    opts: DetectDesktopInstallationOptions,
+  ) => Promise<DesktopInstallationResult>;
 }
 
 interface ActivationCommand {
   command: string;
   args: string[];
+  /**
+   * `exit`: a helper (open, cmd) hands the request to the OS and exits; 0 means requested.
+   * `spawn`: the app itself was started. It keeps running, so starting is the evidence.
+   */
+  completion: 'exit' | 'spawn';
+  /** Hides a helper's console. Off for the app itself: it would also hide the app window. */
+  windowsHide: boolean;
 }
-
-export const activationTargetForProfile = (profile: Profile): ActivationTarget => {
-  const activationUrl = activationUrlForProfile(profile);
-
-  if (profile === 'prod') {
-    return {
-      profile,
-      productName: 'NeoSQL',
-      appId: 'com.unvus.neosql',
-      activationUrl,
-    };
-  }
-
-  return {
-    profile,
-    productName: `NeoSQL${capitalizeProfile(profile)}`,
-    appId: `com.unvus.neosql.${profile}`,
-    activationUrl,
-  };
-};
-
-const capitalizeProfile = (profile: Exclude<Profile, 'prod'>): string =>
-  `${profile.charAt(0).toUpperCase()}${profile.slice(1)}`;
-
-const activationUrlForProfile = (profile: Profile): ActivationUrl =>
-  `${protocolSchemeForProfile(profile)}://mcp/activate`;
 
 export const requestAppActivation = async (
   opts: RequestAppActivationOptions,
@@ -92,7 +79,7 @@ export const requestAppActivation = async (
     const child = launcher(activationCommand.command, activationCommand.args, {
       detached: true,
       stdio: 'ignore',
-      windowsHide: true,
+      windowsHide: activationCommand.windowsHide,
     });
     child.unref();
 
@@ -115,6 +102,7 @@ export const requestAppActivation = async (
                 error: 'Activation command did not exit successfully.',
               },
         );
+      const onSpawn = () => settle({ status: 'requested', target });
       const onError = (err: Error) =>
         settle({ status: 'request_failed', target, error: err.message });
       const onAbort = () => {
@@ -127,10 +115,12 @@ export const requestAppActivation = async (
       };
       const cleanup = () => {
         child.removeListener('exit', onExit);
+        child.removeListener('spawn', onSpawn);
         child.removeListener('error', onError);
         opts.signal?.removeEventListener('abort', onAbort);
       };
-      child.once('exit', onExit);
+      if (activationCommand.completion === 'spawn') child.once('spawn', onSpawn);
+      else child.once('exit', onExit);
       child.once('error', onError);
       opts.signal?.addEventListener('abort', onAbort, { once: true });
       if (opts.signal?.aborted) onAbort();
@@ -153,26 +143,66 @@ const commandForPlatform = async (
     homeDir?: string;
     readMcpConfigFile?: McpConfigFileReader;
     pathExists?: ActivationPathExists;
+    checkInstallation?: RequestAppActivationOptions['checkInstallation'];
   },
 ): Promise<ActivationCommand> => {
+  const activationUrl = target.activationUrl;
   if (platform === 'darwin') {
+    // `open -a` launches the app or brings the running one to the front, with or without a URL.
     const appSpecifier = await macActivationAppSpecifier(target, opts);
     return {
       command: 'open',
-      args: ['-a', appSpecifier, target.activationUrl],
+      args: ['-a', appSpecifier, ...(activationUrl === undefined ? [] : [activationUrl])],
+      completion: 'exit',
+      windowsHide: true,
     };
+  }
+
+  if (activationUrl === undefined) {
+    if (platform === 'win32') return windowsAppLaunchCommand(target, opts);
+    throw new Error(`${target.productName} cannot be launched on ${platform}.`);
   }
 
   if (platform === 'win32') {
     return {
       command: 'cmd',
-      args: ['/d', '/c', 'start', '""', target.activationUrl],
+      args: ['/d', '/c', 'start', '""', activationUrl],
+      completion: 'exit',
+      windowsHide: true,
     };
   }
 
   return {
     command: 'xdg-open',
-    args: [target.activationUrl],
+    args: [activationUrl],
+    completion: 'exit',
+    windowsHide: true,
+  };
+};
+
+/**
+ * Starts the installed executable. A second start of a running app reaches the running instance,
+ * which brings its window to the front, and then exits.
+ */
+const windowsAppLaunchCommand = async (
+  target: ActivationTarget,
+  opts: {
+    signal?: AbortSignal;
+    checkInstallation?: RequestAppActivationOptions['checkInstallation'];
+  },
+): Promise<ActivationCommand> => {
+  const installation = await (opts.checkInstallation ?? detectDesktopInstallation)({
+    profile: target.profile,
+    platform: 'win32',
+    ...(opts.signal === undefined ? {} : { signal: opts.signal }),
+  });
+  if (installation.status !== 'installed')
+    throw new Error(`${target.productName} installation could not be found.`);
+  return {
+    command: installation.executablePath,
+    args: [],
+    completion: 'spawn',
+    windowsHide: false,
   };
 };
 

@@ -44,6 +44,7 @@ const parseProfile = (value: string | undefined): Profile | undefined => {
     value === 'dev' ||
     value === 'local' ||
     value === 'stage' ||
+    value === 'enterprise' ||
     value === 'test'
   )
     return value;

@@ -36,6 +36,7 @@ describe('resolveLogAppName', () => {
   it('returns profile-specific app names for non-prod profiles', () => {
     expect(resolveLogAppName('local')).toBe('NeoSqlMcpLocal');
     expect(resolveLogAppName('stage')).toBe('NeoSqlMcpStage');
+    expect(resolveLogAppName('enterprise')).toBe('NeoSqlMcpEnterprise');
   });
 
   it('returns the test app name for the test profile', () => {
