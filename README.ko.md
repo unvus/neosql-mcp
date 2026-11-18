@@ -53,7 +53,7 @@ PostgreSQL, Supabase, MySQL, MariaDB, Oracle, SQL Server, SQLite, H2, Databricks
 
 데이터베이스 연결은 NeoSQL Desktop이 담당하므로 `neosql-mcp`는 Desktop이 지원하는 모든
 DBMS에서 동작합니다. 버전 요구사항과 DBMS별 연결 방법은
-[DBMS별 연결 가이드](https://neosql.unvus.com/ko/docs/database/dbms)를 참고하세요.
+[DBMS별 연결 가이드](https://neosql.unvus.com/ko/docs/reference/dbms)를 참고하세요.
 
 ## 보안
 
@@ -321,9 +321,9 @@ MCP 호스트에서 `npx`에 접근할 수 있는지, Node.js 버전이 20 이�
 ## 참고 자료
 
 - [NeoSQL 웹사이트](https://neosql.unvus.com)
-- [NeoSQL MCP 문서](https://neosql.unvus.com/ko/docs/mcp/intro)
-- [NeoSQL Desktop 설치](https://neosql.unvus.com/ko/docs/install)
-- [지원 DBMS 및 연결 가이드](https://neosql.unvus.com/ko/docs/database/dbms)
+- [NeoSQL MCP 문서](https://neosql.unvus.com/ko/docs/start/mcp)
+- [NeoSQL Desktop 설치](https://neosql.unvus.com/ko/docs/start/install)
+- [지원 DBMS 및 연결 가이드](https://neosql.unvus.com/ko/docs/reference/dbms)
 - [NeoSQL MCP 개인정보 처리방침(영문)](https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md)
 
 ## 개발

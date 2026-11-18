@@ -53,7 +53,7 @@ PostgreSQL, Supabase, MySQL, MariaDB, Oracle, SQL Server, SQLite, H2, and Databr
 
 Database connections are made by NeoSQL Desktop, so `neosql-mcp` works with every DBMS
 that Desktop supports. See the
-[DBMS connection guide](https://neosql.unvus.com/en/docs/database/dbms) for
+[DBMS connection guide](https://neosql.unvus.com/en/docs/reference/dbms) for
 version requirements and per-DBMS connection details.
 
 ## Security
@@ -328,9 +328,9 @@ before trying again.
 ## Resources
 
 - [NeoSQL website](https://neosql.unvus.com)
-- [NeoSQL MCP documentation](https://neosql.unvus.com/en/docs/mcp/intro)
-- [Install NeoSQL Desktop](https://neosql.unvus.com/en/docs/install)
-- [Supported DBMS and connection guide](https://neosql.unvus.com/en/docs/database/dbms)
+- [NeoSQL MCP documentation](https://neosql.unvus.com/en/docs/start/mcp)
+- [Install NeoSQL Desktop](https://neosql.unvus.com/en/docs/start/install)
+- [Supported DBMS and connection guide](https://neosql.unvus.com/en/docs/reference/dbms)
 - [NeoSQL MCP Privacy Policy](https://github.com/unvus/neosql-mcp/blob/main/PRIVACY.md)
 
 ## Development
