@@ -6,6 +6,7 @@ import {
   macDesktopExecutablePathFromAppPath,
   windowsNsisUninstallGuid,
   windowsNsisUninstallRegistryKey,
+  windowsNsisUninstallRegistryKeys,
 } from '../../src/upstream/desktop-installation.js';
 
 describe('desktop installation detection', () => {
@@ -144,6 +145,33 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
       displayVersion: '0.0.2',
       displayIcon: `${executablePath},0`,
       publisher: 'Unvus Co., Ltd.',
+    });
+  });
+
+  it('finds a per-machine install (NeoSQLEnterprise) in HKLM when HKCU has none', async () => {
+    const executablePath = 'C:\\Program Files\\NeoSQLEnterprise\\NeoSQLEnterprise.exe';
+    const asked: string[] = [];
+
+    const result = await detectDesktopInstallation({
+      profile: 'enterprise',
+      platform: 'win32',
+      registryQuery: async (key) => {
+        asked.push(key);
+        if (!key.startsWith('HKLM\\')) return undefined;
+        return `
+${key.replace(/^HKLM/, 'HKEY_LOCAL_MACHINE')}
+    DisplayName    REG_SZ    NeoSQLEnterprise 4.1.0
+    DisplayIcon    REG_SZ    ${executablePath},0
+`;
+      },
+      pathExists: async (candidate) => candidate === executablePath,
+    });
+
+    expect(asked.map((key) => key.slice(0, 5))).toEqual(['HKCU\\', 'HKLM\\']);
+    expect(result).toMatchObject({
+      status: 'installed',
+      executablePath,
+      checkedRegistryKey: windowsNsisUninstallRegistryKeys('enterprise')[1],
     });
   });
 

@@ -282,7 +282,8 @@ fails, open it manually and call the tool again. On macOS, `neosql-mcp` currentl
 `/Applications` and `~/Applications` locations first. If the app is not found there,
 it falls back to the app path recorded by NeoSQL Desktop in
 `~/.neosql/mcp-config.json` after the app has been launched at least once. On
-Windows, it checks the per-user NSIS uninstall registry entry under HKCU.
+Windows, it checks the NSIS uninstall registry entry under HKCU (per-user install), then HKLM
+(per-machine install, used by NeoSQLEnterprise).
 
 ### Desktop does not start automatically
 

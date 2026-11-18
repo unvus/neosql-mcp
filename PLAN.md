@@ -341,7 +341,7 @@ Uninstall registry 를 기준으로 판별한다. Linux 는 현재 범위에서 
     `neosql-<profile>` 이다. record 는 hint 이므로 실제 `.app` bundle 또는 executable
     존재를 파일시스템으로 검증한다.
   - Windows: `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\<guid>`
-    registry. `<guid>` 는 electron-builder NSIS 규칙인
+    registry, 없으면 같은 경로의 `HKLM`(PC 전체 설치 — NeoSQLEnterprise 는 perMachine 이다). `<guid>` 는 electron-builder NSIS 규칙인
     `UUIDv5(appId, 50e065bc-3134-11e6-9bab-38c9862bdaf3)` 로 산출한다.
     HKLM/WOW6432Node fallback 은 두지 않는다. 향후 본체 installer 가 perMachine 으로
     바뀌면 그 변경과 같은 작업 단위에서 MCP 도 HKLM 기준으로 확장한다.

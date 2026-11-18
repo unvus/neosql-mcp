@@ -17,8 +17,8 @@ import {
 export const NEOSQL_INSTALL_GUIDE_URL = 'https://neosql.unvus.com/ko/docs/install';
 
 const ELECTRON_BUILDER_NS_UUID = '50e065bc-3134-11e6-9bab-38c9862bdaf3';
-const WINDOWS_UNINSTALL_KEY_PREFIX =
-  'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall';
+const WINDOWS_UNINSTALL_SUBKEY = 'Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall';
+const WINDOWS_UNINSTALL_KEY_PREFIX = `HKCU\\${WINDOWS_UNINSTALL_SUBKEY}`;
 const execFileAsync = promisify(execFile);
 
 export type PathExists = (candidate: string) => Promise<boolean>;
@@ -223,6 +223,18 @@ export const windowsNsisUninstallGuid = (profile: Profile): string =>
 export const windowsNsisUninstallRegistryKey = (profile: Profile): string =>
   `${WINDOWS_UNINSTALL_KEY_PREFIX}\\${windowsNsisUninstallGuid(profile)}`;
 
+/**
+ * Where the NSIS installer records the app: HKCU for a per-user install (every build but NeoSQLEnterprise), HKLM for a
+ * per-machine install (NeoSQLEnterprise, deployed by company PC management). HKCU first, so a per-user copy wins.
+ */
+export const windowsNsisUninstallRegistryKeys = (profile: Profile): string[] => {
+  const guid = windowsNsisUninstallGuid(profile);
+  return [
+    `HKCU\\${WINDOWS_UNINSTALL_SUBKEY}\\${guid}`,
+    `HKLM\\${WINDOWS_UNINSTALL_SUBKEY}\\${guid}`,
+  ];
+};
+
 interface DetectWindowsDesktopInstallationOptions {
   profile: Profile;
   target: ReturnType<typeof activationTargetForProfile>;
@@ -241,9 +253,17 @@ interface WindowsUninstallRegistryValues {
 const detectWindowsDesktopInstallation = async (
   opts: DetectWindowsDesktopInstallationOptions,
 ): Promise<DesktopInstallationResult> => {
-  const checkedRegistryKey = windowsNsisUninstallRegistryKey(opts.profile);
-
-  const output = await opts.registryQuery(checkedRegistryKey);
+  const keys = windowsNsisUninstallRegistryKeys(opts.profile);
+  // When neither hive has the key, the per-user key is reported, as before per-machine installs were looked up.
+  let checkedRegistryKey = windowsNsisUninstallRegistryKey(opts.profile);
+  let output: string | undefined;
+  for (const key of keys) {
+    output = await opts.registryQuery(key);
+    if (output !== undefined) {
+      checkedRegistryKey = key;
+      break;
+    }
+  }
   if (output === undefined) {
     return {
       status: 'not_installed',
@@ -365,10 +385,11 @@ const defaultWindowsRegistryQuery: WindowsRegistryQuery = async (key, signal) =>
     signal?.throwIfAborted();
     // reg.exe exit 1 cannot distinguish absence from access errors. .NET OpenSubKey
     // returns null only for an absent key; exceptions remain lookup failures.
-    const subkey = key.replace(/^HKCU\\/, '').replaceAll("'", "''");
+    const hive = key.startsWith('HKLM\\') ? 'LocalMachine' : 'CurrentUser';
+    const subkey = key.replace(/^HK(?:CU|LM)\\/, '').replaceAll("'", "''");
     const script =
       "$ErrorActionPreference='Stop'; try { " +
-      "$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('" +
+      `$k=[Microsoft.Win32.Registry]::${hive}.OpenSubKey('` +
       subkey +
       "'); " +
       "if ($null -eq $k) { Write-Output 'missing' } else { $k.Dispose(); Write-Output 'present' } " +

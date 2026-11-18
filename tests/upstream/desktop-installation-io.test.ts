@@ -19,13 +19,24 @@ describe('T02/T18 OS installation I/O boundaries', () => {
     io.access.mockReset();
   });
 
-  it('recognizes a Windows key absence only after the OS registry probe confirms it', async () => {
+  it('recognizes a Windows key absence only after the OS registry probe confirms it in both hives', async () => {
     io.exec
+      .mockRejectedValueOnce(new Error('reg exit 1'))
+      .mockResolvedValueOnce({ stdout: 'missing\r\n' })
       .mockRejectedValueOnce(new Error('reg exit 1'))
       .mockResolvedValueOnce({ stdout: 'missing\r\n' });
     const result = await detectDesktopInstallation({ profile: 'prod', platform: 'win32' });
     expect(result).toMatchObject({ status: 'not_installed', reason: 'registry_missing' });
-    expect(io.exec.mock.calls.map((call) => call[0])).toEqual(['reg', 'powershell.exe']);
+    expect(io.exec.mock.calls.map((call) => call[0])).toEqual([
+      'reg',
+      'powershell.exe',
+      'reg',
+      'powershell.exe',
+    ]);
+    // Per-user install first, then a per-machine install (NeoSQLEnterprise).
+    const probes = io.exec.mock.calls.filter((call) => call[0] === 'powershell.exe');
+    expect(String(probes[0]?.[1])).toContain('Registry]::CurrentUser');
+    expect(String(probes[1]?.[1])).toContain('Registry]::LocalMachine');
     expect(io.access).not.toHaveBeenCalled();
   });
   it.each(['present', 'unexpected'])(

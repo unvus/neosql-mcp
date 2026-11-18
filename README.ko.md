@@ -274,8 +274,8 @@ NeoSQL 도구는 호출마다 프로젝트 하나를 대상으로 합니다. 도
 설치하지 않았다면 NeoSQL Desktop을 먼저 설치하세요. 이미 설치했는데 감지에 실패하면
 앱을 직접 실행한 뒤 도구를 다시 호출하세요. macOS에서는 `/Applications`와 `~/Applications`의
 표준 위치를 먼저 확인합니다. 찾지 못하면 Desktop을 한 번 이상 실행한 뒤
-`~/.neosql/mcp-config.json`에 기록된 앱 경로를 확인합니다. Windows에서는 HKCU의
-사용자별 NSIS 제거 정보 레지스트리 항목을 확인합니다.
+`~/.neosql/mcp-config.json`에 기록된 앱 경로를 확인합니다. Windows에서는 NSIS 제거 정보 레지스트리
+항목을 HKCU(사용자별 설치)에서 먼저, 없으면 HKLM(PC 전체 설치 — NeoSQLEnterprise)에서 확인합니다.
 
 ### Desktop이 자동으로 실행되지 않는 경우
 
