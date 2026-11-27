@@ -193,6 +193,17 @@ const foreignKeyOperationSchema = z
   })
   .strict();
 
+type McpForeignKeyOperation = z.infer<typeof foreignKeyOperationSchema>;
+
+/**
+ * Input only virtual relations understand. An app without the virtualRelations capability
+ * ignores these fields and would apply the operation as a real foreign key (or drop one).
+ * identifying matters only together with virtual=true; an app that knows virtual relations
+ * refuses conditions / pkSchemaName without it.
+ */
+export const usesVirtualRelationInput = (op: McpForeignKeyOperation): boolean =>
+  op.virtual === true || (op.conditions?.length ?? 0) > 0 || !!op.pkSchemaName?.trim();
+
 const constraintOperationSchema = z
   .object({
     action: z.string().describe('Operation type: ADD or DROP'),

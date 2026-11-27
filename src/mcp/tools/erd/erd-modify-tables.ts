@@ -7,7 +7,8 @@ import {
 } from '../shared.js';
 import { coordinateInputShape, validateCoordinateInput } from '../context/coordinates.js';
 import { projectTargetInputShape, splitProjectTarget } from '../context/project-target.js';
-import { alterTableDefSchema } from './input-models.js';
+import { alterTableDefSchema, usesVirtualRelationInput } from './input-models.js';
+import { requireAppFeature } from '../app-capabilities.js';
 
 export type ErdModifyTablesDeps = UpstreamToolDeps;
 
@@ -32,7 +33,8 @@ export const registerErdModifyTablesTool = (server: McpServer, deps: ErdModifyTa
         'in NeoSQL that never produce DDL, for an FK the database intentionally does not enforce or a ' +
         'code/category mapping with fixed values. Never turn a virtual relation into foreign key DDL. ' +
         'Problems are reported per table in warnings; added and dropped virtual relation names are ' +
-        'returned in virtualRelations. ' +
+        'returned in virtualRelations. Virtual relations need NeoSQL Desktop newer than 4.3.0; with an older ' +
+        'app the whole request is refused before anything is sent. ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
         'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed.',
       inputSchema: {
@@ -47,11 +49,23 @@ export const registerErdModifyTablesTool = (server: McpServer, deps: ErdModifyTa
       validateCoordinateInput(args);
       const { projectId, input } = splitProjectTarget(args);
       const database = normalizeOptionalNullableString(input.database);
+      // An older app would turn virtual relation operations into real foreign keys: send the
+      // request only after the app reports the capability. Other requests skip the check.
+      const needsVirtualRelations = input.alterations.some((alteration) =>
+        alteration.foreignKeyOperations.some(usesVirtualRelationInput),
+      );
       return callUpstreamTool(
         deps,
         'erd-modify-tables',
         { ...input, ...(database === undefined ? {} : { database }) },
-        { ...(projectId === undefined ? {} : { projectId }), request, timeoutMs: 60_000 },
+        {
+          ...(projectId === undefined ? {} : { projectId }),
+          request,
+          timeoutMs: 60_000,
+          ...(needsVirtualRelations
+            ? requireAppFeature(deps.postRpc, 'virtualRelations', 'erd-modify-tables', 60_000)
+            : {}),
+        },
       );
     },
   );

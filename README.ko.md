@@ -251,7 +251,7 @@ NeoSQL 도구는 호출마다 프로젝트 하나를 대상으로 합니다. 도
 | `list-tables`        | 예        | 테이블을 조회합니다.                                                                                                                                                        |
 | `get-table-details`  | 예        | 컬럼, 키, 인덱스 등 테이블 메타데이터를 반환합니다. NeoSQL 가상 관계는 별도 `virtualRelations` 목록으로 반환합니다.                                                         |
 | `erd-create-tables`  | 예        | 실제 데이터베이스를 변경하지 않고 ERD에 가상 테이블을 추가합니다.                                                                                                           |
-| `erd-modify-tables`  | 예        | 실제 데이터베이스를 변경하지 않고 ERD의 가상 테이블 모델과 NeoSQL 가상 관계(DDL 없음)를 수정합니다.                                                                         |
+| `erd-modify-tables`  | 예        | 실제 데이터베이스를 변경하지 않고 ERD의 가상 테이블 모델과 NeoSQL 가상 관계(DDL 없음)를 수정합니다. 가상 관계는 4.3.0보다 새 NeoSQL Desktop이 필요하며, 이전 앱에는 아무것도 보내지 않고 업데이트를 요청합니다. |
 | `execute-query`      | 예        | DDL을 포함한 SQL을 실행합니다.                                                                                                                                              |
 | `generate-code`      | 예        | 지정한 테이블의 소스 파일을 생성·저장합니다. 프로젝트 설정에서 템플릿 팩, 필수 변수, 출력 폴더(Location)를 설정해야 하며, 별도 확인 창 없이 기존 파일을 덮어쓸 수 있습니다. |
 

@@ -231,11 +231,48 @@ type OpenProjectResult = {
 상태 메시지·사유 매핑·익명 local 및 배포 지원 범위는
 [런타임 수명 계약](../../neosql/docs/mcp/runtime-lifecycle.html#navigation)을 따른다.
 
+## Internal app capabilities
+
+`get-capabilities`는 공개 MCP tool이 아닌 내부 method다. params는 `{}`이고 Electron main이
+Renderer를 거치지 않고 답한다(프로젝트가 열려 있지 않아도 된다).
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"get-capabilities","params":{}}
+{"jsonrpc":"2.0","id":1,"result":{"appVersion":"4.4.0","features":["virtualRelations"]}}
+```
+
+- 기능 id는 구버전 앱이 새 입력을 모른 채 **말없이 다른 동작으로** 처리하는 경우에만 둔다. 새 RPC
+  method는 구버전 앱이 `method-not-found`로 거절하므로 id가 필요 없다. 응답 필드와 id는 더하기만
+  한다. Node는 모르는 필드·id를 무시한다.
+- `virtualRelations`: `erd-modify-tables`의 `foreignKeyOperations`에서 `virtual`·`identifying`·
+  `conditions`·`pkSchemaName`으로 가상 관계를 더하고 지운다. 이 id가 없는 앱(4.3.0 이하)은 이 필드를
+  버리고 실제 FK ADD/DROP으로 처리한다.
+
+Node는 가상 관계 입력(`virtual: true`, 비어 있지 않은 `conditions`, 공백이 아닌 `pkSchemaName` 중 하나)이
+있는 `erd-modify-tables` 호출에서만, Desktop 준비 뒤·작업 전송 전에 1초 제한으로 묻는다. `identifying`은
+`virtual: true`와 함께일 때만 의미가 있어 따로 보지 않는다. 그 밖의 호출과 도구는 묻지 않고 예전과 같이
+보낸다.
+
+| 응답                                           | Node 결과 (`isError: true`, 작업 미전송)                     |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| `features`에 `virtualRelations`                | 작업을 한 번 보낸다                                          |
+| `method-not-found`(-32601) — 4.3.0 이하 앱     | `status: app_update_required`, `requestSent: false`          |
+| `features`에 없음                              | `app_update_required` + 앱이 알린 `appVersion`               |
+| timeout·HTTP 오류·다른 RPC 오류·형식 오류      | `status: capability_check_failed`, `requestSent: false`      |
+
+거절은 요청 전체다. 한 호출에 가상 관계 작업과 일반 FK 작업이 섞여 있어도 아무것도 보내지 않는다.
+메시지는 앱 업데이트를 요청하고 일반 FK로 바꿔 보내지 말라고 적는다.
+
+결과를 캐시하지 않고 해당 호출마다 묻는다. Node와 앱 사이에는 지속 연결이 없어 "재연결"을 관찰할 수
+없고, 두 호출 사이에 사용자가 Desktop을 업데이트하거나 이전 버전으로 되돌릴 수 있다. 묵은 "지원" 캐시는
+구버전 앱에 가상 관계를 보내 실제 FK를 만든다. 조회는 main이 바로 답하는 로컬 RPC 한 번이다.
+
 ## Methods
 
 | MCP tool             | RPC method           | Electron 호출 | Timeout |
 | -------------------- | -------------------- | ------------- | ------: |
 | (internal only)     | `get-runtime-status` | yes           |      1s |
+| (internal only)     | `get-capabilities`   | yes (main only) |    1s |
 | `list-projects`      | `list-projects`      | yes           |     30s |
 | `create-project`     | `create-project`     | yes           |     90s |
 | `list-connections`   | `list-connections`   | yes           |     30s |
@@ -256,6 +293,7 @@ type OpenProjectResult = {
 이 표는 upstream RPC를 호출하거나 upstream context contract와 직접 관련된 MCP tool만
 다룬다. `ping`, `get-mcp-session-id`, `get-context-help`는 Node-local tool이다.
 `generate-code`는 준비 확인 후 내부 정책 조회와 생성 RPC를 순서대로 호출한다.
+가상 관계 입력이 있는 `erd-modify-tables`는 준비 확인 후 `get-capabilities`를 먼저 호출한다.
 
 ## `list-projects`
 
@@ -475,7 +513,8 @@ interface TableDetail {
     pkColumnName: string;
   }>;
   // NeoSQL 에만 있는 가상 관계. FK 가 아니므로 foreignKeys 와 다른 칸이다 — FK DDL 로 바꾸지 않는다.
-  virtualRelations: Array<{
+  // 4.3.0 이하 앱은 이 칸을 내지 않는다(없음 ≠ 가상 관계 없음). Node 는 그대로 전달한다.
+  virtualRelations?: Array<{
     name: string;
     pkTableName: string;
     pkSchemaName?: string; // 참조 테이블이 이 테이블과 다른 schema 일 때만
@@ -734,6 +773,8 @@ Virtual relation semantics (`foreignKeyOperations` with `virtual: true`):
 
 - 가상 관계는 NeoSQL 에만 저장되고 DDL 을 만들지 않는다. 쓰임은 DB 가 성능 때문에 만들지 않은 실제 FK 와,
   컬럼과 고정값으로 맺는 코드 · 카테고리 매핑이다.
+- 4.3.0 이하 앱은 이 필드를 버리고 실제 FK 로 처리한다. Node 는 앱이 `virtualRelations` 기능을 알릴 때만
+  요청을 보낸다([Internal app capabilities](#internal-app-capabilities)).
 - 앱이 FK 추가 창과 같은 검증을 한다: 참조 테이블 · 컬럼이 있어야 하고(새 컬럼을 만들지 않는다), 같은 connection ·
   database(SQLite 는 같은 schema), 컬럼 짝 1개 이상, 식별 관계는 부모 PK 컬럼만 · 고정값 없음, 숫자 컬럼에는 숫자 값,
   이름은 테이블 안에서 FK 와 가상 관계를 통틀어 하나.

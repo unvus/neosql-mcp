@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../../../src/mcp/server.js';
-import { startMockRpcServer, type MockRpcRequest } from '../../../helpers/mock-uds-server.js';
+import {
+  startMockRpcServer,
+  type MockRpcRequest,
+  type MockRpcResponse,
+} from '../../../helpers/mock-uds-server.js';
 import { makeTestSocketPath, removeSocketFile } from '../../../helpers/socket.js';
 
 describe('ERD table tools', () => {
@@ -160,8 +164,147 @@ describe('ERD table tools', () => {
     });
 
     expect(result.isError).not.toBe(true);
-    expect(received[0]?.params).toMatchObject({
+    expect(received.map((request) => request.method)).toEqual([
+      'get-capabilities',
+      'erd-modify-tables',
+    ]);
+    expect(received[1]?.params).toMatchObject({
       input: { alterations: [{ foreignKeyOperations: [virtualAdd, virtualDrop] }] },
+    });
+  });
+
+  describe('virtual relations and the app capability', () => {
+    const fk = {
+      action: 'ADD',
+      fkName: 'fk_type',
+      fkColumnName: 'acnt_type',
+      pkTableName: 'nv_category',
+      pkColumnName: 'cate_code',
+      deferrable: false,
+      initiallyDeferred: false,
+    };
+    const modify = (foreignKeyOperations: Array<Record<string, unknown>>) => ({
+      name: 'erd-modify-tables',
+      arguments: {
+        alterations: [
+          {
+            tableName: 'nv_account',
+            newTableName: '',
+            columnOperations: [],
+            indexOperations: [],
+            foreignKeyOperations,
+            constraintOperations: [],
+          },
+        ],
+      },
+    });
+    const payload = (result: Awaited<ReturnType<Client['callTool']>>) =>
+      JSON.parse((result.content as Array<{ text: string }>)[0]!.text) as Record<string, unknown>;
+
+    it.each([
+      ['virtual ADD', { ...fk, virtual: true }],
+      ['virtual DROP', { ...fk, action: 'DROP', virtual: true }],
+      ['identifying virtual ADD', { ...fk, virtual: true, identifying: true }],
+      [
+        'conditions without virtual',
+        { ...fk, conditions: [{ side: 'child', column: 'a', value: 1 }] },
+      ],
+      ['pkSchemaName without virtual', { ...fk, pkSchemaName: 'common' }],
+    ])('refuses %s on an app without get-capabilities and sends nothing', async (_, operation) => {
+      const { client, received } = await setupClient({ app: 'old' });
+      const result = await client.callTool(modify([operation]));
+
+      expect(result.isError).toBe(true);
+      expect(payload(result)).toMatchObject({
+        status: 'app_update_required',
+        feature: 'virtualRelations',
+        requestSent: false,
+      });
+      expect(payload(result).message).toContain('newer than 4.3.0');
+      expect(received.map((request) => request.method)).toEqual(['get-capabilities']);
+    });
+
+    it('refuses the whole request, including its real foreign keys, when one operation is virtual', async () => {
+      const { client, received } = await setupClient({ app: 'old' });
+      const result = await client.callTool(
+        modify([fk, { ...fk, fkName: 'v_type', virtual: true }]),
+      );
+
+      expect(result.isError).toBe(true);
+      expect(received.map((request) => request.method)).toEqual(['get-capabilities']);
+    });
+
+    it('refuses when the app reports capabilities without virtualRelations', async () => {
+      const { client, received } = await setupClient({ app: 'without-feature' });
+      const result = await client.callTool(modify([{ ...fk, virtual: true }]));
+
+      expect(result.isError).toBe(true);
+      expect(payload(result)).toMatchObject({
+        status: 'app_update_required',
+        appVersion: '4.3.0',
+        requestSent: false,
+      });
+      expect(received.map((request) => request.method)).toEqual(['get-capabilities']);
+    });
+
+    it.each([
+      ['an HTTP 500', { kind: 'http', status: 500, body: 'boom' } as const],
+      ['an invalid result', { kind: 'result', result: { features: 'virtualRelations' } } as const],
+      [
+        'another RPC error',
+        { kind: 'rpc-error', code: -32000, message: 'x', rpcKind: 'handler-error' } as const,
+      ],
+    ])('sends nothing when the capability check returns %s', async (_, capabilities) => {
+      const { client, received } = await setupClient({ app: capabilities });
+      const result = await client.callTool(modify([{ ...fk, virtual: true }]));
+
+      expect(result.isError).toBe(true);
+      expect(payload(result)).toMatchObject({
+        status: 'capability_check_failed',
+        feature: 'virtualRelations',
+        requestSent: false,
+      });
+      expect(received.map((request) => request.method)).toEqual(['get-capabilities']);
+    });
+
+    it('forwards foreign key operations to an old app exactly as before, without a capability check', async () => {
+      const { client, received } = await setupClient({ app: 'old' });
+      const operations = [
+        fk,
+        { ...fk, action: 'DROP', fkName: 'fk_old' },
+        {
+          ...fk,
+          fkName: 'fk_flags',
+          virtual: false,
+          identifying: true,
+          conditions: [],
+          pkSchemaName: ' ',
+        },
+      ];
+      const result = await client.callTool(modify(operations));
+
+      expect(result.isError).not.toBe(true);
+      expect(received.map((request) => request.method)).toEqual(['erd-modify-tables']);
+      expect(received[0]?.params).toMatchObject({
+        input: { alterations: [{ foreignKeyOperations: operations }] },
+      });
+    });
+
+    it('asks the app on every call, so an app swapped between calls is checked again', async () => {
+      const app: { current: AppKind } = { current: 'new' };
+      const { client, received } = await setupClient({ app: () => app.current });
+
+      expect((await client.callTool(modify([{ ...fk, virtual: true }]))).isError).not.toBe(true);
+      app.current = 'old';
+      const second = await client.callTool(modify([{ ...fk, virtual: true }]));
+
+      expect(second.isError).toBe(true);
+      expect(payload(second)).toMatchObject({ status: 'app_update_required' });
+      expect(received.map((request) => request.method)).toEqual([
+        'get-capabilities',
+        'erd-modify-tables',
+        'get-capabilities',
+      ]);
     });
   });
 
@@ -232,9 +375,13 @@ describe('ERD table tools', () => {
     expect(received).toHaveLength(0);
   });
 
-  async function setupClient(): Promise<{ client: Client; received: MockRpcRequest[] }> {
+  async function setupClient(
+    opts: { app?: AppKind | (() => AppKind) } = {},
+  ): Promise<{ client: Client; received: MockRpcRequest[] }> {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];
+    const app = opts.app ?? 'new';
+    const appKind = typeof app === 'function' ? app : () => app;
     const mock = await startMockRpcServer({
       socketPath,
       runtimeStatus: {
@@ -245,6 +392,7 @@ describe('ERD table tools', () => {
       },
       handler: (request) => {
         received.push(request);
+        if (request.method === 'get-capabilities') return capabilitiesResponse(appKind());
         return { kind: 'result', result: { ok: true } };
       },
     });
@@ -262,3 +410,25 @@ describe('ERD table tools', () => {
     return { client, received };
   }
 });
+
+/** new: reports virtualRelations. old: before get-capabilities. Or a raw capability response. */
+type AppKind = 'new' | 'old' | 'without-feature' | MockRpcResponse;
+
+const capabilitiesResponse = (app: AppKind): MockRpcResponse => {
+  switch (app) {
+    case 'new':
+      return { kind: 'result', result: { appVersion: '4.4.0', features: ['virtualRelations'] } };
+    case 'without-feature':
+      return { kind: 'result', result: { appVersion: '4.3.0', features: [] } };
+    case 'old':
+      // What an older Electron main answers for a method it does not know.
+      return {
+        kind: 'rpc-error',
+        code: -32601,
+        message: 'method-not-found: get-capabilities',
+        rpcKind: 'method-not-found',
+      };
+    default:
+      return app;
+  }
+};
