@@ -28,6 +28,11 @@ export const registerErdModifyTablesTool = (server: McpServer, deps: ErdModifyTa
         'Alterations may rename tables, update comments and primary keys, and add, modify, or remove ' +
         'columns, indexes, foreign keys, and UNIQUE / CHECK / EXCLUSION constraints. ' +
         'For table comments, use remarksOperation.modify=true when an empty string is intentional. ' +
+        'foreignKeyOperations with virtual=true add or drop NeoSQL virtual relations: relations stored only ' +
+        'in NeoSQL that never produce DDL, for an FK the database intentionally does not enforce or a ' +
+        'code/category mapping with fixed values. Never turn a virtual relation into foreign key DDL. ' +
+        'Problems are reported per table in warnings; added and dropped virtual relation names are ' +
+        'returned in virtualRelations. ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
         'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed.',
       inputSchema: {

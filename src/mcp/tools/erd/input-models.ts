@@ -63,7 +63,12 @@ export const tableDefSchema = z
     remarks: z.string().describe('Table comment'),
     columns: z.array(columnDefSchema).describe('Column definitions'),
     primaryKeys: stringArraySchema.describe('Primary key column names'),
-    importedKeys: z.array(importedKeyDefSchema).describe('Foreign key definitions'),
+    importedKeys: z
+      .array(importedKeyDefSchema)
+      .describe(
+        'Foreign key definitions (real foreign keys only). To add NeoSQL virtual relations, create the ' +
+          'tables first, then use erd-modify-tables foreignKeyOperations with virtual=true.',
+      ),
     indexes: z.array(indexDefSchema).describe('Index definitions'),
     constraints: z
       .array(constraintDefSchema)
@@ -106,17 +111,85 @@ const indexOperationSchema = z
   })
   .strict();
 
+const virtualRelationConditionSchema = z
+  .object({
+    side: z
+      .enum(['child', 'parent'])
+      .describe(
+        "Which table the column belongs to: 'child' = this table (the fkColumnName side), " +
+          "'parent' = the referenced table (pkTableName).",
+      ),
+    column: z.string().describe('Existing column name on that side'),
+    value: z
+      .union([z.string(), z.number()])
+      .describe(
+        'Fixed value the column equals (equality only). Numeric columns need a numeric value.',
+      ),
+  })
+  .strict();
+
 const foreignKeyOperationSchema = z
   .object({
     action: z.string().describe('Operation type: ADD or DROP'),
-    fkName: z.string().describe('Foreign key constraint name'),
-    fkColumnName: z.string().describe('Foreign key column name in this table (required for ADD)'),
+    fkName: z
+      .string()
+      .describe(
+        'Foreign key constraint name. With virtual=true: the virtual relation name; for a single-pair ' +
+          'virtual ADD it may be empty to get a generated name (returned in virtualRelations.added). ' +
+          'Names are unique per table across foreign keys and virtual relations.',
+      ),
+    fkColumnName: z
+      .string()
+      .describe(
+        'Foreign key column name in this table (required for ADD). ' +
+          'For a multi-column key or virtual relation, send one ADD per column pair with the same fkName.',
+      ),
     pkTableName: z.string().describe('Referenced (primary key) table name (required for ADD)'),
-    pkColumnName: z.string().describe('Referenced (primary key) column name (required for ADD)'),
+    pkColumnName: z
+      .string()
+      .describe(
+        'Referenced (primary key) column name (required for ADD). ' +
+          'A non-identifying virtual relation may reference any existing column.',
+      ),
     deferrable: z.boolean().describe('Whether the foreign key is DEFERRABLE (PostgreSQL / Oracle)'),
     initiallyDeferred: z
       .boolean()
       .describe('True if INITIALLY DEFERRED, false if INITIALLY IMMEDIATE'),
+    virtual: z
+      .boolean()
+      .optional()
+      .describe(
+        'true = a NeoSQL virtual relation instead of a foreign key. It is stored only in NeoSQL, never ' +
+          'produces DDL, and is never applied to the database. Use it for (1) a real FK the database ' +
+          'intentionally does not enforce (e.g. for performance), or (2) a code/category mapping matched ' +
+          'by columns plus fixed values, e.g. on table ha_category: fkColumnName cate_code -> ' +
+          "ha_account.acnt_status with child conditions cate_ns = 'common' and cate_parent_code = " +
+          "'acnt_status' (one relation per code group; another for acnt_type). The referenced table and all " +
+          'columns must already exist (same connection and database; new columns are not created). ' +
+          'Read tables with get-table-details first. ADD/DROP with virtual=true only touch virtual ' +
+          'relations; a DROP without it never removes one. deferrable/initiallyDeferred are ignored.',
+      ),
+    identifying: z
+      .boolean()
+      .optional()
+      .describe(
+        'Virtual relations only (default false). true = identifying: may reference only primary key ' +
+          'columns of the referenced table and cannot have conditions.',
+      ),
+    pkSchemaName: z
+      .string()
+      .optional()
+      .describe(
+        'Virtual relations only: schema of the referenced table when it is in another schema of the ' +
+          'same database (not supported on SQLite). Omit or empty for the schema of this tool call.',
+      ),
+    conditions: z
+      .array(virtualRelationConditionSchema)
+      .optional()
+      .describe(
+        'Virtual relations only, non-identifying: fixed-value conditions (column = value) on either ' +
+          'table, in addition to the column pairs. A condition column cannot also be in a column pair.',
+      ),
   })
   .strict();
 
@@ -196,7 +269,10 @@ export const alterTableDefSchema = z
     indexOperations: z.array(indexOperationSchema).describe('Index operations (ADD, DROP)'),
     foreignKeyOperations: z
       .array(foreignKeyOperationSchema)
-      .describe('Foreign key operations (ADD, DROP)'),
+      .describe(
+        'Foreign key operations (ADD, DROP). With virtual=true, adds or drops a NeoSQL virtual relation ' +
+          '(no DDL) instead; virtual operations run after the foreign key operations, DROPs before ADDs.',
+      ),
     constraintOperations: z
       .array(constraintOperationSchema)
       .describe('Table-level constraint operations (UNIQUE / CHECK / EXCLUSION). ADD, DROP.'),

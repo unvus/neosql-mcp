@@ -115,6 +115,123 @@ describe('ERD table tools', () => {
     });
   });
 
+  it('forwards virtual relation operations with identifying, pkSchemaName, and conditions', async () => {
+    const { client, received } = await setupClient();
+    const virtualAdd = {
+      action: 'ADD',
+      fkName: '',
+      fkColumnName: 'acnt_type',
+      pkTableName: 'nv_category',
+      pkColumnName: 'cate_code',
+      deferrable: false,
+      initiallyDeferred: false,
+      virtual: true,
+      identifying: false,
+      pkSchemaName: '',
+      conditions: [
+        { side: 'parent', column: 'cate_ns', value: 'common' },
+        { side: 'parent', column: 'cate_order', value: 1 },
+      ],
+    };
+    const virtualDrop = {
+      action: 'DROP',
+      fkName: 'fk_old',
+      fkColumnName: '',
+      pkTableName: '',
+      pkColumnName: '',
+      deferrable: false,
+      initiallyDeferred: false,
+      virtual: true,
+    };
+    const result = await client.callTool({
+      name: 'erd-modify-tables',
+      arguments: {
+        alterations: [
+          {
+            tableName: 'nv_account',
+            newTableName: '',
+            columnOperations: [],
+            indexOperations: [],
+            foreignKeyOperations: [virtualAdd, virtualDrop],
+            constraintOperations: [],
+          },
+        ],
+      },
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(received[0]?.params).toMatchObject({
+      input: { alterations: [{ foreignKeyOperations: [virtualAdd, virtualDrop] }] },
+    });
+  });
+
+  it('rejects a virtual relation condition with an unknown side before calling NeoSQL', async () => {
+    const { client, received } = await setupClient();
+    const result = await client.callTool({
+      name: 'erd-modify-tables',
+      arguments: {
+        alterations: [
+          {
+            tableName: 'nv_account',
+            newTableName: '',
+            columnOperations: [],
+            indexOperations: [],
+            foreignKeyOperations: [
+              {
+                action: 'ADD',
+                fkName: 'fk_type',
+                fkColumnName: 'acnt_type',
+                pkTableName: 'nv_category',
+                pkColumnName: 'cate_code',
+                deferrable: false,
+                initiallyDeferred: false,
+                virtual: true,
+                conditions: [{ side: 'other', column: 'cate_ns', value: 'common' }],
+              },
+            ],
+            constraintOperations: [],
+          },
+        ],
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(received).toHaveLength(0);
+  });
+
+  it('keeps importedKeys of erd-create-tables to real foreign keys', async () => {
+    const { client, received } = await setupClient();
+    const result = await client.callTool({
+      name: 'erd-create-tables',
+      arguments: {
+        tableDefinitions: [
+          {
+            name: 'orders',
+            remarks: '',
+            columns: [],
+            primaryKeys: [],
+            importedKeys: [
+              {
+                fkName: 'fk_orders_users',
+                fkColumnName: 'user_id',
+                pkTableName: 'users',
+                pkColumnName: 'id',
+                deferrable: false,
+                initiallyDeferred: false,
+                virtual: true,
+              },
+            ],
+            indexes: [],
+            constraints: [],
+          },
+        ],
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(received).toHaveLength(0);
+  });
+
   async function setupClient(): Promise<{ client: Client; received: MockRpcRequest[] }> {
     const socketPath = makeTestSocketPath();
     const received: MockRpcRequest[] = [];

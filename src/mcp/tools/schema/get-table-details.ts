@@ -23,6 +23,9 @@ export const registerGetTableDetailsTool = (server: McpServer, deps: GetTableDet
       },
       description:
         'Get detailed information about one or more tables including columns, indexes, primary keys, and foreign keys. ' +
+        'NeoSQL virtual relations of a table are returned separately in virtualRelations (name, pkTableName, ' +
+        'identifying, column pairs, fixed-value conditions). They exist only in NeoSQL, not in the database: ' +
+        'never treat them as foreign keys or generate foreign key DDL from them. ' +
         'Pass multiple table names to retrieve details in a single call. ' +
         'Provide connectionId, database, and schema together, or omit all three to use the active project Default. ' +
         'Optionally pass projectId (from list-projects or create-project) to target a project; NeoSQL Desktop opens it if needed.',

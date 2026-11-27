@@ -26,7 +26,9 @@ export const registerErdCreateTablesTool = (server: McpServer, deps: ErdCreateTa
       description:
         'Create one or more virtual tables in a NeoSQL ERD without executing SQL or changing the database. ' +
         'Each definition may include columns, primary keys, foreign keys, indexes, and table-level ' +
-        'constraints (UNIQUE / CHECK / EXCLUSION). Tables that fail validation or conflict with an ' +
+        'constraints (UNIQUE / CHECK / EXCLUSION). To add NeoSQL virtual relations (no DDL), create the ' +
+        'tables first and then call erd-modify-tables with virtual=true. ' +
+        'Tables that fail validation or conflict with an ' +
         'existing model are skipped and reported; successful tables remain pending ERD changes. ' +
         'Works on designOnly connections (no database connection info), so it can draft an initial schema ' +
         'before any database exists. ' +

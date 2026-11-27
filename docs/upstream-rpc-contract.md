@@ -474,6 +474,15 @@ interface TableDetail {
     pkTableName: string;
     pkColumnName: string;
   }>;
+  // NeoSQL 에만 있는 가상 관계. FK 가 아니므로 foreignKeys 와 다른 칸이다 — FK DDL 로 바꾸지 않는다.
+  virtualRelations: Array<{
+    name: string;
+    pkTableName: string;
+    pkSchemaName?: string; // 참조 테이블이 이 테이블과 다른 schema 일 때만
+    identifying: boolean;
+    pairs: Array<{ fkColumnName: string; pkColumnName: string }>;
+    conditions: Array<{ side: 'child' | 'parent'; column: string; value: string }>;
+  }>;
   constraints: Array<{
     name: string;
     type: string;
@@ -688,6 +697,11 @@ interface McpForeignKeyOperation {
   pkColumnName: string;
   deferrable: boolean;
   initiallyDeferred: boolean;
+  // 아래는 가상 관계(virtual=true)에만 쓴다. 생략 가능.
+  virtual?: boolean;
+  identifying?: boolean;
+  pkSchemaName?: string;
+  conditions?: Array<{ side: 'child' | 'parent'; column: string; value: string | number }>;
 }
 
 interface McpConstraintOperation {
@@ -715,6 +729,19 @@ Primary key operation semantics:
 - `DROP`: remove that column from the current primary key.
 - Dropping all primary key columns requires one explicit `DROP` operation per current PK column.
 - Legacy `newRemarks` and `newPrimaryKeys` inputs are rejected by the Node MCP tool schema.
+
+Virtual relation semantics (`foreignKeyOperations` with `virtual: true`):
+
+- 가상 관계는 NeoSQL 에만 저장되고 DDL 을 만들지 않는다. 쓰임은 DB 가 성능 때문에 만들지 않은 실제 FK 와,
+  컬럼과 고정값으로 맺는 코드 · 카테고리 매핑이다.
+- 앱이 FK 추가 창과 같은 검증을 한다: 참조 테이블 · 컬럼이 있어야 하고(새 컬럼을 만들지 않는다), 같은 connection ·
+  database(SQLite 는 같은 schema), 컬럼 짝 1개 이상, 식별 관계는 부모 PK 컬럼만 · 고정값 없음, 숫자 컬럼에는 숫자 값,
+  이름은 테이블 안에서 FK 와 가상 관계를 통틀어 하나.
+- 여러 컬럼 관계는 같은 `fkName` 의 ADD 를 컬럼 짝마다 보낸다. 짝 하나인 ADD 는 `fkName` 을 비워 이름을 받을 수 있다.
+- 가상 관계 작업은 FK 작업 뒤에, DROP 을 ADD 보다 먼저 적용한다. virtual 없는 DROP 은 가상 관계를 지우지 않고,
+  virtual DROP 은 FK 를 지우지 않는다(둘 다 warnings 로 안내).
+- 적용하지 못한 작업은 테이블의 `warnings` 로 알리고, 더하고 지운 이름은 `modified[].virtualRelations` 로 돌려준다.
+- `erd-create-tables` 의 `importedKeys` 는 실제 FK 만 받는다. 가상 관계는 테이블을 만든 뒤 이 도구로 더한다.
 - 세 좌표를 모두 명시하거나 모두 생략하며 Node는 이를 `params.input`에 유지한다.
 - Electron main이 좌표를 renderer request field로 추출하고 ERD payload에서는 제거한다.
 - 기존 테이블은 dirty 모델로만 저장하며 실제 SQL/DDL은 생성하거나 실행하지 않는다.
@@ -730,7 +757,12 @@ interface ErdModifyTablesResult {
     modifiedInErd: number;
     failed: number;
   };
-  modified: Array<{ name: string; warnings?: string[] }>;
+  modified: Array<{
+    name: string;
+    warnings?: string[];
+    // 이 테이블에서 더하고 지운 가상 관계 이름(이름을 비운 ADD 는 만든 이름)
+    virtualRelations?: { added: string[]; dropped: string[] };
+  }>;
   failed?: Array<{ name: string; error: string }>;
 }
 ```
