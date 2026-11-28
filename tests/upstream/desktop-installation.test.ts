@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 import {
   detectDesktopInstallation,
+  installGuideUrlForProfile,
   macDesktopExecutableCandidates,
   macDesktopExecutablePathFromAppPath,
   windowsNsisUninstallGuid,
@@ -254,6 +255,33 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\4531
         '/Users/shock/Applications/NeoSQLEnterprise.app/Contents/MacOS/NeoSQLEnterprise',
       ],
     });
+    // The customer's administrator distributes NeoSQLEnterprise — no pointer to the public SaaS homepage.
+    expect(result).not.toHaveProperty('installGuideUrl');
+  });
+
+  it('gives NeoSQLEnterprise no SaaS install guide on Windows either', async () => {
+    const missing = await detectDesktopInstallation({
+      profile: 'enterprise',
+      platform: 'win32',
+      registryQuery: async () => undefined,
+    });
+    expect(missing).toMatchObject({ status: 'not_installed', reason: 'registry_missing' });
+    expect(missing).not.toHaveProperty('installGuideUrl');
+
+    const executablePath = 'C:\\Program Files\\NeoSQLEnterprise\\NeoSQLEnterprise.exe';
+    const removed = await detectDesktopInstallation({
+      profile: 'enterprise',
+      platform: 'win32',
+      registryQuery: async (key) => (key.startsWith('HKLM\\') ? `\n    DisplayIcon    REG_SZ    ${executablePath},0\n` : undefined),
+      pathExists: async () => false,
+    });
+    expect(removed).toMatchObject({ status: 'not_installed', reason: 'executable_missing', executablePath });
+    expect(removed).not.toHaveProperty('installGuideUrl');
+  });
+
+  it('keeps the install guide for the SaaS desktop', () => {
+    expect(installGuideUrlForProfile('prod')).toBe('https://neosql.unvus.com/ko/docs/install');
+    expect(installGuideUrlForProfile('enterprise')).toBeUndefined();
   });
 
   it('builds macOS executable candidates from the product name', () => {

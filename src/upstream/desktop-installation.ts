@@ -16,6 +16,22 @@ import {
 
 export const NEOSQL_INSTALL_GUIDE_URL = 'https://neosql.unvus.com/ko/docs/install';
 
+/**
+ * Where to point someone whose NeoSQL Desktop is missing. NeoSQLEnterprise gets none: the customer's administrator
+ * distributes it from their own server (often on a closed network), so the public homepage is the wrong place to send them.
+ */
+export const installGuideUrlForProfile = (
+  profile: Profile,
+): typeof NEOSQL_INSTALL_GUIDE_URL | undefined =>
+  profile === 'enterprise' ? undefined : NEOSQL_INSTALL_GUIDE_URL;
+
+const installGuideField = (
+  profile: Profile,
+): { installGuideUrl?: typeof NEOSQL_INSTALL_GUIDE_URL } => {
+  const url = installGuideUrlForProfile(profile);
+  return url === undefined ? {} : { installGuideUrl: url };
+};
+
 const ELECTRON_BUILDER_NS_UUID = '50e065bc-3134-11e6-9bab-38c9862bdaf3';
 const WINDOWS_UNINSTALL_SUBKEY = 'Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall';
 const WINDOWS_UNINSTALL_KEY_PREFIX = `HKCU\\${WINDOWS_UNINSTALL_SUBKEY}`;
@@ -44,7 +60,8 @@ export type DesktopInstallationResult =
       platform: 'darwin';
       target: ReturnType<typeof activationTargetForProfile>;
       checkedExecutablePaths: string[];
-      installGuideUrl: typeof NEOSQL_INSTALL_GUIDE_URL;
+      /** Absent for NeoSQLEnterprise (see {@link installGuideUrlForProfile}). */
+      installGuideUrl?: typeof NEOSQL_INSTALL_GUIDE_URL;
     }
   | {
       status: 'installed';
@@ -70,7 +87,8 @@ export type DesktopInstallationResult =
       displayIcon?: string;
       publisher?: string;
       uninstallString?: string;
-      installGuideUrl: typeof NEOSQL_INSTALL_GUIDE_URL;
+      /** Absent for NeoSQLEnterprise (see {@link installGuideUrlForProfile}). */
+      installGuideUrl?: typeof NEOSQL_INSTALL_GUIDE_URL;
     }
   | {
       status: 'not_checked';
@@ -159,7 +177,7 @@ export const detectDesktopInstallation = async (
     platform,
     target,
     checkedExecutablePaths,
-    installGuideUrl: NEOSQL_INSTALL_GUIDE_URL,
+    ...installGuideField(opts.profile),
   };
 };
 
@@ -271,7 +289,7 @@ const detectWindowsDesktopInstallation = async (
       target: opts.target,
       checkedRegistryKey,
       reason: 'registry_missing',
-      installGuideUrl: NEOSQL_INSTALL_GUIDE_URL,
+      ...installGuideField(opts.profile),
     };
   }
   const registryValues = parseWindowsUninstallRegistry(output);
@@ -279,6 +297,7 @@ const detectWindowsDesktopInstallation = async (
   const executablePath = executablePathFromDisplayIcon(registryValues.displayIcon);
   if (!executablePath) {
     return windowsNotInstalledFromRegistry({
+      profile: opts.profile,
       target: opts.target,
       checkedRegistryKey,
       registryValues,
@@ -288,6 +307,7 @@ const detectWindowsDesktopInstallation = async (
 
   if (!(await opts.pathExists(executablePath))) {
     return windowsNotInstalledFromRegistry({
+      profile: opts.profile,
       target: opts.target,
       checkedRegistryKey,
       registryValues,
@@ -307,6 +327,7 @@ const detectWindowsDesktopInstallation = async (
 };
 
 const windowsNotInstalledFromRegistry = (opts: {
+  profile: Profile;
   target: ReturnType<typeof activationTargetForProfile>;
   checkedRegistryKey: string;
   registryValues: WindowsUninstallRegistryValues;
@@ -320,7 +341,7 @@ const windowsNotInstalledFromRegistry = (opts: {
     checkedRegistryKey: opts.checkedRegistryKey,
     reason: opts.reason,
     ...opts.registryValues,
-    installGuideUrl: NEOSQL_INSTALL_GUIDE_URL,
+    ...installGuideField(opts.profile),
   };
   if (opts.executablePath !== undefined) result.executablePath = opts.executablePath;
   return result;
