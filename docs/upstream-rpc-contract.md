@@ -671,6 +671,9 @@ interface ErdCreateTablesResult {
   };
   created: Array<{ name: string }>;
   failed?: Array<{ name: string; error: string }>;
+  // 사용자가 DDL 승인을 거쳐야 하는 멤버면(계정 프로젝트의 DDL 제한 역할) 만든 테이블은 팀 설계가 아니라 그 사용자의
+  // 승인 대기 변경으로 저장된다. 만든 테이블이 있을 때만 싣는다. message 는 AI 가 읽을 안내다.
+  pendingApproval?: { tables: string[]; message: string };
 }
 ```
 
@@ -805,6 +808,9 @@ interface ErdModifyTablesResult {
     virtualRelations?: { added: string[]; dropped: string[] };
   }>;
   failed?: Array<{ name: string; error: string }>;
+  // erd-create-tables 와 같다 — DDL 승인을 거쳐야 하는 사용자가 고친 테이블은 승인 대기 변경으로 저장된다.
+  // 그 사용자는 다른 멤버가 저장하고 아직 DB 에 반영하지 않은 변경이 있는 테이블을 고치지 못한다(failed 로 돌려준다).
+  pendingApproval?: { tables: string[]; message: string };
 }
 ```
 
